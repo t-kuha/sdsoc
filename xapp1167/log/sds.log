@@ -1,0 +1,116 @@
+(c) Copyright 2012-2016 Xilinx, Inc. All Rights Reserved.
+#-----------------------------------------------------------
+# Tool version  : sds++ 2016.2 SW Build on Jul 15 2016 19:20:29
+# Start time    : Mon Dec 05 19:39:39 +0900 2016
+# Command line  : sds++ -o xapp1167.elf ./src/opencv_top.o ./src/test.o ./src/top.o -dmclkid 1 -sds-pf zybo
+# Log file      : E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/_sds/reports/sds.log
+# Journal file  : E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/_sds/reports/sds.jou
+# Report file   : E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/_sds/reports/sds.rpt
+#-----------------------------------------------------------
+
+Libraries: 
+Library Paths {}
+INFO: [SDSoC 0-0] Analyzing object files
+arm-linux-gnueabihf-objcopy -O binary --set-section-flags .xdinfo=alloc --only-section=.xdinfo E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/src/opencv_top.o E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/_sds/.data/xdinfo.xml
+arm-linux-gnueabihf-objcopy -O binary --set-section-flags .xddata=alloc --only-section=.xddata E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/src/opencv_top.o E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/_sds/.data/xddata.xml
+arm-linux-gnueabihf-objcopy -O binary --set-section-flags .xdinfo=alloc --only-section=.xdinfo E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/src/test.o E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/_sds/.data/xdinfo.xml
+arm-linux-gnueabihf-objcopy -O binary --set-section-flags .xddata=alloc --only-section=.xddata E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/src/test.o E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/_sds/.data/xddata.xml
+arm-linux-gnueabihf-objcopy -O binary --set-section-flags .xdinfo=alloc --only-section=.xdinfo E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/src/top.o E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/_sds/.data/xdinfo.xml
+arm-linux-gnueabihf-objcopy -O binary --set-section-flags .xddata=alloc --only-section=.xddata E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/src/top.o E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/_sds/.data/xddata.xml
+build_xd_ip_db  -sds-pf C:/Xilinx/SDSoC/2016.2/platforms/zybo/zybo_hw.pfm    -o E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/_sds/.cdb/xd_ip_db.xml  
+INFO: Using user-defined path for XILINX_XD environment variable C:/Xilinx/SDSoC/2016.2
+INFO: [SDSoC 0-0] Using prebuilt hardware
+INFO: [SDSoC 0-0] Skipping block diagram (BD), address map, port information and device registration for partition 0
+INFO: [SDSoC 0-0] Prepare hardware access API functions
+INFO: [SDSoC 0-0] Create accelerator stub functions
+INFO: [SDSoC 0-0] Compile hardware access API functions
+arm-linux-gnueabihf-gcc      -I C:/Xilinx/SDSoC/2016.2/aarch32-linux/include  -I C:/Xilinx/SDSoC/2016.2/Vivado_HLS/2016.2/include -c  E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/_sds/swstubs/devreg.c
+arm-linux-gnueabihf-gcc       -I C:/Xilinx/SDSoC/2016.2/aarch32-linux/include  -I C:/Xilinx/SDSoC/2016.2/Vivado_HLS/2016.2/include -c  E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/_sds/swstubs/portinfo.c
+arm-linux-gnueabihf-g++      -I C:/Xilinx/SDSoC/2016.2/aarch32-linux/include  -I C:/Xilinx/SDSoC/2016.2/Vivado_HLS/2016.2/include -c  E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/_sds/swstubs/cf_stub.c
+arm-linux-gnueabihf-ar crs E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/_sds/swstubs/libxlnk_stub.a E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/_sds/swstubs/devreg.o E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/_sds/swstubs/portinfo.o E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/_sds/swstubs/cf_stub.o
+INFO: [SDSoC 0-0] Compile accelerator stub functions
+arm-linux-gnueabihf-ar crs E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/_sds/swstubs/libxapp1167.a E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/_sds/swstubs/devreg.o E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/_sds/swstubs/portinfo.o E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/_sds/swstubs/cf_stub.o 
+INFO: [SDSoC 0-0] Link application ELF file
+arm-linux-gnueabihf-g++     E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/src/opencv_top.o E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/src/test.o E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/src/top.o E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/_sds/swstubs/devreg.o E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/_sds/swstubs/portinfo.o    -L C:/Xilinx/SDSoC/2016.2/aarch32-linux/lib -LE:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/_sds/swstubs -Wl,--start-group  -Wl,--end-group -Wl,--start-group    -lpthread -lsds_lib -lxlnk_stub  -Wl,--end-group -o E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/_sds/swstubs/xapp1167.elf
+E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/src/opencv_top.o: In function `opencv_image_filter':
+E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/src/opencv_top.cpp:163: undefined reference to `cv::Mat::Mat(_IplImage const*, bool)'
+E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/src/opencv_top.cpp:164: undefined reference to `cv::Mat::Mat(_IplImage const*, bool)'
+E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/src/opencv_top.o: In function `hls_image_filter':
+E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/src/opencv_top.cpp:212: undefined reference to `cv::Mat::Mat(_IplImage const*, bool)'
+E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/src/opencv_top.cpp:213: undefined reference to `cv::Mat::Mat(_IplImage const*, bool)'
+E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/src/opencv_top.o: In function `cv::Mat::~Mat()':
+C:/Xilinx/SDSoC/2016.2/Vivado_HLS/2016.2/include/opencv2/core/mat.hpp:278: undefined reference to `cv::fastFree(void*)'
+E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/src/opencv_top.o: In function `cv::Mat::release()':
+C:/Xilinx/SDSoC/2016.2/Vivado_HLS/2016.2/include/opencv2/core/mat.hpp:367: undefined reference to `cv::Mat::deallocate()'
+E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/src/opencv_top.o: In function `half::xip_fpo_get_data(__xip_fpo_struct*) const':
+C:/Xilinx/SDSoC/2016.2/Vivado_HLS/2016.2/include/hls_half.h:1086: undefined reference to `xip_fpo_set_zero'
+C:/Xilinx/SDSoC/2016.2/Vivado_HLS/2016.2/include/hls_half.h:1089: undefined reference to `xip_fpo_set_inf'
+C:/Xilinx/SDSoC/2016.2/Vivado_HLS/2016.2/include/hls_half.h:1092: undefined reference to `xip_fpo_set_nan'
+E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/src/opencv_top.o: In function `half::xip_fpo_half_get_flt() const':
+C:/Xilinx/SDSoC/2016.2/Vivado_HLS/2016.2/include/hls_half.h:1100: undefined reference to `xip_fpo_init2'
+C:/Xilinx/SDSoC/2016.2/Vivado_HLS/2016.2/include/hls_half.h:1110: undefined reference to `xip_fpo_get_flt'
+C:/Xilinx/SDSoC/2016.2/Vivado_HLS/2016.2/include/hls_half.h:1112: undefined reference to `xip_fpo_clear'
+E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/src/opencv_top.o: In function `xil_fpo_mul_flt(float, float)':
+C:/Xilinx/SDSoC/2016.2/Vivado_HLS/2016.2/include/hls_fpo.h:225: undefined reference to `xip_fpo_mul_flt'
+E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/src/opencv_top.o: In function `xil_fpo_mul_d(double, double)':
+C:/Xilinx/SDSoC/2016.2/Vivado_HLS/2016.2/include/hls_fpo.h:234: undefined reference to `xip_fpo_mul_d'
+E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/src/opencv_top.o: In function `xil_fpo_div_flt(float, float)':
+C:/Xilinx/SDSoC/2016.2/Vivado_HLS/2016.2/include/hls_fpo.h:247: undefined reference to `xip_fpo_div_flt'
+E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/src/opencv_top.o: In function `xil_fpo_div_d(double, double)':
+C:/Xilinx/SDSoC/2016.2/Vivado_HLS/2016.2/include/hls_fpo.h:256: undefined reference to `xip_fpo_div_d'
+E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/src/opencv_top.o: In function `xil_fpo_rec_flt(float)':
+C:/Xilinx/SDSoC/2016.2/Vivado_HLS/2016.2/include/hls_fpo.h:269: undefined reference to `xip_fpo_rec_flt'
+E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/src/opencv_top.o: In function `xil_fpo_rec_d(double)':
+C:/Xilinx/SDSoC/2016.2/Vivado_HLS/2016.2/include/hls_fpo.h:278: undefined reference to `xip_fpo_rec_d'
+E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/src/opencv_top.o: In function `xil_fpo_sqrt_flt(float)':
+C:/Xilinx/SDSoC/2016.2/Vivado_HLS/2016.2/include/hls_fpo.h:292: undefined reference to `xip_fpo_sqrt_flt'
+E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/src/opencv_top.o: In function `xil_fpo_sqrt_d(double)':
+C:/Xilinx/SDSoC/2016.2/Vivado_HLS/2016.2/include/hls_fpo.h:302: undefined reference to `xip_fpo_sqrt_d'
+E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/src/opencv_top.o: In function `xil_fpo_recsqrt_flt(float)':
+C:/Xilinx/SDSoC/2016.2/Vivado_HLS/2016.2/include/hls_fpo.h:316: undefined reference to `xip_fpo_recsqrt_flt'
+E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/src/opencv_top.o: In function `xil_fpo_recsqrt_d(double)':
+C:/Xilinx/SDSoC/2016.2/Vivado_HLS/2016.2/include/hls_fpo.h:325: undefined reference to `xip_fpo_recsqrt_d'
+E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/src/opencv_top.o: In function `xil_fpo_log_flt(float)':
+C:/Xilinx/SDSoC/2016.2/Vivado_HLS/2016.2/include/hls_fpo.h:358: undefined reference to `xip_fpo_log_flt'
+E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/src/opencv_top.o: In function `xil_fpo_log_d(double)':
+C:/Xilinx/SDSoC/2016.2/Vivado_HLS/2016.2/include/hls_fpo.h:367: undefined reference to `xip_fpo_log_d'
+E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/src/opencv_top.o: In function `xil_fpo_exp_flt(float)':
+C:/Xilinx/SDSoC/2016.2/Vivado_HLS/2016.2/include/hls_fpo.h:381: undefined reference to `xip_fpo_exp_flt'
+E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/src/opencv_top.o: In function `xil_fpo_exp_d(double)':
+C:/Xilinx/SDSoC/2016.2/Vivado_HLS/2016.2/include/hls_fpo.h:394: undefined reference to `xip_fpo_exp_d'
+E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/src/opencv_top.o: In function `void cvMat2AXIvideo<16>(cv::Mat&, hls::stream<ap_axiu<16, 1, 1, 1> >&)':
+C:/Xilinx/SDSoC/2016.2/Vivado_HLS/2016.2/include/hls_opencv.h:252: undefined reference to `cv::Mat::operator _IplImage() const'
+E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/src/opencv_top.o: In function `void AXIvideo2cvMat<16>(hls::stream<ap_axiu<16, 1, 1, 1> >&, cv::Mat&)':
+C:/Xilinx/SDSoC/2016.2/Vivado_HLS/2016.2/include/hls_opencv.h:258: undefined reference to `cv::Mat::operator _IplImage() const'
+E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/src/opencv_top.o: In function `void IplImage2AXIvideo<16>(_IplImage*, hls::stream<ap_axiu<16, 1, 1, 1> >&)':
+C:/Xilinx/SDSoC/2016.2/Vivado_HLS/2016.2/include/hls_opencv.h:137: undefined reference to `cvGet2D'
+E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/src/opencv_top.o: In function `void AXIvideo2IplImage<16>(hls::stream<ap_axiu<16, 1, 1, 1> >&, _IplImage*)':
+C:/Xilinx/SDSoC/2016.2/Vivado_HLS/2016.2/include/hls_opencv.h:244: undefined reference to `cvSet2D'
+E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/src/test.o: In function `cvtcolor_rgb2yuv422(cv::Mat&, cv::Mat&)':
+E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/src/../common/image_utils.h:42: undefined reference to `cv::_InputArray::_InputArray(cv::Mat const&)'
+E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/src/../common/image_utils.h:42: undefined reference to `cv::_OutputArray::_OutputArray(cv::Mat&)'
+E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/src/../common/image_utils.h:42: undefined reference to `cv::cvtColor(cv::_InputArray const&, cv::_OutputArray const&, int, int)'
+E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/src/test.o: In function `image_compare(char const*, char const*)':
+E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/src/../common/image_utils.h:64: undefined reference to `cv::imread(std::string const&, int)'
+E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/src/../common/image_utils.h:65: undefined reference to `cv::imread(std::string const&, int)'
+E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/src/test.o: In function `main':
+E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/src/test.cpp:54: undefined reference to `cv::imread(std::string const&, int)'
+E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/src/test.cpp:65: undefined reference to `cv::Mat::operator _IplImage() const'
+E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/src/test.cpp:66: undefined reference to `cv::Mat::operator _IplImage() const'
+E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/src/test.cpp:68: undefined reference to `cv::_InputArray::_InputArray(cv::Mat const&)'
+E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/src/test.cpp:68: undefined reference to `cv::_OutputArray::_OutputArray(cv::Mat&)'
+E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/src/test.cpp:68: undefined reference to `cv::cvtColor(cv::_InputArray const&, cv::_OutputArray const&, int, int)'
+E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/src/test.cpp:69: undefined reference to `cv::_InputArray::_InputArray(cv::Mat const&)'
+E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/src/test.cpp:69: undefined reference to `cv::imwrite(std::string const&, cv::_InputArray const&, std::vector<int, std::allocator<int> > const&)'
+E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/src/test.cpp:72: undefined reference to `cv::_InputArray::_InputArray(cv::Mat const&)'
+E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/src/test.cpp:72: undefined reference to `cv::_OutputArray::_OutputArray(cv::Mat&)'
+E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/src/test.cpp:72: undefined reference to `cv::cvtColor(cv::_InputArray const&, cv::_OutputArray const&, int, int)'
+E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/src/test.cpp:73: undefined reference to `cv::_InputArray::_InputArray(cv::Mat const&)'
+E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/src/test.cpp:73: undefined reference to `cv::imwrite(std::string const&, cv::_InputArray const&, std::vector<int, std::allocator<int> > const&)'
+E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/src/test.o: In function `cv::Mat::create(int, int, int)':
+C:/Xilinx/SDSoC/2016.2/Vivado_HLS/2016.2/include/opencv2/core/mat.hpp:353: undefined reference to `cv::Mat::create(int, int const*, int)'
+collect2.exe: error: ld returned 1 exit status
+ERROR: [SDSoC 0-0] Exiting sds++ : Error when calling 'arm-linux-gnueabihf-g++     E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/src/opencv_top.o E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/src/test.o E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/src/top.o E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/_sds/swstubs/devreg.o E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/_sds/swstubs/portinfo.o    -L C:/Xilinx/SDSoC/2016.2/aarch32-linux/lib -LE:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/_sds/swstubs -Wl,--start-group  -Wl,--end-group -Wl,--start-group    -lpthread -lsds_lib -lxlnk_stub  -Wl,--end-group -o E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/_sds/swstubs/xapp1167.elf'
+sds++ log file saved as E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/_sds/reports/sds.log
+ERROR: [SDSoC 0-0] Build failed
+sds++ completed at Mon Dec 05 19:39:51 +0900 2016
