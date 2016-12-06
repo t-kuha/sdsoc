@@ -1,15 +1,19 @@
 (c) Copyright 2012-2016 Xilinx, Inc. All Rights Reserved.
 #-----------------------------------------------------------
 # Tool version  : sds++ 2016.2 SW Build on Jul 15 2016 19:20:29
-# Start time    : Mon Dec 05 19:39:39 +0900 2016
-# Command line  : sds++ -o xapp1167.elf ./src/opencv_top.o ./src/test.o ./src/top.o -dmclkid 1 -sds-pf zybo
+# Start time    : Tue Dec 06 09:03:08 +0900 2016
+# Command line  : sds++ {-LE:\User\kuriharat\Documents\Zynq\SDSoC\library\2016.2\lib} -o xapp1167.elf ./src/opencv_top.o ./src/test.o ./src/top.o -lopencv_core -lopencv_imgproc -lopencv_highgui -dmclkid 1 -sds-pf zybo
 # Log file      : E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/_sds/reports/sds.log
 # Journal file  : E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/_sds/reports/sds.jou
 # Report file   : E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/_sds/reports/sds.rpt
 #-----------------------------------------------------------
 
-Libraries: 
-Library Paths {}
+INFO: [SDSoC 0-0] Removing implementation files from previous run
+Libraries: opencv_core opencv_imgproc opencv_highgui
+Library Paths {E:\User\kuriharat\Documents\Zynq\SDSoC\library\2016.2\lib} {}
+Searching for static library libopencv_core.a
+Searching for static library libopencv_imgproc.a
+Searching for static library libopencv_highgui.a
 INFO: [SDSoC 0-0] Analyzing object files
 arm-linux-gnueabihf-objcopy -O binary --set-section-flags .xdinfo=alloc --only-section=.xdinfo E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/src/opencv_top.o E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/_sds/.data/xdinfo.xml
 arm-linux-gnueabihf-objcopy -O binary --set-section-flags .xddata=alloc --only-section=.xddata E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/src/opencv_top.o E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/_sds/.data/xddata.xml
@@ -31,17 +35,9 @@ arm-linux-gnueabihf-ar crs E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xa
 INFO: [SDSoC 0-0] Compile accelerator stub functions
 arm-linux-gnueabihf-ar crs E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/_sds/swstubs/libxapp1167.a E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/_sds/swstubs/devreg.o E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/_sds/swstubs/portinfo.o E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/_sds/swstubs/cf_stub.o 
 INFO: [SDSoC 0-0] Link application ELF file
-arm-linux-gnueabihf-g++     E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/src/opencv_top.o E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/src/test.o E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/src/top.o E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/_sds/swstubs/devreg.o E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/_sds/swstubs/portinfo.o    -L C:/Xilinx/SDSoC/2016.2/aarch32-linux/lib -LE:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/_sds/swstubs -Wl,--start-group  -Wl,--end-group -Wl,--start-group    -lpthread -lsds_lib -lxlnk_stub  -Wl,--end-group -o E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/_sds/swstubs/xapp1167.elf
-E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/src/opencv_top.o: In function `opencv_image_filter':
-E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/src/opencv_top.cpp:163: undefined reference to `cv::Mat::Mat(_IplImage const*, bool)'
-E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/src/opencv_top.cpp:164: undefined reference to `cv::Mat::Mat(_IplImage const*, bool)'
-E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/src/opencv_top.o: In function `hls_image_filter':
-E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/src/opencv_top.cpp:212: undefined reference to `cv::Mat::Mat(_IplImage const*, bool)'
-E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/src/opencv_top.cpp:213: undefined reference to `cv::Mat::Mat(_IplImage const*, bool)'
-E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/src/opencv_top.o: In function `cv::Mat::~Mat()':
-C:/Xilinx/SDSoC/2016.2/Vivado_HLS/2016.2/include/opencv2/core/mat.hpp:278: undefined reference to `cv::fastFree(void*)'
-E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/src/opencv_top.o: In function `cv::Mat::release()':
-C:/Xilinx/SDSoC/2016.2/Vivado_HLS/2016.2/include/opencv2/core/mat.hpp:367: undefined reference to `cv::Mat::deallocate()'
+arm-linux-gnueabihf-g++     E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/src/opencv_top.o E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/src/test.o E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/src/top.o E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/_sds/swstubs/devreg.o E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/_sds/swstubs/portinfo.o {-LE:\User\kuriharat\Documents\Zynq\SDSoC\library\2016.2\lib} -lopencv_core -lopencv_imgproc -lopencv_highgui   -L C:/Xilinx/SDSoC/2016.2/aarch32-linux/lib -LE:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/_sds/swstubs -Wl,--start-group  -Wl,--end-group -Wl,--start-group    -lpthread -lsds_lib -lxlnk_stub  -Wl,--end-group -o E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/_sds/swstubs/xapp1167.elf
+c:/xilinx/sdsoc/2016.2/sdk/2016.2/gnu/aarch32/nt/gcc-arm-linux-gnueabi/bin/../lib/gcc/arm-linux-gnueabihf/4.9.2/../../../../arm-linux-gnueabihf/bin/ld.exe: warning: libdl.so.2, needed by E:\User\kuriharat\Documents\Zynq\SDSoC\library\2016.2\lib/libopencv_core.so, not found (try using -rpath or -rpath-link)
+c:/xilinx/sdsoc/2016.2/sdk/2016.2/gnu/aarch32/nt/gcc-arm-linux-gnueabi/bin/../lib/gcc/arm-linux-gnueabihf/4.9.2/../../../../arm-linux-gnueabihf/bin/ld.exe: warning: librt.so.1, needed by E:\User\kuriharat\Documents\Zynq\SDSoC\library\2016.2\lib/libopencv_core.so, not found (try using -rpath or -rpath-link)
 E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/src/opencv_top.o: In function `half::xip_fpo_get_data(__xip_fpo_struct*) const':
 C:/Xilinx/SDSoC/2016.2/Vivado_HLS/2016.2/include/hls_half.h:1086: undefined reference to `xip_fpo_set_zero'
 C:/Xilinx/SDSoC/2016.2/Vivado_HLS/2016.2/include/hls_half.h:1089: undefined reference to `xip_fpo_set_inf'
@@ -78,39 +74,9 @@ E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/src/opencv_t
 C:/Xilinx/SDSoC/2016.2/Vivado_HLS/2016.2/include/hls_fpo.h:381: undefined reference to `xip_fpo_exp_flt'
 E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/src/opencv_top.o: In function `xil_fpo_exp_d(double)':
 C:/Xilinx/SDSoC/2016.2/Vivado_HLS/2016.2/include/hls_fpo.h:394: undefined reference to `xip_fpo_exp_d'
-E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/src/opencv_top.o: In function `void cvMat2AXIvideo<16>(cv::Mat&, hls::stream<ap_axiu<16, 1, 1, 1> >&)':
-C:/Xilinx/SDSoC/2016.2/Vivado_HLS/2016.2/include/hls_opencv.h:252: undefined reference to `cv::Mat::operator _IplImage() const'
-E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/src/opencv_top.o: In function `void AXIvideo2cvMat<16>(hls::stream<ap_axiu<16, 1, 1, 1> >&, cv::Mat&)':
-C:/Xilinx/SDSoC/2016.2/Vivado_HLS/2016.2/include/hls_opencv.h:258: undefined reference to `cv::Mat::operator _IplImage() const'
-E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/src/opencv_top.o: In function `void IplImage2AXIvideo<16>(_IplImage*, hls::stream<ap_axiu<16, 1, 1, 1> >&)':
-C:/Xilinx/SDSoC/2016.2/Vivado_HLS/2016.2/include/hls_opencv.h:137: undefined reference to `cvGet2D'
-E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/src/opencv_top.o: In function `void AXIvideo2IplImage<16>(hls::stream<ap_axiu<16, 1, 1, 1> >&, _IplImage*)':
-C:/Xilinx/SDSoC/2016.2/Vivado_HLS/2016.2/include/hls_opencv.h:244: undefined reference to `cvSet2D'
-E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/src/test.o: In function `cvtcolor_rgb2yuv422(cv::Mat&, cv::Mat&)':
-E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/src/../common/image_utils.h:42: undefined reference to `cv::_InputArray::_InputArray(cv::Mat const&)'
-E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/src/../common/image_utils.h:42: undefined reference to `cv::_OutputArray::_OutputArray(cv::Mat&)'
-E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/src/../common/image_utils.h:42: undefined reference to `cv::cvtColor(cv::_InputArray const&, cv::_OutputArray const&, int, int)'
-E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/src/test.o: In function `image_compare(char const*, char const*)':
-E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/src/../common/image_utils.h:64: undefined reference to `cv::imread(std::string const&, int)'
-E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/src/../common/image_utils.h:65: undefined reference to `cv::imread(std::string const&, int)'
-E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/src/test.o: In function `main':
-E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/src/test.cpp:54: undefined reference to `cv::imread(std::string const&, int)'
-E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/src/test.cpp:65: undefined reference to `cv::Mat::operator _IplImage() const'
-E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/src/test.cpp:66: undefined reference to `cv::Mat::operator _IplImage() const'
-E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/src/test.cpp:68: undefined reference to `cv::_InputArray::_InputArray(cv::Mat const&)'
-E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/src/test.cpp:68: undefined reference to `cv::_OutputArray::_OutputArray(cv::Mat&)'
-E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/src/test.cpp:68: undefined reference to `cv::cvtColor(cv::_InputArray const&, cv::_OutputArray const&, int, int)'
-E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/src/test.cpp:69: undefined reference to `cv::_InputArray::_InputArray(cv::Mat const&)'
-E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/src/test.cpp:69: undefined reference to `cv::imwrite(std::string const&, cv::_InputArray const&, std::vector<int, std::allocator<int> > const&)'
-E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/src/test.cpp:72: undefined reference to `cv::_InputArray::_InputArray(cv::Mat const&)'
-E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/src/test.cpp:72: undefined reference to `cv::_OutputArray::_OutputArray(cv::Mat&)'
-E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/src/test.cpp:72: undefined reference to `cv::cvtColor(cv::_InputArray const&, cv::_OutputArray const&, int, int)'
-E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/src/test.cpp:73: undefined reference to `cv::_InputArray::_InputArray(cv::Mat const&)'
-E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/src/test.cpp:73: undefined reference to `cv::imwrite(std::string const&, cv::_InputArray const&, std::vector<int, std::allocator<int> > const&)'
-E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/src/test.o: In function `cv::Mat::create(int, int, int)':
-C:/Xilinx/SDSoC/2016.2/Vivado_HLS/2016.2/include/opencv2/core/mat.hpp:353: undefined reference to `cv::Mat::create(int, int const*, int)'
+E:\User\kuriharat\Documents\Zynq\SDSoC\library\2016.2\lib/libopencv_core.so: undefined reference to `clock_gettime@GLIBC_2.4'
 collect2.exe: error: ld returned 1 exit status
-ERROR: [SDSoC 0-0] Exiting sds++ : Error when calling 'arm-linux-gnueabihf-g++     E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/src/opencv_top.o E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/src/test.o E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/src/top.o E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/_sds/swstubs/devreg.o E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/_sds/swstubs/portinfo.o    -L C:/Xilinx/SDSoC/2016.2/aarch32-linux/lib -LE:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/_sds/swstubs -Wl,--start-group  -Wl,--end-group -Wl,--start-group    -lpthread -lsds_lib -lxlnk_stub  -Wl,--end-group -o E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/_sds/swstubs/xapp1167.elf'
+ERROR: [SDSoC 0-0] Exiting sds++ : Error when calling 'arm-linux-gnueabihf-g++     E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/src/opencv_top.o E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/src/test.o E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/src/top.o E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/_sds/swstubs/devreg.o E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/_sds/swstubs/portinfo.o {-LE:\User\kuriharat\Documents\Zynq\SDSoC\library\2016.2\lib} -lopencv_core -lopencv_imgproc -lopencv_highgui   -L C:/Xilinx/SDSoC/2016.2/aarch32-linux/lib -LE:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/_sds/swstubs -Wl,--start-group  -Wl,--end-group -Wl,--start-group    -lpthread -lsds_lib -lxlnk_stub  -Wl,--end-group -o E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/_sds/swstubs/xapp1167.elf'
 sds++ log file saved as E:/User/kuriharat/Documents/Zynq/SDSoC/zybo/2016.2/xapp1167/SDDebug/_sds/reports/sds.log
 ERROR: [SDSoC 0-0] Build failed
-sds++ completed at Mon Dec 05 19:39:51 +0900 2016
+sds++ completed at Tue Dec 06 09:03:24 +0900 2016
