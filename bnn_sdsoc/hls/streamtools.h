@@ -40,6 +40,8 @@
  * 
  *
  *****************************************************************************/
+#ifndef STREAMTOOLS_H
+#define STREAMTOOLS_H
 
 // only let the first X elements of a stream to pass through, the remainder
 // are consumed from input but not re-emitted from the output
@@ -206,3 +208,5 @@ template<unsigned W, unsigned N>
     return  m_target;
   }
 };
+
+#endif // STREAMTOOLS_H

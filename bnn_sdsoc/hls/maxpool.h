@@ -39,6 +39,8 @@
  * 
  *
  *****************************************************************************/
+#ifndef MAXPOOL_H
+#define MAXPOOL_H
 
 template<unsigned int ImgDim, unsigned int PoolDim, unsigned int NumChannels>
 void StreamingMaxPool(stream<ap_uint<NumChannels> > & in,
@@ -82,3 +84,5 @@ void StreamingMaxPool_Batch(stream<ap_uint<NumChannels> > & in,
 		StreamingMaxPool<ImgDim, PoolDim, NumChannels>(in, out);
 	}
 }
+
+#endif // MAXPOOL_H

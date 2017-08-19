@@ -1,3 +1,6 @@
+#ifndef SLIDINGWINDOW_H
+#define SLIDINGWINDOW_H
+
 #define MAX(x, y) (((x) > (y)) ? (x) : (y))
 #define MIN(x, y) (((x) > (y)) ? (y) : (x))
 
@@ -106,3 +109,5 @@ void StreamingConvolutionInputGenerator_Batch(
 	read_block = 0;
 	} // End count_image
 } // End generator
+
+#endif // SLIDINGWINDOW_H

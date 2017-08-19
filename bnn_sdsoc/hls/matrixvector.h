@@ -40,6 +40,8 @@
  * 
  *
  *****************************************************************************/
+#ifndef MATRIX_VECTOR_H
+#define MATRIX_VECTOR_H
 
 // popcount implemented as unsigned 1-bit add
 // HLS automatically balances this into an adder tree
@@ -316,3 +318,5 @@ void StreamingFxdMatrixVector_Batch(stream<ap_uint<SIMDWidth * InpWidth> > & in,
 		}
 	}
 }
+
+#endif // MATRIX_VECTOR_H

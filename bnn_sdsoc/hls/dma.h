@@ -39,6 +39,9 @@
  * streams 
  *
  *****************************************************************************/
+#ifndef DMA_H
+#define DMA_H
+
 // essentially small DMA generators, moving data between mem-mapped arrays and
 // streams
 template<unsigned int DataWidth, unsigned int numBytes>
@@ -111,3 +114,6 @@ void Stream2Mem_Batch(stream<ap_uint<DataWidth> > & in,
 		}
 	}
 }
+
+
+#endif // DMA_H

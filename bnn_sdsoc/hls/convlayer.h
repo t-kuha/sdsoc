@@ -40,6 +40,8 @@
  * 
  *
  *****************************************************************************/
+#ifndef CONVLAYER_H
+#define CONVLAYER_H
 
 template<
 // convolution parameters
@@ -118,3 +120,5 @@ void StreamingFxdConvLayer_Batch(stream<ap_uint<IFMChannels * InpWidth> > & in,
 			mvOut, weightMem, thresMem, numReps * OFMDim * OFMDim);
 
 }
+
+#endif // CONVLAYER_H

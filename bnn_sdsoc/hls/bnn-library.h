@@ -40,6 +40,9 @@
  *
  *****************************************************************************/
 
+#ifndef BNN_LIBRARAY_H
+#define BNN_LIBRARAY_H
+
 #include <hls_stream.h>
 #include "ap_int.h"
 #include <iostream>
@@ -57,3 +60,5 @@ using namespace std;
 #include "maxpool.h"
 #include "fclayer.h"
 #include "convlayer.h"
+
+#endif	// BNN_LIBRARAY_H

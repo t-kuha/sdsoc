@@ -40,6 +40,8 @@
  * 
  *
  *****************************************************************************/
+#ifndef FCLAYER_H
+#define FCLAYER_H
 
 // helper function for fully connected layers
 // instantiates matrix vector unit plus data width converters
@@ -86,3 +88,5 @@ void StreamingFCLayer_NoActivation_Batch(stream<ap_uint<InStreamW> > & in,
 	StreamingDataWidthConverter_Batch<PECount * PopCountWidth, OutStreamW,
 			OutPerImage>(mvu2out, out, numReps);
 }
+
+#endif // FCLAYER_H
