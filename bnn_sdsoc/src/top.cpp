@@ -39,8 +39,7 @@
  * 
  *
  *****************************************************************************/
-#include "bnn-library.h"
-#include "config.h"
+#include "top.h"
 
 
 static ap_uint<L0_SIMD> weightMem0[L0_PE][L0_WMEM];
