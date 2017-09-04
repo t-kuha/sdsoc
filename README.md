@@ -1,6 +1,6 @@
 ## SDSoC Projects
 
-* * *
+
 #### bnn\_sdsoc
   - SDSoC implementation of BNN-PYNQ
 
