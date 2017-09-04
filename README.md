@@ -1,13 +1,17 @@
-# sdsoc
+## SDSoC Projects
 
-lib:
-  - Header & library files.
-  - Created on SDSoC 2016.2  
-  
-xapp1167:
+* * *
+#### bnn\_sdsoc
+  - SDSoC implementation of BNN-PYNQ
+
+
+* * *
+#### embed\_build\_date
+  - Example of embedding build date/time into HW
+
+
+* * *
+#### xapp1167
   - SDSoC project result
   - For Zybo board
   - Created on SDSoC 2016.2
-  
-  log:  SDSoC logs.
-  sd_card:
