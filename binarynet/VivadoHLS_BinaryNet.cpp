@@ -41,11 +41,6 @@ ap_int<7> bias_4[120];// 120
 ap_int<7> bias_5[10];// 10
 #endif
 
-// 認識回数を記録するグローバル変数
-// 認識が行われるたびにインクリメントされるので、前回との差分をしらべて
-// 認識終了の判定を行っています
-//int steps = 0;
-
 // Cソース版はping-pongバッファを外部に持っていましたが, 内部に持つように
 // BinaryNet()内部で宣言しました.
 void BinaryNet(unsigned char *predict_num, // 認識した数字のインデックス
@@ -95,7 +90,6 @@ int main(void) {
 	// Perform prediction -------------------------------------------------
 	printf("START PREDICTION\n");
 	unsigned char est;
-//    steps = 0;
 
 	BinaryNet(&est, pbuf);
 
@@ -158,9 +152,6 @@ void BinaryNet(unsigned char *predict_num, // 認識した数字のインデッ�
 			0, 1 }, { 1, 1, 1, 1, 1, 1 } };
 
 	// 入力された画像データをバッファメモリ(ping-pongメモリ)に格納
-//    int /*xx, yy,*/ tx, ty;
-//    int pixel;
-//    int r, g, b;
 	ap_uint<32> pict;
 
 	for (int yy = 0; yy < 32; yy++) {
@@ -197,7 +188,6 @@ void BinaryNet(unsigned char *predict_num, // 認識した数字のインデッ�
 	ap_uint<7> n_dmap, n_smap;
 	ap_uint<2> dx, dy;
 
-//    ap_uint<3> layer;
 	ap_uint<16> idx;
 
 	ap_int<24> result[10];
@@ -314,14 +304,10 @@ void BinaryNet(unsigned char *predict_num, // 認識した数字のインデッ�
 		// 開発者の一人.
 		for (int dmap = 0; dmap < n_dmap; dmap++) {
 			for (int i = 0; i < dmap_x * dmap_y; i++) {
-//    			int smap;
-//    			int ox, oy;
 				ap_int<24> temp;
-				int sptr;
 				ap_uint<1> is_connect;
 
 				temp = 0;
-				sptr = 0;
 
 				ap_int<18> dat;
 				ap_int<8> coef;
@@ -417,7 +403,6 @@ void BinaryNet(unsigned char *predict_num, // 認識した数字のインデッ�
 
 						// Update offset, since the LeCun's table requires
 						// uniformaly connection
-						sptr++;
 						coef_offset += (wx * wy);
 					} // end for is_connect
 				} // end for smap
