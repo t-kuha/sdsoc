@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <assert.h>
 
 // FPGA実装のためにビット幅を調整します. そのためのヘッダ
 #include "ap_int.h"
@@ -152,12 +153,11 @@ void BinaryNet(unsigned char *predict_num, // 認識した数字のインデッ�
 			0, 1 }, { 1, 1, 1, 1, 1, 1 } };
 
 	// 入力された画像データをバッファメモリ(ping-pongメモリ)に格納
-	ap_uint<32> pict;
-
 	for (int yy = 0; yy < 32; yy++) {
-		pict = pbuf[yy];
+		ap_uint<32> pict = pbuf[yy];
 		//printf("yy=%d pict=%X ", yy, pict);
 		for (int xx = 0; xx < 32; xx++) {
+#pragma HLS PIPELINE
 			if ((pict & 0x1) == 1) {
 				buf[0][yy * 32 + 31 - xx] = 1;
 			} else {
@@ -182,11 +182,11 @@ void BinaryNet(unsigned char *predict_num, // 認識した数字のインデッ�
 	 }
 	 */
 
-	ap_uint<3> wx, wy;
-	ap_uint<6> smap_x, smap_y;
-	ap_uint<6> dmap_x, dmap_y;
-	ap_uint<7> n_dmap, n_smap;
-	ap_uint<2> dx, dy;
+    ap_uint<3> wx, wy;			// Kernel/Window size
+    ap_uint<6> smap_x, smap_y;	// Size of input feature map
+    ap_uint<6> dmap_x, dmap_y;	// Size of output feature map
+    ap_uint<7> n_dmap, n_smap;	// n_dmap: # output channel | n_smap: # input channel
+    ap_uint<2> dx, dy;			// Stride
 
 	ap_uint<16> idx;
 
@@ -198,6 +198,7 @@ void BinaryNet(unsigned char *predict_num, // 認識した数字のインデッ�
 	// (カーネルサイズ=フル結合層のサイズn, とみなして, n x 1 回の２重ループとして計算する)
 
 	// ６層レイヤのループ
+LOOP_LAYER:
 	for (ap_uint<3> layer = 0; layer < 6; layer++) {
 		// set layer parameters
 		// レイヤ毎にパラメータを設定します.
@@ -302,7 +303,9 @@ void BinaryNet(unsigned char *predict_num, // 認識した数字のインデッ�
 		// http://cadlab.cs.ucla.edu/~cong/slides/fpga2015_chen.pdf
 		// 著者のJ.CongはVivado HLSで使われている高位合成アルゴリズムの
 		// 開発者の一人.
+LOOP_DMAP:
 		for (int dmap = 0; dmap < n_dmap; dmap++) {
+LOOP_I:
 			for (int i = 0; i < dmap_x * dmap_y; i++) {
 				ap_int<24> temp;
 				ap_uint<1> is_connect;
@@ -311,7 +314,7 @@ void BinaryNet(unsigned char *predict_num, // 認識した数字のインデッ�
 
 				ap_int<18> dat;
 				ap_int<8> coef;
-
+LOOP_SMAP:
 				for (int smap = 0; smap < n_smap; smap++) {
 					// Read connection from LeCun's table
 					is_connect = 0;
@@ -324,9 +327,12 @@ void BinaryNet(unsigned char *predict_num, // 認識した数字のインデッ�
 					//  then apply a convolutional operation
 					if (is_connect) {
 						// window size is wy x wx
+LOOP_OY:
 						for (int oy = 0; oy < wy; oy++) {
-
+LOOP_OX:
 							for (int ox = 0; ox < wx; ox++) {
+//#pragma HLS LOOP_TRIPCOUNT max=5
+#pragma HLS UNROLL
 								if (layer == 1 || layer == 3) {
 									// average pooling layer
 
@@ -474,8 +480,9 @@ void BinaryNet(unsigned char *predict_num, // 認識した数字のインデッ�
 	// Vivado HLSではprintf文をデバッグ用に入れていても
 	// 合成時に省いてくれる便利なやつなんです!
 	//
-	int max_val = -9999, max_idx = 0;
-	for (int i = 0; i < 10; i++) {
+	int max_val = result[0], max_idx = 0;
+	for (int i = 1; i < 10; i++) {
+#pragma HLS PIPELINE
 		if (max_val < result[i]) {
 			max_val = result[i];
 			max_idx = i;
