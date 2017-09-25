@@ -18,26 +18,50 @@
 #ifdef __SYNTHESIS__
 #include "weight.h"
 #else
-ap_int<7> coef_w_0[117600];	// 117600
-ap_int<7> coef_w_1[4704];// 4704
-ap_int<7> coef_w_2[240000];// 240000
-ap_int<7> coef_w_3[6400];// 6400
-ap_int<7> coef_w_4[4000];// 48000
-ap_int<7> coef_w_5[1200];// 1200
+ap_int<7> coef_w_0[117600];
+ap_int<7> coef_w_1[4704];
+ap_int<7> coef_w_2[240000];
+ap_int<7> coef_w_3[6400];
+ap_int<7> coef_w_4[4000];
+ap_int<7> coef_w_5[1200];
 
-ap_int<7> scale_f_0[4704];// 4704
-ap_int<7> scale_f_1[1176];// 1176
-ap_int<7> scale_f_2[1600];// 1600
-ap_int<7> scale_f_3[400];// 400
-ap_int<7> scale_f_4[120];// 120
-ap_int<7> scale_f_5[10];// 10
+ap_int<7> scale_f_0[4704];
+ap_int<7> scale_f_1[1176];
+ap_int<7> scale_f_2[1600];
+ap_int<7> scale_f_3[400];
+ap_int<7> scale_f_4[120];
+ap_int<7> scale_f_5[10];
 
-ap_int<7> bias_0[4704];// 4704
-ap_int<7> bias_1[1176];// 1176
-ap_int<7> bias_2[1600];// 1600
-ap_int<7> bias_3[400];// 400
-ap_int<7> bias_4[120];// 120
-ap_int<7> bias_5[10];// 10
+ap_int<7> bias_0[4704];
+ap_int<7> bias_1[1176];
+ap_int<7> bias_2[1600];
+ap_int<7> bias_3[400];
+ap_int<7> bias_4[120];
+ap_int<7> bias_5[10];
+
+
+void load_weight(const char* path, int numel, ap_int<7>* dst)
+{
+	std::cout << __LINE__ << std::endl;
+	signed char* tmp;
+	tmp = new signed char [numel];
+
+	FILE* fp = NULL;
+	fp = fopen(path, "rb");
+	assert(fp != NULL);
+
+	size_t r = fread(tmp, sizeof(signed char), numel, fp);
+	assert(r == numel);
+
+	for(int i = 0; i < numel; i++){
+		dst[i] = tmp[i];
+	}
+
+	fclose(fp);
+
+	delete [] tmp;
+}
+
 #endif
 
 // Cソース版はping-pongバッファを外部に持っていましたが, 内部に持つように
@@ -82,8 +106,28 @@ int main(void) {
 	}
 
 #ifndef __SYNTHESIS__
-	printf("READING WEIGHT DATA...\n");
+    printf("READING WEIGHT DATA...\n");
 
+    load_weight("weight/coef_w_0.bin",  117600, coef_w_0);
+    load_weight("weight/coef_w_1.bin",    4704, coef_w_1);
+    load_weight("weight/coef_w_2.bin",  240000, coef_w_2);
+    load_weight("weight/coef_w_3.bin",    6400, coef_w_3);
+    load_weight("weight/coef_w_4.bin",   48000, coef_w_4);
+    load_weight("weight/coef_w_5.bin",    1200, coef_w_5);
+
+    load_weight("weight/scale_f_0.bin",   4704, scale_f_0);
+    load_weight("weight/scale_f_1.bin",   1176, scale_f_1);
+    load_weight("weight/scale_f_2.bin",   1600, scale_f_2);
+    load_weight("weight/scale_f_3.bin",    400, scale_f_3);
+    load_weight("weight/scale_f_4.bin",    120, scale_f_4);
+    load_weight("weight/scale_f_5.bin",     10, scale_f_5);
+
+    load_weight("weight/bias_0.bin",      4704, bias_0);
+    load_weight("weight/bias_1.bin",      1176, bias_1);
+    load_weight("weight/bias_2.bin",      1600, bias_2);
+    load_weight("weight/bias_3.bin",       400, bias_3);
+    load_weight("weight/bias_4.bin",       120, bias_4);
+    load_weight("weight/bias_5.bin",        10, bias_5);
 #endif
 
 	// Perform prediction -------------------------------------------------
