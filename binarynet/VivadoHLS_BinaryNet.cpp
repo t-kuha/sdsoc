@@ -133,7 +133,6 @@ void BinaryNet(unsigned char *predict_num, // 認識した数字のインデッ�
 		) {
 
 	// This version uses a ping-pong memory
-	//int18 buf[2][6*28*28];
 	// 途中結果は2値(Binarized)した値を保持します. なのでuint1で済みました.
 	// 最初は18ビットでDSP48Eを使うネットワークだったのでVirtexクラスのFPGAが必要で
 	// Artixには入りませんでした. 18ビットと比べて認識精度は若干落ちますがBinaryNetやっぱりすごい。
@@ -153,6 +152,7 @@ void BinaryNet(unsigned char *predict_num, // 認識した数字のインデッ�
 			0, 1 }, { 1, 1, 1, 1, 1, 1 } };
 
 	// 入力された画像データをバッファメモリ(ping-pongメモリ)に格納
+LOOP_INPUT_DATA:
 	for (int yy = 0; yy < 32; yy++) {
 		ap_uint<32> pict = pbuf[yy];
 		//printf("yy=%d pict=%X ", yy, pict);
@@ -169,18 +169,17 @@ void BinaryNet(unsigned char *predict_num, // 認識した数字のインデッ�
 
 	// Vivado HLSでは、C検証時に内部のデータをこうやって↓みれるので便利ですね。
 	// RTLシミュレーションだと… (-_-)
-	/*
-	 for( yy = 0; yy < 32; yy++){
-	 for( xx = 0; xx < 32; xx++){
-	 if( buf[0][yy * 32 + xx] == 1){
-	 printf("#");
-	 } else {
-	 printf(" ");
-	 }
-	 }
-	 printf("\n");
-	 }
-	 */
+	// for( yy = 0; yy < 32; yy++){
+	// 	for( xx = 0; xx < 32; xx++){
+	// 		if( buf[0][yy * 32 + xx] == 1){
+	// 			printf("#");
+	// 		} else {
+	// 			printf(" ");
+	// 		}
+	// 	}
+	// 	printf("\n");
+	// }
+	 
 
     ap_uint<3> wx, wy;			// Kernel/Window size
     ap_uint<6> smap_x, smap_y;	// Size of input feature map
@@ -190,7 +189,7 @@ void BinaryNet(unsigned char *predict_num, // 認識した数字のインデッ�
 
 	ap_uint<16> idx;
 
-	ap_int<24> result[10];
+	ap_int<24> result[10];		// Output score
 
 	// Prediction --------------------------------------------
 	// 認識本体のルーチン
@@ -307,17 +306,17 @@ LOOP_DMAP:
 		for (int dmap = 0; dmap < n_dmap; dmap++) {
 LOOP_I:
 			for (int i = 0; i < dmap_x * dmap_y; i++) {
-				ap_int<24> temp;
-				ap_uint<1> is_connect;
+				ap_int<24> temp = 0;
+//				ap_uint<1> is_connect;
+//
+//				temp = 0;
 
-				temp = 0;
-
-				ap_int<18> dat;
-				ap_int<8> coef;
+//				ap_int<18> dat;
+//				ap_int<8> coef;
 LOOP_SMAP:
 				for (int smap = 0; smap < n_smap; smap++) {
 					// Read connection from LeCun's table
-					is_connect = 0;
+					ap_uint<1> is_connect = 0;
 					if (layer != 2)
 						is_connect = 1;
 					else if (cnct_tbl[dmap][smap])
@@ -333,6 +332,8 @@ LOOP_OX:
 							for (int ox = 0; ox < wx; ox++) {
 //#pragma HLS LOOP_TRIPCOUNT max=5
 #pragma HLS UNROLL
+								ap_int<18> dat;
+								ap_int<8> coef;
 								if (layer == 1 || layer == 3) {
 									// average pooling layer
 
