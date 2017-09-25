@@ -15,8 +15,6 @@
 // FPGA実装のためにビット幅を調整します. そのためのヘッダ
 #include "ap_int.h"
 
-//#define P_BIT 5
-
 #ifdef __SYNTHESIS__
 #include "weight.h"
 #else
@@ -302,12 +300,6 @@ LOOP_DMAP:
 LOOP_I:
 			for (int i = 0; i < dmap_x * dmap_y; i++) {
 				ap_int<24> temp = 0;
-//				ap_uint<1> is_connect;
-//
-//				temp = 0;
-
-//				ap_int<18> dat;
-//				ap_int<8> coef;
 LOOP_SMAP:
 				for (int smap = 0; smap < n_smap; smap++) {
 					// Read connection from LeCun's table
