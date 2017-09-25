@@ -15,14 +15,16 @@
 // FPGA実装のためにビット幅を調整します. そのためのヘッダ
 #include "ap_int.h"
 
-#ifdef __SYNTHESIS__
+#define INPUT_IS_8
+
+#if defined(__SYNTHESIS__)
 #include "weight.h"
 #else
 ap_int<7> coef_w_0[117600];
 ap_int<7> coef_w_1[4704];
 ap_int<7> coef_w_2[240000];
 ap_int<7> coef_w_3[6400];
-ap_int<7> coef_w_4[4000];
+ap_int<7> coef_w_4[48000];
 ap_int<7> coef_w_5[1200];
 
 ap_int<7> scale_f_0[4704];
@@ -42,7 +44,6 @@ ap_int<7> bias_5[10];
 
 void load_weight(const char* path, int numel, ap_int<7>* dst)
 {
-	std::cout << __LINE__ << std::endl;
 	signed char* tmp;
 	tmp = new signed char [numel];
 
@@ -71,8 +72,6 @@ void BinaryNet(unsigned char *predict_num, // 認識した数字のインデッ�
 		);
 
 // メイン関数. 認識用のBinaryNetのテストベンチになっています
-#define INPUT_IS_8
-
 int main(void) {
 	// Test data by MNIST benchmark --------------------------------------------
 	int input[32][32] = {
@@ -518,11 +517,11 @@ LOOP_OUTPUT:
 			max_val = result[i];
 			max_idx = i;
 		}
-#if !(!defined(__SDSVHLS__) || !defined(__SYNTHESIS__))
-		printf("idx=%d %d\n", i, result[i].to_int());
+#if !defined(__SDSVHLS__) || !defined(__SYNTHESIS__)
+		printf("idx=%d %d\n", i.to_uint(), result[i].to_int());
 #endif
 	}
-#if defined(__SDSVHLS__) && defined(__SYNTHESIS__)
+#if !defined(__SDSVHLS__) && !defined(__SYNTHESIS__)
 	printf("max index = %d\n", max_idx);
 #endif
 
