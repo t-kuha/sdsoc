@@ -187,8 +187,6 @@ LOOP_INPUT_DATA:
     ap_uint<7> n_dmap, n_smap;	// n_dmap: # output channel | n_smap: # input channel
     ap_uint<2> dx, dy;			// Stride
 
-	ap_uint<16> idx;
-
 	ap_int<24> result[10];		// Output score
 
 	// Prediction --------------------------------------------
@@ -285,13 +283,10 @@ LOOP_LAYER:
 			dmap_y = (smap_y - wy + dy) >> 1;
 		}
 
-		int x, y;
-		int coef_offset;
+		int x = 0, y = 0;
+		int coef_offset = 0;
 
-		idx = 0;
-		x = 0;
-		y = 0;
-		coef_offset = 0;
+		ap_uint<16> idx = 0;
 
 		// 出力特徴マップの値を求めます
 		// ここから先のループをどこでインライン展開(#pragma unroll)するかが
@@ -478,9 +473,6 @@ LOOP_OX:
 	} // end for layer
 
 	// Prediction ----------------------------------------------------
-	// Vivado HLSではprintf文をデバッグ用に入れていても
-	// 合成時に省いてくれる便利なやつなんです!
-	//
 	ap_int<24> max_val = result[0];
 	unsigned char max_idx = 0;
 LOOP_OUTPUT:
@@ -498,16 +490,14 @@ LOOP_OUTPUT:
 	printf("max index = %d\n", max_idx);
 #endif
 
-	/*
-	 for( i = 0; i < 10; i++){
-	 if( max_val < buf[6 & 0x1][i]){
-	 max_val = buf[6 & 0x1][i];
-	 max_idx = i;
-	 }
-	 //printf("idx=%d %d\n", i, buf[6 & 0x1][i]);
-	 }
-	 //printf("max index = %d\n", max_idx);
-	 */
+	// for( i = 0; i < 10; i++){
+	// 	if( max_val < buf[6 & 0x1][i]){
+	// 		max_val = buf[6 & 0x1][i];
+	// 		max_idx = i;
+	// 	}
+	// 	//printf("idx=%d %d\n", i, buf[6 & 0x1][i]);
+	// }
+	// //printf("max index = %d\n", max_idx);
 
 	*predict_num = max_idx;
 
