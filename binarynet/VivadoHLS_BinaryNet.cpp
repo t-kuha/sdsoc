@@ -17,7 +17,7 @@
 
 //#define P_BIT 5
 
-#ifndef __SYNTHESIS__
+#ifdef __SYNTHESIS__
 #include "weight.h"
 #else
 ap_int<7> coef_w_0[117600];	// 117600
@@ -480,18 +480,20 @@ LOOP_OX:
 	// Vivado HLSではprintf文をデバッグ用に入れていても
 	// 合成時に省いてくれる便利なやつなんです!
 	//
-	int max_val = result[0], max_idx = 0;
-	for (int i = 1; i < 10; i++) {
+	ap_int<24> max_val = result[0];
+	unsigned char max_idx = 0;
+LOOP_OUTPUT:
+	for (ap_uint<4> i = 1; i < 10; i++) {
 #pragma HLS PIPELINE
 		if (max_val < result[i]) {
 			max_val = result[i];
 			max_idx = i;
 		}
-#ifndef __SDSVHLS__
+#if !(!defined(__SDSVHLS__) || !defined(__SYNTHESIS__))
 		printf("idx=%d %d\n", i, result[i].to_int());
 #endif
 	}
-#ifndef __SDSVHLS__
+#if defined(__SDSVHLS__) && defined(__SYNTHESIS__)
 	printf("max index = %d\n", max_idx);
 #endif
 
