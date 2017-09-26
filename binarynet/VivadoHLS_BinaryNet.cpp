@@ -189,18 +189,6 @@ void BinaryNet(unsigned char *predict_num, // 認識した数字のインデッ�
 	// なお、今回の実装は重み係数は6ビットとしています. BinaryNetの論文は重み係数も1ビットです.
 	// (ちょっとトリックが入ってるので精度はそれほど落ちない)
 	ap_uint<1> buf[2][6 * 28 * 28];
-#if 0
-	// Connection Table by LeCun ------------------------------
-	// LeCunの論文[LeCun98]に書かれているとおりに接続テーブルを実装しました.
-	// http://yann.lecun.com/exdb/publis/pdf/lecun-98.pdf
-	// 認識精度を維持しつつ, 過学習を避けて計算量の削減が達成できます.
-	ap_uint<1> cnct_tbl[16][6] = { { 1, 1, 1, 0, 0, 0 }, { 0, 1, 1, 1, 0, 0 }, {
-			0, 0, 1, 1, 1, 0 }, { 0, 0, 0, 1, 1, 1 }, { 1, 0, 0, 0, 1, 1 }, { 1,
-			1, 0, 0, 0, 1 }, { 1, 1, 1, 1, 0, 0 }, { 0, 1, 1, 1, 1, 0 }, { 0, 0,
-			1, 1, 1, 1 }, { 1, 0, 0, 1, 1, 1 }, { 1, 1, 0, 0, 1, 1 }, { 1, 1, 1,
-			0, 0, 1 }, { 1, 1, 0, 1, 1, 0 }, { 0, 1, 1, 0, 1, 1 }, { 1, 0, 1, 1,
-			0, 1 }, { 1, 1, 1, 1, 1, 1 } };
-#endif
 
 	// 入力された画像データをバッファメモリ(ping-pongメモリ)に格納
 //LOOP_INPUT_DATA:
@@ -235,283 +223,7 @@ void BinaryNet(unsigned char *predict_num, // 認識した数字のインデッ�
 	 
 	ap_int<24> result[10];		// Output score
 
-#if 0
-    ap_uint<3> wx, wy;			// Kernel/Window size
-    ap_uint<6> smap_x, smap_y;	// Size of input feature map
-    ap_uint<6> dmap_x, dmap_y;	// Size of output feature map
-    ap_uint<7> n_dmap, n_smap;	// n_dmap: # output channel | n_smap: # input channel
-    ap_uint<2> dx, dy;			// Stride
 
-
-	// Prediction --------------------------------------------
-	// 認識本体のルーチン
-	// 多重ループになっています. フル結合層も2次元畳込み層のループで記述できます.
-	// (カーネルサイズ=フル結合層のサイズn, とみなして, n x 1 回の２重ループとして計算する)
-
-	// ６層レイヤのループ
-LOOP_LAYER:
-	for (ap_uint<3> layer = 0; layer < 1; layer++) {
-		// set layer parameters
-		// レイヤ毎にパラメータを設定します.
-		// 俗に, ハイパーパラメータというのですが、なぜこう決めたのかはノウハウと経験です.
-		// 少し変えるだけでも認識精度はガクッと落ちることが多く, 大変苦労する部分です.
-		// 予め上手くいったパラメータ（構造）を一部利用して, 目的のニューラルネットワークを
-		// 設計する転移学習という方法もあります.
-		switch (layer) {
-		case 0: // Convolutional layer
-			wx = 5;
-			wy = 5;
-			n_smap = 1;
-			smap_x = 32;
-			smap_y = 32;
-			n_dmap = 6;
-			dx = 1;
-			dy = 1;
-			break;
-		case 1: // Average pooling layer
-			wx = 2;
-			wy = 2;
-			n_smap = 1;
-			smap_x = 28;
-			smap_y = 28;
-			n_dmap = 6;
-			dx = 2;
-			dy = 2;
-			break;
-		case 2: // Convolutional layer
-			wx = 5;
-			wy = 5;
-			n_smap = 6;
-			smap_x = 14;
-			smap_y = 14;
-			n_dmap = 16;
-			dx = 1;
-			dy = 1;
-			break;
-		case 3: // Average pooling layer
-			wx = 2;
-			wy = 2;
-			n_smap = 1;
-			smap_x = 10;
-			smap_y = 10;
-			n_dmap = 16;
-			dx = 2;
-			dy = 2;
-			break;
-		case 4: // Convolutional layer
-			wx = 5;
-			wy = 5;
-			n_smap = 16;
-			smap_x = 5;
-			smap_y = 5;
-			n_dmap = 120;
-			dx = 1;
-			dy = 1;
-			break;
-		default:
-			//fprintf( stderr, "ERROR: UNDEFIND LAYER CALLED\n");
-			break;
-		}
-
-		// 出力となる特徴マップのサイズは, ずらし量(stride)と入力特徴マップの
-		// 大きさから一意に決まります
-		// オリジナルのCソースは単に除算を行っていましたが, FPGA(ハードウェア)では
-		// ものすごく遅く大きな除算回路を合成してしまうため, 2のべき乗の除算であっても
-		// 明示的にシフタを記述しています..
-		// (Vivado HLSちゃん, もうちょっと賢くなって！)
-		if (dx == 1) {
-			dmap_x = (smap_x - wx + dx);
-			dmap_y = (smap_y - wy + dy);
-		} else {
-			dmap_x = (smap_x - wx + dx) >> 1;
-			dmap_y = (smap_y - wy + dy) >> 1;
-		}
-
-		int x = 0, y = 0;
-		int coef_offset = 0;
-
-		ap_uint<16> idx = 0;
-
-		// 出力特徴マップの値を求めます
-		// ここから先のループをどこでインライン展開(#pragma unroll)するかが
-		// 高位合成設計者の腕の見せ所.
-		// (今回は載せていません)
-		// なお、ディープニューラルネットワークに限ってはインライン展開を解析した論文があって
-		// とても勉強になります.
-		// http://cadlab.cs.ucla.edu/~cong/slides/fpga2015_chen.pdf
-		// 著者のJ.CongはVivado HLSで使われている高位合成アルゴリズムの
-		// 開発者の一人.
-LOOP_DMAP:
-		for (int dmap = 0; dmap < n_dmap; dmap++) {
-LOOP_I:
-			for (int i = 0; i < dmap_x * dmap_y; i++) {
-				ap_int<24> temp = 0;
-LOOP_SMAP:
-				for (int smap = 0; smap < n_smap; smap++) {
-					// Read connection from LeCun's table
-					ap_uint<1> is_connect = 0;
-					if (layer != 2)
-						is_connect = 1;
-					else if (cnct_tbl[dmap][smap])
-						is_connect = 1;
-
-					// If a source map is connected,
-					//  then apply a convolutional operation
-					if (is_connect) {
-						// window size is wy x wx
-LOOP_OY:
-						for (int oy = 0; oy < wy; oy++) {
-LOOP_OX:
-							for (int ox = 0; ox < wx; ox++) {
-// #pragma HLS PIPELINE
-								ap_int<18> dat;
-								ap_int<8> coef;
-
-								if (layer == 1 || layer == 3) {
-									// average pooling layer
-
-									if (buf[layer & 0x1][dmap
-											* (smap_x * smap_y)
-											+ (y + oy) * smap_y + (x + ox)]
-											== 1)
-										dat = 1;
-									else
-										dat = -1;
-
-									if (layer == 0) {
-										coef = coef_w_0[idx * (wx * wy * n_smap)
-												+ (smap * wx * wy) + oy * wy
-												+ ox];
-									} else if (layer == 1) {
-										coef = coef_w_1[idx * (wx * wy * n_smap)
-												+ (smap * wx * wy) + oy * wy
-												+ ox];
-									} else if (layer == 2) {
-										coef = coef_w_2[idx * (wx * wy * n_smap)
-												+ (smap * wx * wy) + oy * wy
-												+ ox];
-									} else if (layer == 3) {
-										coef = coef_w_3[idx * (wx * wy * n_smap)
-												+ (smap * wx * wy) + oy * wy
-												+ ox];
-									} else if (layer == 4) {
-										coef = coef_w_4[idx * (wx * wy * n_smap)
-												+ (smap * wx * wy) + oy * wy
-												+ ox];
-									} else {
-										coef = coef_w_5[idx * (wx * wy * n_smap)
-												+ (smap * wx * wy) + oy * wy
-												+ ox];
-									}
-								} else {
-									// convolutional and fully-connected layer
-
-									if (buf[layer & 0x1][smap
-											* (smap_x * smap_y)
-											+ (y + oy) * smap_y + (x + ox)]
-											== 1)
-										dat = 1;
-									else
-										dat = -1;
-
-									if (layer == 0) {
-										coef = coef_w_0[coef_offset + oy * wy
-												+ ox];
-									} else if (layer == 1) {
-										coef = coef_w_1[coef_offset + oy * wy
-												+ ox];
-									} else if (layer == 2) {
-										coef = coef_w_2[coef_offset + oy * wy
-												+ ox];
-									} else if (layer == 3) {
-										coef = coef_w_3[coef_offset + oy * wy
-												+ ox];
-									} else if (layer == 4) {
-										coef = coef_w_4[coef_offset + oy * wy
-												+ ox];
-									} else {
-										coef = coef_w_5[coef_offset + oy * wy
-												+ ox];
-									}
-
-								}
-
-								// Perform an ADD-MUL operation
-								temp += (dat * coef);
-							} // end for oy
-						} // end for ox
-
-						// Update offset, since the LeCun's table requires
-						// uniformaly connection
-						coef_offset += (wx * wy);
-					} // end for is_connect
-				} // end for smap
-
-				ap_int<8> sf, bi;
-
-				if (layer == 0) {
-					sf = scale_f_0[idx];
-					bi = bias_0[idx];
-				} else if (layer == 1) {
-					sf = scale_f_1[idx];
-					bi = bias_1[idx];
-				} else if (layer == 2) {
-					sf = scale_f_2[idx];
-					bi = bias_2[idx];
-				} else if (layer == 3) {
-					sf = scale_f_3[idx];
-					bi = bias_3[idx];
-				} else if (layer == 4) {
-					sf = scale_f_4[idx];
-					bi = bias_4[idx];
-				} else {
-					sf = scale_f_5[idx];
-					bi = bias_5[idx];
-				}
-
-				// Activation function for the BinaryNet
-				// 活性化関数を省略して2値化しています.
-				// ビット精度の調整もいらないので便利♪
-				if (layer != 5) {
-					temp = temp * sf; // 8b x 8b = 16b
-					temp = temp + bi;
-					if (temp >= 0){
-//						temp = 1; //1.0;
-						buf[(layer + 1) & 0x1][idx] = 1;
-					}else{
-//						temp = -1; //-1.0;
-						buf[(layer + 1) & 0x1][idx] = 0;
-					}
-					// Store ping-pong memory
-					// ２値化した結果をping-pongメモリに格納します
-					// ただし, 最終層は２値化すると精度に影響がでるのでやっていません.
-//					if (temp == 1)
-//						buf[(layer + 1) & 0x1][idx] = 1;
-//					else
-//						buf[(layer + 1) & 0x1][idx] = 0;
-				} else {
-					// 最終層のみ, ２値化せずにそのまま計算結果を格納しています.
-					// 幸い手書き数字認識なので10ニューロンで済みましたので、そのまま配列で書いて
-					// レジスタに合成
-					temp = temp + bi;
-					result[idx] = temp;
-				}
-
-				// Update indices
-				idx++;
-				x += dx;
-				if (x > (smap_x - wx)) {
-					x = 0;
-					y += dy;
-					if (y > (smap_y - wy)) {
-						y = 0;
-					}
-				}
-			} // end for i
-		} // end for dmap
-
-	} // end for layer
-#endif
 
 	// Layer 0
 	layer0(buf);
@@ -569,202 +281,58 @@ LOOP_OX:
 
 
 void layer0(ap_uint<1> buf[2][6 * 28 * 28]){
-	const int layer = 0;
-	const int			wx = 5;
-	const int		wy = 5;
-	const int		n_smap = 1;
-	const int		smap_x = 32;
-	const int		smap_y = 32;
-	const int		n_dmap = 6;
-	const int		dx = 1;
-	const int		dy = 1;
-	const int		dmap_x = 28;
-	const int		dmap_y = 28;
-
-	ap_uint<1> cnct_tbl[16][6] = { { 1, 1, 1, 0, 0, 0 }, { 0, 1, 1, 1, 0, 0 }, {
-			0, 0, 1, 1, 1, 0 }, { 0, 0, 0, 1, 1, 1 }, { 1, 0, 0, 0, 1, 1 }, { 1,
-			1, 0, 0, 0, 1 }, { 1, 1, 1, 1, 0, 0 }, { 0, 1, 1, 1, 1, 0 }, { 0, 0,
-			1, 1, 1, 1 }, { 1, 0, 0, 1, 1, 1 }, { 1, 1, 0, 0, 1, 1 }, { 1, 1, 1,
-			0, 0, 1 }, { 1, 1, 0, 1, 1, 0 }, { 0, 1, 1, 0, 1, 1 }, { 1, 0, 1, 1,
-			0, 1 }, { 1, 1, 1, 1, 1, 1 } };
 
 	int x = 0, y = 0;
 	int coef_offset = 0;
 
 	ap_uint<16> idx = 0;
 
-	// 出力特徴マップの値を求めます
-	// ここから先のループをどこでインライン展開(#pragma unroll)するかが
-	// 高位合成設計者の腕の見せ所.
-	// (今回は載せていません)
-	// なお、ディープニューラルネットワークに限ってはインライン展開を解析した論文があって
-	// とても勉強になります.
-	// http://cadlab.cs.ucla.edu/~cong/slides/fpga2015_chen.pdf
-	// 著者のJ.CongはVivado HLSで使われている高位合成アルゴリズムの
-	// 開発者の一人.
-LOOP_DMAP:
-	for (int dmap = 0; dmap < n_dmap; dmap++) {
-LOOP_I:
-		for (int i = 0; i < dmap_x * dmap_y; i++) {
+	for (int dmap = 0; dmap < 6; dmap++) {
+		for (int i = 0; i < 28 * 28; i++) {
 			ap_int<24> temp = 0;
-LOOP_SMAP:
-			for (int smap = 0; smap < n_smap; smap++) {
-				// Read connection from LeCun's table
-				ap_uint<1> is_connect = 0;
-				if (layer != 2)
-					is_connect = 1;
-				else if (cnct_tbl[dmap][smap])
-					is_connect = 1;
-
-				// If a source map is connected,
-				//  then apply a convolutional operation
-				if (is_connect) {
-					// window size is wy x wx
-LOOP_OY:
-					for (int oy = 0; oy < wy; oy++) {
-LOOP_OX:
-						for (int ox = 0; ox < wx; ox++) {
+//			for (int smap = 0; smap < 1; smap++) {
+			for (int oy = 0; oy < 5; oy++) {
+				for (int ox = 0; ox < 5; ox++) {
 // #pragma HLS PIPELINE
-							ap_int<18> dat;
-							ap_int<8> coef;
+					ap_int<18> dat;
+					ap_int<8> coef;
 
-							if (layer == 1 || layer == 3) {
-								// average pooling layer
+					if (buf[0 & 0x1][/*smap*/0 * (32 * 32) + (y + oy) * 32
+							+ (x + ox)] == 1) {
+						dat = 1;
+					} else {
+						dat = -1;
+					}
 
-								if (buf[layer & 0x1][dmap
-										* (smap_x * smap_y)
-										+ (y + oy) * smap_y + (x + ox)]
-										== 1)
-									dat = 1;
-								else
-									dat = -1;
+					coef = coef_w_0[coef_offset + oy * 5 + ox];
 
-								if (layer == 0) {
-									coef = coef_w_0[idx * (wx * wy * n_smap)
-											+ (smap * wx * wy) + oy * wy
-											+ ox];
-								} else if (layer == 1) {
-									coef = coef_w_1[idx * (wx * wy * n_smap)
-											+ (smap * wx * wy) + oy * wy
-											+ ox];
-								} else if (layer == 2) {
-									coef = coef_w_2[idx * (wx * wy * n_smap)
-											+ (smap * wx * wy) + oy * wy
-											+ ox];
-								} else if (layer == 3) {
-									coef = coef_w_3[idx * (wx * wy * n_smap)
-											+ (smap * wx * wy) + oy * wy
-											+ ox];
-								} else if (layer == 4) {
-									coef = coef_w_4[idx * (wx * wy * n_smap)
-											+ (smap * wx * wy) + oy * wy
-											+ ox];
-								} else {
-									coef = coef_w_5[idx * (wx * wy * n_smap)
-											+ (smap * wx * wy) + oy * wy
-											+ ox];
-								}
-							} else {
-								// convolutional and fully-connected layer
+					temp += (dat * coef);
+				} // end for oy
+			} // end for ox
 
-								if (buf[layer & 0x1][smap
-										* (smap_x * smap_y)
-										+ (y + oy) * smap_y + (x + ox)]
-										== 1)
-									dat = 1;
-								else
-									dat = -1;
-
-								if (layer == 0) {
-									coef = coef_w_0[coef_offset + oy * wy
-											+ ox];
-								} else if (layer == 1) {
-									coef = coef_w_1[coef_offset + oy * wy
-											+ ox];
-								} else if (layer == 2) {
-									coef = coef_w_2[coef_offset + oy * wy
-											+ ox];
-								} else if (layer == 3) {
-									coef = coef_w_3[coef_offset + oy * wy
-											+ ox];
-								} else if (layer == 4) {
-									coef = coef_w_4[coef_offset + oy * wy
-											+ ox];
-								} else {
-									coef = coef_w_5[coef_offset + oy * wy
-											+ ox];
-								}
-
-							}
-
-							// Perform an ADD-MUL operation
-							temp += (dat * coef);
-						} // end for oy
-					} // end for ox
-
-					// Update offset, since the LeCun's table requires
-					// uniformaly connection
-					coef_offset += (wx * wy);
-				} // end for is_connect
-			} // end for smap
+			coef_offset += (5 * 5);
+//			} // end for smap
 
 			ap_int<8> sf, bi;
 
-			if (layer == 0) {
-				sf = scale_f_0[idx];
-				bi = bias_0[idx];
-			} else if (layer == 1) {
-				sf = scale_f_1[idx];
-				bi = bias_1[idx];
-			} else if (layer == 2) {
-				sf = scale_f_2[idx];
-				bi = bias_2[idx];
-			} else if (layer == 3) {
-				sf = scale_f_3[idx];
-				bi = bias_3[idx];
-			} else if (layer == 4) {
-				sf = scale_f_4[idx];
-				bi = bias_4[idx];
-			} else {
-				sf = scale_f_5[idx];
-				bi = bias_5[idx];
-			}
+			sf = scale_f_0[idx];
+			bi = bias_0[idx];
 
-			// Activation function for the BinaryNet
-			// 活性化関数を省略して2値化しています.
-			// ビット精度の調整もいらないので便利♪
-			if (layer != 5) {
-				temp = temp * sf; // 8b x 8b = 16b
-				temp = temp + bi;
-				if (temp >= 0){
-//						temp = 1; //1.0;
-					buf[(layer + 1) & 0x1][idx] = 1;
-				}else{
-//						temp = -1; //-1.0;
-					buf[(layer + 1) & 0x1][idx] = 0;
-				}
-				// Store ping-pong memory
-				// ２値化した結果をping-pongメモリに格納します
-				// ただし, 最終層は２値化すると精度に影響がでるのでやっていません.
-//					if (temp == 1)
-//						buf[(layer + 1) & 0x1][idx] = 1;
-//					else
-//						buf[(layer + 1) & 0x1][idx] = 0;
+			temp = temp * sf; // 8b x 8b = 16b
+			temp = temp + bi;
+			if (temp >= 0) {
+				buf[(0 + 1) & 0x1][idx] = 1;
 			} else {
-				// 最終層のみ, ２値化せずにそのまま計算結果を格納しています.
-				// 幸い手書き数字認識なので10ニューロンで済みましたので、そのまま配列で書いて
-				// レジスタに合成
-				temp = temp + bi;
-//				result[idx] = temp;
+				buf[(0 + 1) & 0x1][idx] = 0;
 			}
 
 			// Update indices
 			idx++;
-			x += dx;
-			if (x > (smap_x - wx)) {
+			x += 1;
+			if (x > (32 - 5)) {
 				x = 0;
-				y += dy;
-				if (y > (smap_y - wy)) {
+				y += 1;
+				if (y > (32 - 5)) {
 					y = 0;
 				}
 			}
@@ -773,202 +341,57 @@ LOOP_OX:
 }
 
 void layer1(ap_uint<1> buf[2][6 * 28 * 28]){
-	const int layer = 1;
-	const int		wx = 2;
-	const int		wy = 2;
-	const int			n_smap = 1;
-	const int			smap_x = 28;
-	const int			smap_y = 28;
-	const int			n_dmap = 6;
-	const int			dx = 2;
-	const int			dy = 2;
-	const int			dmap_x = 14;
-	const int			dmap_y = 14;
-
-	ap_uint<1> cnct_tbl[16][6] = { { 1, 1, 1, 0, 0, 0 }, { 0, 1, 1, 1, 0, 0 }, {
-			0, 0, 1, 1, 1, 0 }, { 0, 0, 0, 1, 1, 1 }, { 1, 0, 0, 0, 1, 1 }, { 1,
-			1, 0, 0, 0, 1 }, { 1, 1, 1, 1, 0, 0 }, { 0, 1, 1, 1, 1, 0 }, { 0, 0,
-			1, 1, 1, 1 }, { 1, 0, 0, 1, 1, 1 }, { 1, 1, 0, 0, 1, 1 }, { 1, 1, 1,
-			0, 0, 1 }, { 1, 1, 0, 1, 1, 0 }, { 0, 1, 1, 0, 1, 1 }, { 1, 0, 1, 1,
-			0, 1 }, { 1, 1, 1, 1, 1, 1 } };
 
 	int x = 0, y = 0;
 	int coef_offset = 0;
 
 	ap_uint<16> idx = 0;
 
-	// 出力特徴マップの値を求めます
-	// ここから先のループをどこでインライン展開(#pragma unroll)するかが
-	// 高位合成設計者の腕の見せ所.
-	// (今回は載せていません)
-	// なお、ディープニューラルネットワークに限ってはインライン展開を解析した論文があって
-	// とても勉強になります.
-	// http://cadlab.cs.ucla.edu/~cong/slides/fpga2015_chen.pdf
-	// 著者のJ.CongはVivado HLSで使われている高位合成アルゴリズムの
-	// 開発者の一人.
-LOOP_DMAP:
-	for (int dmap = 0; dmap < n_dmap; dmap++) {
-LOOP_I:
-		for (int i = 0; i < dmap_x * dmap_y; i++) {
+	for (int dmap = 0; dmap < 6; dmap++) {
+		for (int i = 0; i < 14 * 14; i++) {
 			ap_int<24> temp = 0;
-LOOP_SMAP:
-			for (int smap = 0; smap < n_smap; smap++) {
-				// Read connection from LeCun's table
-				ap_uint<1> is_connect = 0;
-				if (layer != 2)
-					is_connect = 1;
-				else if (cnct_tbl[dmap][smap])
-					is_connect = 1;
-
-				// If a source map is connected,
-				//  then apply a convolutional operation
-				if (is_connect) {
-					// window size is wy x wx
-LOOP_OY:
-					for (int oy = 0; oy < wy; oy++) {
-LOOP_OX:
-						for (int ox = 0; ox < wx; ox++) {
+//			for (int smap = 0; smap < 1; smap++) {
+			for (int oy = 0; oy < 2; oy++) {
+				for (int ox = 0; ox < 2; ox++) {
 // #pragma HLS PIPELINE
-							ap_int<18> dat;
-							ap_int<8> coef;
+					ap_int<18> dat;
+					ap_int<8> coef;
 
-							if (layer == 1 || layer == 3) {
-								// average pooling layer
+					if (buf[1 & 0x1][dmap * (28 * 28) + (y + oy) * 28 + (x + ox)]
+							== 1)
+						dat = 1;
+					else
+						dat = -1;
 
-								if (buf[layer & 0x1][dmap
-										* (smap_x * smap_y)
-										+ (y + oy) * smap_y + (x + ox)]
-										== 1)
-									dat = 1;
-								else
-									dat = -1;
+					coef = coef_w_1[idx * (2 * 2 * 1) + (0 * 2 * 2) + oy * 2
+							+ ox];
 
-								if (layer == 0) {
-									coef = coef_w_0[idx * (wx * wy * n_smap)
-											+ (smap * wx * wy) + oy * wy
-											+ ox];
-								} else if (layer == 1) {
-									coef = coef_w_1[idx * (wx * wy * n_smap)
-											+ (smap * wx * wy) + oy * wy
-											+ ox];
-								} else if (layer == 2) {
-									coef = coef_w_2[idx * (wx * wy * n_smap)
-											+ (smap * wx * wy) + oy * wy
-											+ ox];
-								} else if (layer == 3) {
-									coef = coef_w_3[idx * (wx * wy * n_smap)
-											+ (smap * wx * wy) + oy * wy
-											+ ox];
-								} else if (layer == 4) {
-									coef = coef_w_4[idx * (wx * wy * n_smap)
-											+ (smap * wx * wy) + oy * wy
-											+ ox];
-								} else {
-									coef = coef_w_5[idx * (wx * wy * n_smap)
-											+ (smap * wx * wy) + oy * wy
-											+ ox];
-								}
-							} else {
-								// convolutional and fully-connected layer
-
-								if (buf[layer & 0x1][smap
-										* (smap_x * smap_y)
-										+ (y + oy) * smap_y + (x + ox)]
-										== 1)
-									dat = 1;
-								else
-									dat = -1;
-
-								if (layer == 0) {
-									coef = coef_w_0[coef_offset + oy * wy
-											+ ox];
-								} else if (layer == 1) {
-									coef = coef_w_1[coef_offset + oy * wy
-											+ ox];
-								} else if (layer == 2) {
-									coef = coef_w_2[coef_offset + oy * wy
-											+ ox];
-								} else if (layer == 3) {
-									coef = coef_w_3[coef_offset + oy * wy
-											+ ox];
-								} else if (layer == 4) {
-									coef = coef_w_4[coef_offset + oy * wy
-											+ ox];
-								} else {
-									coef = coef_w_5[coef_offset + oy * wy
-											+ ox];
-								}
-
-							}
-
-							// Perform an ADD-MUL operation
-							temp += (dat * coef);
-						} // end for oy
-					} // end for ox
-
-					// Update offset, since the LeCun's table requires
-					// uniformaly connection
-					coef_offset += (wx * wy);
-				} // end for is_connect
-			} // end for smap
+					temp += (dat * coef);
+				} // end for oy
+			} // end for ox
+			coef_offset += (2 * 2);
+//			} // end for smap
 
 			ap_int<8> sf, bi;
 
-			if (layer == 0) {
-				sf = scale_f_0[idx];
-				bi = bias_0[idx];
-			} else if (layer == 1) {
-				sf = scale_f_1[idx];
-				bi = bias_1[idx];
-			} else if (layer == 2) {
-				sf = scale_f_2[idx];
-				bi = bias_2[idx];
-			} else if (layer == 3) {
-				sf = scale_f_3[idx];
-				bi = bias_3[idx];
-			} else if (layer == 4) {
-				sf = scale_f_4[idx];
-				bi = bias_4[idx];
-			} else {
-				sf = scale_f_5[idx];
-				bi = bias_5[idx];
-			}
+			sf = scale_f_1[idx];
+			bi = bias_1[idx];
 
-			// Activation function for the BinaryNet
-			// 活性化関数を省略して2値化しています.
-			// ビット精度の調整もいらないので便利♪
-			if (layer != 5) {
-				temp = temp * sf; // 8b x 8b = 16b
-				temp = temp + bi;
-				if (temp >= 0){
-//						temp = 1; //1.0;
-					buf[(layer + 1) & 0x1][idx] = 1;
-				}else{
-//						temp = -1; //-1.0;
-					buf[(layer + 1) & 0x1][idx] = 0;
-				}
-				// Store ping-pong memory
-				// ２値化した結果をping-pongメモリに格納します
-				// ただし, 最終層は２値化すると精度に影響がでるのでやっていません.
-//					if (temp == 1)
-//						buf[(layer + 1) & 0x1][idx] = 1;
-//					else
-//						buf[(layer + 1) & 0x1][idx] = 0;
+			temp = temp * sf; // 8b x 8b = 16b
+			temp = temp + bi;
+			if (temp >= 0) {
+				buf[(1 + 1) & 0x1][idx] = 1;
 			} else {
-				// 最終層のみ, ２値化せずにそのまま計算結果を格納しています.
-				// 幸い手書き数字認識なので10ニューロンで済みましたので、そのまま配列で書いて
-				// レジスタに合成
-				temp = temp + bi;
-//				result[idx] = temp;
+				buf[(1 + 1) & 0x1][idx] = 0;
 			}
 
 			// Update indices
 			idx++;
-			x += dx;
-			if (x > (smap_x - wx)) {
+			x += 2;
+			if (x > (28 - 2)) {
 				x = 0;
-				y += dy;
-				if (y > (smap_y - wy)) {
+				y += 2;
+				if (y > (28 - 2)) {
 					y = 0;
 				}
 			}
@@ -977,202 +400,83 @@ LOOP_OX:
 }
 
 void layer2(ap_uint<1> buf[2][6 * 28 * 28]){
-	const int layer = 2;
-	const int wx = 5;
-	const int wy = 5;
-	const int n_smap = 6;
-	const int smap_x = 14;
-	const int smap_y = 14;
-	const int n_dmap = 16;
-	const int dx = 1;
-	const int dy = 1;
-	const int dmap_x = 10;
-	const int dmap_y = 10;
 
-	ap_uint<1> cnct_tbl[16][6] = { { 1, 1, 1, 0, 0, 0 }, { 0, 1, 1, 1, 0, 0 }, {
-			0, 0, 1, 1, 1, 0 }, { 0, 0, 0, 1, 1, 1 }, { 1, 0, 0, 0, 1, 1 }, { 1,
-			1, 0, 0, 0, 1 }, { 1, 1, 1, 1, 0, 0 }, { 0, 1, 1, 1, 1, 0 }, { 0, 0,
-			1, 1, 1, 1 }, { 1, 0, 0, 1, 1, 1 }, { 1, 1, 0, 0, 1, 1 }, { 1, 1, 1,
-			0, 0, 1 }, { 1, 1, 0, 1, 1, 0 }, { 0, 1, 1, 0, 1, 1 }, { 1, 0, 1, 1,
-			0, 1 }, { 1, 1, 1, 1, 1, 1 } };
+	ap_uint<1> cnct_tbl[16][6] = {
+			{ 1, 1, 1, 0, 0, 0 },
+			{ 0, 1, 1, 1, 0, 0 },
+			{ 0, 0, 1, 1, 1, 0 },
+			{ 0, 0, 0, 1, 1, 1 },
+			{ 1, 0, 0, 0, 1, 1 },
+			{ 1, 1, 0, 0, 0, 1 },
+			{ 1, 1, 1, 1, 0, 0 },
+			{ 0, 1, 1, 1, 1, 0 },
+			{ 0, 0,	1, 1, 1, 1 },
+			{ 1, 0, 0, 1, 1, 1 },
+			{ 1, 1, 0, 0, 1, 1 },
+			{ 1, 1, 1, 0, 0, 1 },
+			{ 1, 1, 0, 1, 1, 0 },
+			{ 0, 1, 1, 0, 1, 1 },
+			{ 1, 0, 1, 1, 0, 1 },
+			{ 1, 1, 1, 1, 1, 1 } };
 
 	int x = 0, y = 0;
 	int coef_offset = 0;
 
 	ap_uint<16> idx = 0;
 
-	// 出力特徴マップの値を求めます
-	// ここから先のループをどこでインライン展開(#pragma unroll)するかが
-	// 高位合成設計者の腕の見せ所.
-	// (今回は載せていません)
-	// なお、ディープニューラルネットワークに限ってはインライン展開を解析した論文があって
-	// とても勉強になります.
-	// http://cadlab.cs.ucla.edu/~cong/slides/fpga2015_chen.pdf
-	// 著者のJ.CongはVivado HLSで使われている高位合成アルゴリズムの
-	// 開発者の一人.
-LOOP_DMAP:
-	for (int dmap = 0; dmap < n_dmap; dmap++) {
-LOOP_I:
-		for (int i = 0; i < dmap_x * dmap_y; i++) {
+	for (int dmap = 0; dmap < 16; dmap++) {
+		for (int i = 0; i < 10 * 10; i++) {
 			ap_int<24> temp = 0;
-LOOP_SMAP:
-			for (int smap = 0; smap < n_smap; smap++) {
+			for (int smap = 0; smap < 6; smap++) {
 				// Read connection from LeCun's table
 				ap_uint<1> is_connect = 0;
-				if (layer != 2)
+				if (cnct_tbl[dmap][smap]) {
 					is_connect = 1;
-				else if (cnct_tbl[dmap][smap])
-					is_connect = 1;
+				}
 
-				// If a source map is connected,
-				//  then apply a convolutional operation
 				if (is_connect) {
-					// window size is wy x wx
-LOOP_OY:
-					for (int oy = 0; oy < wy; oy++) {
-LOOP_OX:
-						for (int ox = 0; ox < wx; ox++) {
+					for (int oy = 0; oy < 5; oy++) {
+						for (int ox = 0; ox < 5; ox++) {
 // #pragma HLS PIPELINE
 							ap_int<18> dat;
 							ap_int<8> coef;
 
-							if (layer == 1 || layer == 3) {
-								// average pooling layer
-
-								if (buf[layer & 0x1][dmap
-										* (smap_x * smap_y)
-										+ (y + oy) * smap_y + (x + ox)]
-										== 1)
-									dat = 1;
-								else
-									dat = -1;
-
-								if (layer == 0) {
-									coef = coef_w_0[idx * (wx * wy * n_smap)
-											+ (smap * wx * wy) + oy * wy
-											+ ox];
-								} else if (layer == 1) {
-									coef = coef_w_1[idx * (wx * wy * n_smap)
-											+ (smap * wx * wy) + oy * wy
-											+ ox];
-								} else if (layer == 2) {
-									coef = coef_w_2[idx * (wx * wy * n_smap)
-											+ (smap * wx * wy) + oy * wy
-											+ ox];
-								} else if (layer == 3) {
-									coef = coef_w_3[idx * (wx * wy * n_smap)
-											+ (smap * wx * wy) + oy * wy
-											+ ox];
-								} else if (layer == 4) {
-									coef = coef_w_4[idx * (wx * wy * n_smap)
-											+ (smap * wx * wy) + oy * wy
-											+ ox];
-								} else {
-									coef = coef_w_5[idx * (wx * wy * n_smap)
-											+ (smap * wx * wy) + oy * wy
-											+ ox];
-								}
+							if (buf[2 & 0x1][smap * (14 * 14) + (y + oy) * 14
+									+ (x + ox)] == 1) {
+								dat = 1;
 							} else {
-								// convolutional and fully-connected layer
-
-								if (buf[layer & 0x1][smap
-										* (smap_x * smap_y)
-										+ (y + oy) * smap_y + (x + ox)]
-										== 1)
-									dat = 1;
-								else
-									dat = -1;
-
-								if (layer == 0) {
-									coef = coef_w_0[coef_offset + oy * wy
-											+ ox];
-								} else if (layer == 1) {
-									coef = coef_w_1[coef_offset + oy * wy
-											+ ox];
-								} else if (layer == 2) {
-									coef = coef_w_2[coef_offset + oy * wy
-											+ ox];
-								} else if (layer == 3) {
-									coef = coef_w_3[coef_offset + oy * wy
-											+ ox];
-								} else if (layer == 4) {
-									coef = coef_w_4[coef_offset + oy * wy
-											+ ox];
-								} else {
-									coef = coef_w_5[coef_offset + oy * wy
-											+ ox];
-								}
-
+								dat = -1;
 							}
 
-							// Perform an ADD-MUL operation
+							coef = coef_w_2[coef_offset + oy * 5 + ox];
+
 							temp += (dat * coef);
 						} // end for oy
 					} // end for ox
 
-					// Update offset, since the LeCun's table requires
-					// uniformaly connection
-					coef_offset += (wx * wy);
+					coef_offset += (5 * 5);
 				} // end for is_connect
 			} // end for smap
 
 			ap_int<8> sf, bi;
 
-			if (layer == 0) {
-				sf = scale_f_0[idx];
-				bi = bias_0[idx];
-			} else if (layer == 1) {
-				sf = scale_f_1[idx];
-				bi = bias_1[idx];
-			} else if (layer == 2) {
-				sf = scale_f_2[idx];
-				bi = bias_2[idx];
-			} else if (layer == 3) {
-				sf = scale_f_3[idx];
-				bi = bias_3[idx];
-			} else if (layer == 4) {
-				sf = scale_f_4[idx];
-				bi = bias_4[idx];
+			sf = scale_f_2[idx];
+			bi = bias_2[idx];
+			temp = temp * sf; // 8b x 8b = 16b
+			temp = temp + bi;
+			if (temp >= 0) {
+				buf[(2 + 1) & 0x1][idx] = 1;
 			} else {
-				sf = scale_f_5[idx];
-				bi = bias_5[idx];
-			}
-
-			// Activation function for the BinaryNet
-			// 活性化関数を省略して2値化しています.
-			// ビット精度の調整もいらないので便利♪
-			if (layer != 5) {
-				temp = temp * sf; // 8b x 8b = 16b
-				temp = temp + bi;
-				if (temp >= 0){
-//						temp = 1; //1.0;
-					buf[(layer + 1) & 0x1][idx] = 1;
-				}else{
-//						temp = -1; //-1.0;
-					buf[(layer + 1) & 0x1][idx] = 0;
-				}
-				// Store ping-pong memory
-				// ２値化した結果をping-pongメモリに格納します
-				// ただし, 最終層は２値化すると精度に影響がでるのでやっていません.
-//					if (temp == 1)
-//						buf[(layer + 1) & 0x1][idx] = 1;
-//					else
-//						buf[(layer + 1) & 0x1][idx] = 0;
-			} else {
-				// 最終層のみ, ２値化せずにそのまま計算結果を格納しています.
-				// 幸い手書き数字認識なので10ニューロンで済みましたので、そのまま配列で書いて
-				// レジスタに合成
-				temp = temp + bi;
-//				result[idx] = temp;
+				buf[(2 + 1) & 0x1][idx] = 0;
 			}
 
 			// Update indices
 			idx++;
-			x += dx;
-			if (x > (smap_x - wx)) {
+			x += 1;
+			if (x > (14 - 5)) {
 				x = 0;
-				y += dy;
-				if (y > (smap_y - wy)) {
+				y += 1;
+				if (y > (14 - 5)) {
 					y = 0;
 				}
 			}
@@ -1181,202 +485,63 @@ LOOP_OX:
 }
 
 void layer3(ap_uint<1> buf[2][6 * 28 * 28]){
-	const int layer = 3;
-	const int wx = 2;
-	const int wy = 2;
-	const int n_smap = 1;
-	const int smap_x = 10;
-	const int smap_y = 10;
-	const int n_dmap = 16;
-	const int dx = 2;
-	const int dy = 2;
-	const int dmap_x = 5;
-	const int dmap_y = 5;
-
-	ap_uint<1> cnct_tbl[16][6] = { { 1, 1, 1, 0, 0, 0 }, { 0, 1, 1, 1, 0, 0 }, {
-			0, 0, 1, 1, 1, 0 }, { 0, 0, 0, 1, 1, 1 }, { 1, 0, 0, 0, 1, 1 }, { 1,
-			1, 0, 0, 0, 1 }, { 1, 1, 1, 1, 0, 0 }, { 0, 1, 1, 1, 1, 0 }, { 0, 0,
-			1, 1, 1, 1 }, { 1, 0, 0, 1, 1, 1 }, { 1, 1, 0, 0, 1, 1 }, { 1, 1, 1,
-			0, 0, 1 }, { 1, 1, 0, 1, 1, 0 }, { 0, 1, 1, 0, 1, 1 }, { 1, 0, 1, 1,
-			0, 1 }, { 1, 1, 1, 1, 1, 1 } };
-
 	int x = 0, y = 0;
 	int coef_offset = 0;
 
 	ap_uint<16> idx = 0;
 
-	// 出力特徴マップの値を求めます
-	// ここから先のループをどこでインライン展開(#pragma unroll)するかが
-	// 高位合成設計者の腕の見せ所.
-	// (今回は載せていません)
-	// なお、ディープニューラルネットワークに限ってはインライン展開を解析した論文があって
-	// とても勉強になります.
-	// http://cadlab.cs.ucla.edu/~cong/slides/fpga2015_chen.pdf
-	// 著者のJ.CongはVivado HLSで使われている高位合成アルゴリズムの
-	// 開発者の一人.
-LOOP_DMAP:
-	for (int dmap = 0; dmap < n_dmap; dmap++) {
-LOOP_I:
-		for (int i = 0; i < dmap_x * dmap_y; i++) {
+	for (int dmap = 0; dmap < 16; dmap++) {
+		for (int i = 0; i < 5 * 5; i++) {
 			ap_int<24> temp = 0;
-LOOP_SMAP:
-			for (int smap = 0; smap < n_smap; smap++) {
-				// Read connection from LeCun's table
-				ap_uint<1> is_connect = 0;
-				if (layer != 2)
-					is_connect = 1;
-				else if (cnct_tbl[dmap][smap])
-					is_connect = 1;
+//			for (int smap = 0; smap < 1; smap++) {
+				for (int oy = 0; oy < 2; oy++) {
+					for (int ox = 0; ox < 2; ox++) {
+						ap_int<18> dat;
+						ap_int<8> coef;
 
-				// If a source map is connected,
-				//  then apply a convolutional operation
-				if (is_connect) {
-					// window size is wy x wx
-LOOP_OY:
-					for (int oy = 0; oy < wy; oy++) {
-LOOP_OX:
-						for (int ox = 0; ox < wx; ox++) {
-// #pragma HLS PIPELINE
-							ap_int<18> dat;
-							ap_int<8> coef;
+						if (buf[3 & 0x1][dmap * (10 * 10)
+								+ (y + oy) * 10 + (x + ox)] == 1) {
+							dat = 1;
+						} else {
+							dat = -1;
+						}
 
-							if (layer == 1 || layer == 3) {
-								// average pooling layer
+						coef = coef_w_3[idx * (2 * 2 * 1)
+								+ (0 * 2 * 2) + oy * 2 + ox];
 
-								if (buf[layer & 0x1][dmap
-										* (smap_x * smap_y)
-										+ (y + oy) * smap_y + (x + ox)]
-										== 1)
-									dat = 1;
-								else
-									dat = -1;
+						// Perform an ADD-MUL operation
+						temp += (dat * coef);
+					} // end for oy
+				} // end for ox
 
-								if (layer == 0) {
-									coef = coef_w_0[idx * (wx * wy * n_smap)
-											+ (smap * wx * wy) + oy * wy
-											+ ox];
-								} else if (layer == 1) {
-									coef = coef_w_1[idx * (wx * wy * n_smap)
-											+ (smap * wx * wy) + oy * wy
-											+ ox];
-								} else if (layer == 2) {
-									coef = coef_w_2[idx * (wx * wy * n_smap)
-											+ (smap * wx * wy) + oy * wy
-											+ ox];
-								} else if (layer == 3) {
-									coef = coef_w_3[idx * (wx * wy * n_smap)
-											+ (smap * wx * wy) + oy * wy
-											+ ox];
-								} else if (layer == 4) {
-									coef = coef_w_4[idx * (wx * wy * n_smap)
-											+ (smap * wx * wy) + oy * wy
-											+ ox];
-								} else {
-									coef = coef_w_5[idx * (wx * wy * n_smap)
-											+ (smap * wx * wy) + oy * wy
-											+ ox];
-								}
-							} else {
-								// convolutional and fully-connected layer
-
-								if (buf[layer & 0x1][smap
-										* (smap_x * smap_y)
-										+ (y + oy) * smap_y + (x + ox)]
-										== 1)
-									dat = 1;
-								else
-									dat = -1;
-
-								if (layer == 0) {
-									coef = coef_w_0[coef_offset + oy * wy
-											+ ox];
-								} else if (layer == 1) {
-									coef = coef_w_1[coef_offset + oy * wy
-											+ ox];
-								} else if (layer == 2) {
-									coef = coef_w_2[coef_offset + oy * wy
-											+ ox];
-								} else if (layer == 3) {
-									coef = coef_w_3[coef_offset + oy * wy
-											+ ox];
-								} else if (layer == 4) {
-									coef = coef_w_4[coef_offset + oy * wy
-											+ ox];
-								} else {
-									coef = coef_w_5[coef_offset + oy * wy
-											+ ox];
-								}
-
-							}
-
-							// Perform an ADD-MUL operation
-							temp += (dat * coef);
-						} // end for oy
-					} // end for ox
-
-					// Update offset, since the LeCun's table requires
-					// uniformaly connection
-					coef_offset += (wx * wy);
-				} // end for is_connect
-			} // end for smap
+				// Update offset, since the LeCun's table requires
+				// uniformaly connection
+				coef_offset += (2 * 2);
+//			} // end for smap
 
 			ap_int<8> sf, bi;
 
-			if (layer == 0) {
-				sf = scale_f_0[idx];
-				bi = bias_0[idx];
-			} else if (layer == 1) {
-				sf = scale_f_1[idx];
-				bi = bias_1[idx];
-			} else if (layer == 2) {
-				sf = scale_f_2[idx];
-				bi = bias_2[idx];
-			} else if (layer == 3) {
-				sf = scale_f_3[idx];
-				bi = bias_3[idx];
-			} else if (layer == 4) {
-				sf = scale_f_4[idx];
-				bi = bias_4[idx];
-			} else {
-				sf = scale_f_5[idx];
-				bi = bias_5[idx];
-			}
+			sf = scale_f_3[idx];
+			bi = bias_3[idx];
 
 			// Activation function for the BinaryNet
 			// 活性化関数を省略して2値化しています.
 			// ビット精度の調整もいらないので便利♪
-			if (layer != 5) {
-				temp = temp * sf; // 8b x 8b = 16b
-				temp = temp + bi;
-				if (temp >= 0){
-//						temp = 1; //1.0;
-					buf[(layer + 1) & 0x1][idx] = 1;
-				}else{
-//						temp = -1; //-1.0;
-					buf[(layer + 1) & 0x1][idx] = 0;
-				}
-				// Store ping-pong memory
-				// ２値化した結果をping-pongメモリに格納します
-				// ただし, 最終層は２値化すると精度に影響がでるのでやっていません.
-//					if (temp == 1)
-//						buf[(layer + 1) & 0x1][idx] = 1;
-//					else
-//						buf[(layer + 1) & 0x1][idx] = 0;
+			temp = temp * sf; // 8b x 8b = 16b
+			temp = temp + bi;
+			if (temp >= 0) {
+				buf[(3 + 1) & 0x1][idx] = 1;
 			} else {
-				// 最終層のみ, ２値化せずにそのまま計算結果を格納しています.
-				// 幸い手書き数字認識なので10ニューロンで済みましたので、そのまま配列で書いて
-				// レジスタに合成
-				temp = temp + bi;
-//				result[idx] = temp;
+				buf[(3 + 1) & 0x1][idx] = 0;
 			}
 
 			// Update indices
 			idx++;
-			x += dx;
-			if (x > (smap_x - wx)) {
+			x += 2;
+			if (x > (10 - 2)) {
 				x = 0;
-				y += dy;
-				if (y > (smap_y - wy)) {
+				y += 2;
+				if (y > (10 - 2)) {
 					y = 0;
 				}
 			}
