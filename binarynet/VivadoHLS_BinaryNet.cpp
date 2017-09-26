@@ -1391,73 +1391,54 @@ void layer4(ap_uint<1> buf[2][6 * 28 * 28]){
 	ap_uint<16> idx = 0;
 
 	LOOP_DMAP: for (ap_uint<7> dmap = 0; dmap < 120; dmap++) {
-//		LOOP_I: for (int i = 0; i < 1 * 1; i++) {
-			ap_int<24> temp = 0;
-			LOOP_SMAP: for (ap_uint<5> smap = 0; smap < 16; smap++) {
- #pragma HLS PIPELINE
-				LOOP_OY: for (ap_uint<3> oy = 0; oy < 5; oy++) {
-					LOOP_OX: for (ap_uint<3> ox = 0; ox < 5; ox++) {
-						ap_int<18> dat;
-						ap_int<8> coef;
+		ap_int<24> temp = 0;
+		LOOP_SMAP: for (ap_uint<5> smap = 0; smap < 16; smap++) {
+#pragma HLS PIPELINE
+			LOOP_OY: for (ap_uint<3> oy = 0; oy < 5; oy++) {
+				LOOP_OX: for (ap_uint<3> ox = 0; ox < 5; ox++) {
+					ap_int<18> dat;
+					ap_int<8> coef;
 
-						// convolutional and fully-connected layer
+					if (buf[4 & 0x1][smap * (5 * 5) + (y + oy) * 5 + (x + ox)]
+							== 1){
+						dat = 1;
+					}else{
+						dat = -1;
+					}
 
-						if (buf[4 & 0x1][smap * (5 * 5)
-								+ (y + oy) * 5 + (x + ox)] == 1)
-							dat = 1;
-						else
-							dat = -1;
+					coef = coef_w_4[coef_offset + oy * 5 + ox];
 
-						coef = coef_w_4[coef_offset + oy * 5 + ox];
+					temp += (dat * coef);
+				} // end for oy
+			} // end for ox
 
-						// Perform an ADD-MUL operation
-						temp += (dat * coef);
-					} // end for oy
-				} // end for ox
+			coef_offset += (5 * 5);
 
-				// Update offset, since the LeCun's table requires
-				// uniformaly connection
-				coef_offset += (5 * 5);
+		} // end for smap
 
-			} // end for smap
+		ap_int<8> sf, bi;
 
-			ap_int<8> sf, bi;
+		sf = scale_f_4[idx];
+		bi = bias_4[idx];
 
-			sf = scale_f_4[idx];
-			bi = bias_4[idx];
+		temp = temp * sf; // 8b x 8b = 16b
+		temp = temp + bi;
+		if (temp >= 0) {
+			buf[(4 + 1) & 0x1][idx] = 1;
+		} else {
+			buf[(4 + 1) & 0x1][idx] = 0;
+		}
 
-			// Activation function for the BinaryNet
-			// 活性化関数を省略して2値化しています.
-			// ビット精度の調整もいらないので便利♪
-
-			temp = temp * sf; // 8b x 8b = 16b
-			temp = temp + bi;
-			if (temp >= 0) {
-//						temp = 1; //1.0;
-				buf[(4 + 1) & 0x1][idx] = 1;
-			} else {
-//						temp = -1; //-1.0;
-				buf[(4 + 1) & 0x1][idx] = 0;
+		// Update indices
+		idx++;
+		x += 1;
+		if (x > (5 - 5)) {
+			x = 0;
+			y += 1;
+			if (y > (5 - 5)) {
+				y = 0;
 			}
-			// Store ping-pong memory
-			// ２値化した結果をping-pongメモリに格納します
-			// ただし, 最終層は２値化すると精度に影響がでるのでやっていません.
-//					if (temp == 1)
-//						buf[(layer + 1) & 0x1][idx] = 1;
-//					else
-//						buf[(layer + 1) & 0x1][idx] = 0;
-
-			// Update indices
-			idx++;
-			x += 1;
-			if (x > (5 - 5)) {
-				x = 0;
-				y += 1;
-				if (y > (5 - 5)) {
-					y = 0;
-				}
-			}
-//		} // end for i
+		}
 	} // end for dmap
 }
 
@@ -1474,19 +1455,16 @@ void layer5(ap_uint<1> buf[2][6 * 28 * 28], ap_int<24> result[10]){
 			ap_int<18> dat;
 			ap_int<8> coef;
 
-			// convolutional and fully-connected layer
-			if (buf[5 & 0x1][smap * (1 * 1) + (y + oy) * 1 + (x + ox)] == 1)
+			if (buf[5 & 0x1][smap * (1 * 1) + (y + oy) * 1 + (x + ox)] == 1){
 				dat = 1;
-			else
+			}else{
 				dat = -1;
+			}
 
 			coef = coef_w_5[coef_offset + oy * 1 + ox];
 
-			// Perform an ADD-MUL operation
 			temp += (dat * coef);
 
-			// Update offset, since the LeCun's table requires
-			// uniformaly connection
 			coef_offset += (1 * 1);
 		} // end for smap
 
