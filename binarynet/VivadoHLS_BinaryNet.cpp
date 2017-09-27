@@ -272,11 +272,6 @@ void BinaryNet(unsigned char *predict_num, // 認識した数字のインデッ�
 	// //printf("max index = %d\n", max_idx);
 
 	*predict_num = max_idx;
-
-//	//　認識した回数をインクリメント
-//	// ホストでこの値の変化を調べて, 認識が終わったと判断します.
-//	steps++;
-//	return steps;
 }
 
 
@@ -514,8 +509,6 @@ void layer3(ap_uint<1> buf[2][6 * 28 * 28]){
 					} // end for oy
 				} // end for ox
 
-				// Update offset, since the LeCun's table requires
-				// uniformaly connection
 				coef_offset += (2 * 2);
 //			} // end for smap
 
@@ -524,9 +517,6 @@ void layer3(ap_uint<1> buf[2][6 * 28 * 28]){
 			sf = scale_f_3[idx];
 			bi = bias_3[idx];
 
-			// Activation function for the BinaryNet
-			// 活性化関数を省略して2値化しています.
-			// ビット精度の調整もいらないので便利♪
 			temp = temp * sf; // 8b x 8b = 16b
 			temp = temp + bi;
 			if (temp >= 0) {
