@@ -344,10 +344,10 @@ void layer1(ap_uint<1> buf[2][6 * 28 * 28]){
 
 	for (ap_uint<3> dmap = 0; dmap < 6; dmap++) {
 		for (ap_uint<9> i = 0; i < 14 * 14; i++) {
+ #pragma HLS PIPELINE
 			ap_int<24> temp = 0;
 //			for (int smap = 0; smap < 1; smap++) {
 			for (ap_uint<2>  oy = 0; oy < 2; oy++) {
- #pragma HLS PIPELINE
 				for (ap_uint<2>  ox = 0; ox < 2; ox++) {
 					ap_int<18> dat;
 					ap_int<8> coef;
