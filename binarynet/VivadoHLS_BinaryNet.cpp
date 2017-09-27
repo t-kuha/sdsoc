@@ -396,7 +396,7 @@ void layer1(ap_uint<1> buf[2][6 * 28 * 28]){
 
 void layer2(ap_uint<1> buf[2][6 * 28 * 28]){
 #pragma HLS INLINE
-	ap_uint<1> cnct_tbl[16][6] = {
+	const static ap_uint<1> cnct_tbl[16][6] = {
 			{ 1, 1, 1, 0, 0, 0 },
 			{ 0, 1, 1, 1, 0, 0 },
 			{ 0, 0, 1, 1, 1, 0 },
@@ -421,17 +421,17 @@ void layer2(ap_uint<1> buf[2][6 * 28 * 28]){
 
 	for (ap_uint<5> dmap = 0; dmap < 16; dmap++) {
 		for (ap_uint<8> i = 0; i < 10 * 10; i++) {
+ #pragma HLS PIPELINE
 			ap_int<24> temp = 0;
 			for (ap_uint<3> smap = 0; smap < 6; smap++) {
 				// Read connection from LeCun's table
-				ap_uint<1> is_connect = 0;
-				if (cnct_tbl[dmap][smap]) {
-					is_connect = 1;
-				}
+//				ap_uint<1> is_connect = 0;
+//				if (cnct_tbl[dmap][smap]) {
+//					is_connect = 1;
+//				}
 
-				if (is_connect) {
+				if (cnct_tbl[dmap][smap]/*is_connect*/) {
 					for (ap_uint<3>  oy = 0; oy < 5; oy++) {
- #pragma HLS PIPELINE
 						for (ap_uint<3>  ox = 0; ox < 5; ox++) {
 							ap_int<18> dat;
 							ap_int<8> coef;
