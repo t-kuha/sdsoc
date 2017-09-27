@@ -276,7 +276,7 @@ void BinaryNet(unsigned char *predict_num, // 認識した数字のインデッ�
 
 
 void layer0(ap_uint<1> buf[2][6 * 28 * 28]){
-
+#pragma HLS INLINE
 	int x = 0, y = 0;
 	int coef_offset = 0;
 
@@ -336,7 +336,7 @@ void layer0(ap_uint<1> buf[2][6 * 28 * 28]){
 }
 
 void layer1(ap_uint<1> buf[2][6 * 28 * 28]){
-
+#pragma HLS INLINE
 	int x = 0, y = 0;
 	int coef_offset = 0;
 
@@ -395,7 +395,7 @@ void layer1(ap_uint<1> buf[2][6 * 28 * 28]){
 }
 
 void layer2(ap_uint<1> buf[2][6 * 28 * 28]){
-
+#pragma HLS INLINE
 	ap_uint<1> cnct_tbl[16][6] = {
 			{ 1, 1, 1, 0, 0, 0 },
 			{ 0, 1, 1, 1, 0, 0 },
@@ -480,6 +480,7 @@ void layer2(ap_uint<1> buf[2][6 * 28 * 28]){
 }
 
 void layer3(ap_uint<1> buf[2][6 * 28 * 28]){
+#pragma HLS INLINE
 	int x = 0, y = 0;
 	int coef_offset = 0;
 
@@ -540,6 +541,7 @@ void layer3(ap_uint<1> buf[2][6 * 28 * 28]){
 }
 
 void layer4(ap_uint<1> buf[2][6 * 28 * 28]){
+#pragma HLS INLINE
 	int x = 0, y = 0;
 	int coef_offset = 0;
 
@@ -598,6 +600,7 @@ void layer4(ap_uint<1> buf[2][6 * 28 * 28]){
 }
 
 void layer5(ap_uint<1> buf[2][6 * 28 * 28], ap_int<24> result[10]){
+#pragma HLS INLINE
 	int x = 0, y = 0;
 	int coef_offset = 0;
 	ap_uint<16> idx = 0;
