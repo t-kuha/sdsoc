@@ -282,13 +282,13 @@ void layer0(ap_uint<1> buf[2][6 * 28 * 28]){
 
 	ap_uint<16> idx = 0;
 
-	for (int dmap = 0; dmap < 6; dmap++) {
-		for (int i = 0; i < 28 * 28; i++) {
+	for (ap_uint<3> dmap = 0; dmap < 6; dmap++) {
+		for (ap_uint<10> i = 0; i < 28 * 28; i++) {
 			ap_int<24> temp = 0;
 //			for (int smap = 0; smap < 1; smap++) {
-			for (int oy = 0; oy < 5; oy++) {
-				for (int ox = 0; ox < 5; ox++) {
-// #pragma HLS PIPELINE
+			for (ap_uint<3> oy = 0; oy < 5; oy++) {
+ #pragma HLS PIPELINE
+				for (ap_uint<3> ox = 0; ox < 5; ox++) {
 					ap_int<18> dat;
 					ap_int<8> coef;
 
@@ -342,13 +342,13 @@ void layer1(ap_uint<1> buf[2][6 * 28 * 28]){
 
 	ap_uint<16> idx = 0;
 
-	for (int dmap = 0; dmap < 6; dmap++) {
-		for (int i = 0; i < 14 * 14; i++) {
+	for (ap_uint<3> dmap = 0; dmap < 6; dmap++) {
+		for (ap_uint<9> i = 0; i < 14 * 14; i++) {
 			ap_int<24> temp = 0;
 //			for (int smap = 0; smap < 1; smap++) {
-			for (int oy = 0; oy < 2; oy++) {
-				for (int ox = 0; ox < 2; ox++) {
-// #pragma HLS PIPELINE
+			for (ap_uint<2>  oy = 0; oy < 2; oy++) {
+ #pragma HLS PIPELINE
+				for (ap_uint<2>  ox = 0; ox < 2; ox++) {
 					ap_int<18> dat;
 					ap_int<8> coef;
 
@@ -419,10 +419,10 @@ void layer2(ap_uint<1> buf[2][6 * 28 * 28]){
 
 	ap_uint<16> idx = 0;
 
-	for (int dmap = 0; dmap < 16; dmap++) {
-		for (int i = 0; i < 10 * 10; i++) {
+	for (ap_uint<5> dmap = 0; dmap < 16; dmap++) {
+		for (ap_uint<8> i = 0; i < 10 * 10; i++) {
 			ap_int<24> temp = 0;
-			for (int smap = 0; smap < 6; smap++) {
+			for (ap_uint<3> smap = 0; smap < 6; smap++) {
 				// Read connection from LeCun's table
 				ap_uint<1> is_connect = 0;
 				if (cnct_tbl[dmap][smap]) {
@@ -430,9 +430,9 @@ void layer2(ap_uint<1> buf[2][6 * 28 * 28]){
 				}
 
 				if (is_connect) {
-					for (int oy = 0; oy < 5; oy++) {
-						for (int ox = 0; ox < 5; ox++) {
-// #pragma HLS PIPELINE
+					for (ap_uint<3>  oy = 0; oy < 5; oy++) {
+ #pragma HLS PIPELINE
+						for (ap_uint<3>  ox = 0; ox < 5; ox++) {
 							ap_int<18> dat;
 							ap_int<8> coef;
 
@@ -486,12 +486,13 @@ void layer3(ap_uint<1> buf[2][6 * 28 * 28]){
 
 	ap_uint<16> idx = 0;
 
-	for (int dmap = 0; dmap < 16; dmap++) {
-		for (int i = 0; i < 5 * 5; i++) {
+	for (ap_uint<5> dmap = 0; dmap < 16; dmap++) {
+		for (ap_uint<3> i = 0; i < 5 * 5; i++) {
 			ap_int<24> temp = 0;
 //			for (int smap = 0; smap < 1; smap++) {
-				for (int oy = 0; oy < 2; oy++) {
-					for (int ox = 0; ox < 2; ox++) {
+				for (ap_uint<2> oy = 0; oy < 2; oy++) {
+#pragma HLS PIPELINE
+					for (ap_uint<2> ox = 0; ox < 2; ox++) {
 						ap_int<18> dat;
 						ap_int<8> coef;
 
