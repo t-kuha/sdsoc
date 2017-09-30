@@ -125,7 +125,6 @@ int main(void) {
     load_weight("weight/bias_5.bin",        10, bias_5);
 #endif
 
-
 	// Perform prediction -------------------------------------------------
 	printf("START PREDICTION\n");
 	unsigned char est;
@@ -133,26 +132,6 @@ int main(void) {
 	BinaryNet(&est, pbuf);
 
 	printf("ESTIMATION = %d\n", est);
-
-	// Printout result ----------------------------------------------------
-	// 未使用ですが、テスト用にコメントを残しておきました.
-	// デバッグ時にはHLSで合成した回路の値とCプログラムの出力を突き合わせていました。
-	/*
-	 int i
-	 int max_val = 0, max_idx = 0;
-	 for( i = 0; i < 10; i++){
-	 if( max_val < buf[6 & 0x1][i]){
-	 max_val = buf[6 & 0x1][i];
-	 max_idx = i;
-	 }
-	 }
-	 for( i = 0; i < 10; i++){
-	 printf("NUMBER'%2d' VALUE=%8d", i, buf[6 & 0x1][i]);
-	 if( i == max_idx)
-	 printf(" (Predicted)");
-	 printf("\n");
-	 }
-	 */
 
 	return 0;
 }
@@ -191,7 +170,6 @@ LOOP_INPUT_DATA:
 	for (int yy = 0; yy < 32; yy++) {
 #pragma HLS PIPELINE
 		ap_uint<32> pict = pbuf[yy];
-		//printf("yy=%d pict=%X ", yy, pict);
 		for (int xx = 0; xx < 32; xx++) {
 //#pragma HLS UNROLL
 //			buf[0][yy * 32 + 31 - xx] = pict.get_bit(xx);
@@ -219,8 +197,6 @@ LOOP_INPUT_DATA:
 	 
 	ap_int<24> result[10];		// Output score
 
-
-
 	// Layer 0
 	layer0(buf);
 
@@ -231,13 +207,6 @@ LOOP_INPUT_DATA:
 
 	// Layer 3
 	layer3(buf);
-	int layer = 3;
-	for(int i = 0; i < 16*5*5; i++){
-		printf("%d ", buf[(layer + 1) & 0x1][i].to_int());
-		if((i + 1) % 100 == 0){
-			printf("\n");
-		}
-	}
 
 	// Layer 4
 	layer4(buf);
@@ -262,15 +231,6 @@ LOOP_OUTPUT:
 #if !defined(__SDSVHLS__) && !defined(__SYNTHESIS__)
 	printf("max index = %d\n", max_idx);
 #endif
-
-	// for( i = 0; i < 10; i++){
-	// 	if( max_val < buf[6 & 0x1][i]){
-	// 		max_val = buf[6 & 0x1][i];
-	// 		max_idx = i;
-	// 	}
-	// 	//printf("idx=%d %d\n", i, buf[6 & 0x1][i]);
-	// }
-	// //printf("max index = %d\n", max_idx);
 
 	*predict_num = max_idx;
 }
