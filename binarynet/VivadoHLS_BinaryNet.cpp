@@ -7,10 +7,6 @@
 // Developed by H. Nakahara
 
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <math.h>
-#include <assert.h>
 
 // FPGA実装のためにビット幅を調整します. そのためのヘッダ
 #include "ap_int.h"
@@ -191,20 +187,20 @@ void BinaryNet(unsigned char *predict_num, // 認識した数字のインデッ�
 	ap_uint<1> buf[2][6 * 28 * 28];
 
 	// 入力された画像データをバッファメモリ(ping-pongメモリ)に格納
-//LOOP_INPUT_DATA:
+LOOP_INPUT_DATA:
 	for (int yy = 0; yy < 32; yy++) {
-//#pragma HLS PIPELINE
+#pragma HLS PIPELINE
 		ap_uint<32> pict = pbuf[yy];
 		//printf("yy=%d pict=%X ", yy, pict);
 		for (int xx = 0; xx < 32; xx++) {
 //#pragma HLS UNROLL
-			buf[0][yy * 32 + 31 - xx] = pict.get_bit(xx);
-//			if ((pict & 0x1) == 1) {
-//				buf[0][yy * 32 + 31 - xx] = 1;
-//			} else {
-//				buf[0][yy * 32 + 31 - xx] = 0;    //-1;
-//			}
-//			pict = pict >> 1;
+//			buf[0][yy * 32 + 31 - xx] = pict.get_bit(xx);
+			if ((pict & 0x1) == 1) {
+				buf[0][yy * 32 + 31 - xx] = 1;
+			} else {
+				buf[0][yy * 32 + 31 - xx] = 0;    //-1;
+			}
+			pict = pict >> 1;
 		}
 	}
 
@@ -230,12 +226,18 @@ void BinaryNet(unsigned char *predict_num, // 認識した数字のインデッ�
 
 	// Layer 1
 	layer1(buf);
-
 	// Layer 2
 	layer2(buf);
 
 	// Layer 3
 	layer3(buf);
+	int layer = 3;
+	for(int i = 0; i < 16*5*5; i++){
+		printf("%d ", buf[(layer + 1) & 0x1][i].to_int());
+		if((i + 1) % 100 == 0){
+			printf("\n");
+		}
+	}
 
 	// Layer 4
 	layer4(buf);
@@ -243,13 +245,12 @@ void BinaryNet(unsigned char *predict_num, // 認識した数字のインデッ�
 	// Layer 5
 	layer5(buf, result);
 
-
 	// Prediction ----------------------------------------------------
 	ap_int<24> max_val = result[0];
 	unsigned char max_idx = 0;
-//LOOP_OUTPUT:
+LOOP_OUTPUT:
 	for (ap_uint<4> i = 1; i < 10; i++) {
-//#pragma HLS PIPELINE
+#pragma HLS PIPELINE
 		if (max_val < result[i]) {
 			max_val = result[i];
 			max_idx = i;
@@ -276,18 +277,23 @@ void BinaryNet(unsigned char *predict_num, // 認識した数字のインデッ�
 
 
 void layer0(ap_uint<1> buf[2][6 * 28 * 28]){
-#pragma HLS INLINE
-	int x = 0, y = 0;
-	int coef_offset = 0;
 
+#pragma HLS INLINE
+
+#pragma HLS RESOURCE variable=bias_0 core=ROM_1P_LUTRAM
+#pragma HLS RESOURCE variable=scale_f_0 core=ROM_1P_LUTRAM
+
+	/*ap_uint<3>*/int x = 0, y = 0;
+	/*ap_uint<20>*/int coef_offset = 0;
 	ap_uint<16> idx = 0;
 
+LAYER0:
 	for (ap_uint<3> dmap = 0; dmap < 6; dmap++) {
 		for (ap_uint<10> i = 0; i < 28 * 28; i++) {
+ #pragma HLS PIPELINE
 			ap_int<24> temp = 0;
 //			for (int smap = 0; smap < 1; smap++) {
 			for (ap_uint<3> oy = 0; oy < 5; oy++) {
- #pragma HLS PIPELINE
 				for (ap_uint<3> ox = 0; ox < 5; ox++) {
 					ap_int<18> dat;
 					ap_int<8> coef;
@@ -342,10 +348,11 @@ void layer1(ap_uint<1> buf[2][6 * 28 * 28]){
 
 	ap_uint<16> idx = 0;
 
+LAYER1:
 	for (ap_uint<3> dmap = 0; dmap < 6; dmap++) {
-		for (ap_uint<9> i = 0; i < 14 * 14; i++) {
+		for (/*ap_uint<9>*/int i = 0; i < 14 * 14; i++) {
  #pragma HLS PIPELINE
-			ap_int<24> temp = 0;
+			/*ap_int<24>*/int temp = 0;
 //			for (int smap = 0; smap < 1; smap++) {
 			for (ap_uint<2>  oy = 0; oy < 2; oy++) {
 				for (ap_uint<2>  ox = 0; ox < 2; ox++) {
@@ -353,10 +360,11 @@ void layer1(ap_uint<1> buf[2][6 * 28 * 28]){
 					ap_int<8> coef;
 
 					if (buf[1 & 0x1][dmap * (28 * 28) + (y + oy) * 28 + (x + ox)]
-							== 1)
+							== 1){
 						dat = 1;
-					else
+					}else{
 						dat = -1;
+					}
 
 					coef = coef_w_1[idx * (2 * 2 * 1) + (0 * 2 * 2) + oy * 2
 							+ ox];
@@ -396,6 +404,10 @@ void layer1(ap_uint<1> buf[2][6 * 28 * 28]){
 
 void layer2(ap_uint<1> buf[2][6 * 28 * 28]){
 #pragma HLS INLINE
+
+#pragma HLS RESOURCE variable=scale_f_2 core=ROM_1P_LUTRAM
+#pragma HLS RESOURCE variable=bias_2 core=ROM_1P_LUTRAM
+
 	const static ap_uint<1> cnct_tbl[16][6] = {
 			{ 1, 1, 1, 0, 0, 0 },
 			{ 0, 1, 1, 1, 0, 0 },
@@ -414,12 +426,13 @@ void layer2(ap_uint<1> buf[2][6 * 28 * 28]){
 			{ 1, 0, 1, 1, 0, 1 },
 			{ 1, 1, 1, 1, 1, 1 } };
 
-	int x = 0, y = 0;
-	int coef_offset = 0;
-
+	/*ap_uint<5>*/int x = 0, y = 0;
+	/*ap_uint<22>*/int coef_offset = 0;
 	ap_uint<16> idx = 0;
 
+LAYER2:
 	for (ap_uint<5> dmap = 0; dmap < 16; dmap++) {
+#pragma HLS LOOP_FLATTEN off
 		for (ap_uint<8> i = 0; i < 10 * 10; i++) {
  #pragma HLS PIPELINE
 			ap_int<24> temp = 0;
@@ -481,17 +494,22 @@ void layer2(ap_uint<1> buf[2][6 * 28 * 28]){
 
 void layer3(ap_uint<1> buf[2][6 * 28 * 28]){
 #pragma HLS INLINE
-	int x = 0, y = 0;
-	int coef_offset = 0;
 
+#pragma HLS RESOURCE variable=coef_w_3 core=ROM_2P_LUTRAM
+
+	/*ap_uint<12>*/int x = 0, y = 0;
+	/*ap_uint<14>*/int coef_offset = 0;
 	ap_uint<16> idx = 0;
 
+LAYER3:
 	for (ap_uint<5> dmap = 0; dmap < 16; dmap++) {
-		for (ap_uint<3> i = 0; i < 5 * 5; i++) {
+#pragma HLS LOOP_FLATTEN off
+
+		for (ap_uint<5> i = 0; i < 5 * 5; i++) {
+#pragma HLS PIPELINE
 			ap_int<24> temp = 0;
 //			for (int smap = 0; smap < 1; smap++) {
 				for (ap_uint<2> oy = 0; oy < 2; oy++) {
-#pragma HLS PIPELINE
 					for (ap_uint<2> ox = 0; ox < 2; ox++) {
 						ap_int<18> dat;
 						ap_int<8> coef;
@@ -514,11 +532,19 @@ void layer3(ap_uint<1> buf[2][6 * 28 * 28]){
 				coef_offset += (2 * 2);
 //			} // end for smap
 
-			ap_int<8> sf, bi;
+			ap_int<7> sf, bi;
 
 			sf = scale_f_3[idx];
 			bi = bias_3[idx];
 
+//			ap_int<24> temp0 = temp * sf;
+//#pragma HLS RESOURCE variable=temp0 core=Mul
+//			ap_int<24> temp2 = temp0 + bi;
+//			if (temp2 >= 0) {
+//				buf[(0 + 1) & 0x1][idx] = 1;
+//			} else {
+//				buf[(0 + 1) & 0x1][idx] = 0;
+//			}
 			temp = temp * sf; // 8b x 8b = 16b
 			temp = temp + bi;
 			if (temp >= 0) {
@@ -548,6 +574,7 @@ void layer4(ap_uint<1> buf[2][6 * 28 * 28]){
 
 	ap_uint<16> idx = 0;
 
+LAYER4:
 	LOOP_DMAP: for (ap_uint<7> dmap = 0; dmap < 120; dmap++) {
 		ap_int<24> temp = 0;
 		LOOP_SMAP: for (ap_uint<5> smap = 0; smap < 16; smap++) {
@@ -606,6 +633,7 @@ void layer5(ap_uint<1> buf[2][6 * 28 * 28], ap_int<24> result[10]){
 	int coef_offset = 0;
 	ap_uint<16> idx = 0;
 
+LAYER5:
 	for (ap_uint<4> dmap = 0; dmap < 10; dmap++) {
 		ap_int<24> temp = 0;
 		for (ap_uint<7> smap = 0; smap < 120; smap++) {
