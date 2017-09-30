@@ -237,20 +237,20 @@ LOOP_OUTPUT:
 
 
 void layer0(ap_uint<1> buf[2][6 * 28 * 28]){
-
 #pragma HLS INLINE
 
 #pragma HLS RESOURCE variable=bias_0 core=ROM_1P_LUTRAM
 #pragma HLS RESOURCE variable=scale_f_0 core=ROM_1P_LUTRAM
 
-	/*ap_uint<3>*/int x = 0, y = 0;
-	/*ap_uint<20>*/int coef_offset = 0;
+	ap_uint<13> x = 0, y = 0;
+	ap_uint<20> coef_offset = 0;
 	ap_uint<16> idx = 0;
 
 LAYER0:
 	for (ap_uint<3> dmap = 0; dmap < 6; dmap++) {
+#pragma HLS LOOP_FLATTEN off
 		for (ap_uint<10> i = 0; i < 28 * 28; i++) {
- #pragma HLS PIPELINE
+#pragma HLS PIPELINE
 			ap_int<24> temp = 0;
 //			for (int smap = 0; smap < 1; smap++) {
 			for (ap_uint<3> oy = 0; oy < 5; oy++) {
@@ -274,14 +274,15 @@ LAYER0:
 			coef_offset += (5 * 5);
 //			} // end for smap
 
-			ap_int<8> sf, bi;
+			ap_int<7> sf, bi;
 
 			sf = scale_f_0[idx];
 			bi = bias_0[idx];
 
-			temp = temp * sf; // 8b x 8b = 16b
-			temp = temp + bi;
-			if (temp >= 0) {
+			ap_int<24> temp0 = temp * sf;
+#pragma HLS RESOURCE variable=temp0 core=Mul
+			ap_int<24> temp2 = temp0 + bi;
+			if (temp2 >= 0) {
 				buf[(0 + 1) & 0x1][idx] = 1;
 			} else {
 				buf[(0 + 1) & 0x1][idx] = 0;
@@ -303,21 +304,26 @@ LAYER0:
 
 void layer1(ap_uint<1> buf[2][6 * 28 * 28]){
 #pragma HLS INLINE
-	int x = 0, y = 0;
-	int coef_offset = 0;
 
+#pragma HLS RESOURCE variable=coef_w_1 core=ROM_2P_LUTRAM
+#pragma HLS RESOURCE variable=scale_f_1 core=ROM_2P_LUTRAM
+#pragma HLS RESOURCE variable=bias_1 core=ROM_2P_LUTRAM
+
+	ap_uint<14> x = 0, y = 0;
+	ap_uint<16> coef_offset = 0;
 	ap_uint<16> idx = 0;
 
 LAYER1:
 	for (ap_uint<3> dmap = 0; dmap < 6; dmap++) {
-		for (/*ap_uint<9>*/int i = 0; i < 14 * 14; i++) {
- #pragma HLS PIPELINE
-			/*ap_int<24>*/int temp = 0;
+#pragma HLS LOOP_FLATTEN off
+		for (ap_uint<8> i = 0; i < 14 * 14; i++) {
+#pragma HLS PIPELINE
+			ap_int<24> temp = 0;
 //			for (int smap = 0; smap < 1; smap++) {
 			for (ap_uint<2>  oy = 0; oy < 2; oy++) {
 				for (ap_uint<2>  ox = 0; ox < 2; ox++) {
-					ap_int<18> dat;
-					ap_int<8> coef;
+					ap_int<2> dat;
+					ap_int<7> coef;
 
 					if (buf[1 & 0x1][dmap * (28 * 28) + (y + oy) * 28 + (x + ox)]
 							== 1){
@@ -335,14 +341,15 @@ LAYER1:
 			coef_offset += (2 * 2);
 //			} // end for smap
 
-			ap_int<8> sf, bi;
+			ap_int<7> sf, bi;
 
 			sf = scale_f_1[idx];
 			bi = bias_1[idx];
 
-			temp = temp * sf; // 8b x 8b = 16b
-			temp = temp + bi;
-			if (temp >= 0) {
+			ap_int<24> temp0 = temp * sf;
+#pragma HLS RESOURCE variable=temp0 core=Mul
+			ap_int<24> temp2 = temp0 + bi;
+			if (temp2 >= 0) {
 				buf[(1 + 1) & 0x1][idx] = 1;
 			} else {
 				buf[(1 + 1) & 0x1][idx] = 0;
@@ -386,28 +393,22 @@ void layer2(ap_uint<1> buf[2][6 * 28 * 28]){
 			{ 1, 0, 1, 1, 0, 1 },
 			{ 1, 1, 1, 1, 1, 1 } };
 
-	/*ap_uint<5>*/int x = 0, y = 0;
-	/*ap_uint<22>*/int coef_offset = 0;
+	ap_uint<13> x = 0, y = 0;
+	ap_uint<22> coef_offset = 0;
 	ap_uint<16> idx = 0;
 
 LAYER2:
 	for (ap_uint<5> dmap = 0; dmap < 16; dmap++) {
 #pragma HLS LOOP_FLATTEN off
 		for (ap_uint<8> i = 0; i < 10 * 10; i++) {
- #pragma HLS PIPELINE
+#pragma HLS PIPELINE
 			ap_int<24> temp = 0;
 			for (ap_uint<3> smap = 0; smap < 6; smap++) {
-				// Read connection from LeCun's table
-//				ap_uint<1> is_connect = 0;
-//				if (cnct_tbl[dmap][smap]) {
-//					is_connect = 1;
-//				}
-
-				if (cnct_tbl[dmap][smap]/*is_connect*/) {
+				if (cnct_tbl[dmap][smap]) {
 					for (ap_uint<3>  oy = 0; oy < 5; oy++) {
 						for (ap_uint<3>  ox = 0; ox < 5; ox++) {
-							ap_int<18> dat;
-							ap_int<8> coef;
+							ap_int<2> dat;
+							ap_int<7> coef;
 
 							if (buf[2 & 0x1][smap * (14 * 14) + (y + oy) * 14
 									+ (x + ox)] == 1) {
@@ -426,13 +427,15 @@ LAYER2:
 				} // end for is_connect
 			} // end for smap
 
-			ap_int<8> sf, bi;
+			ap_int<7> sf, bi;
 
 			sf = scale_f_2[idx];
 			bi = bias_2[idx];
-			temp = temp * sf; // 8b x 8b = 16b
-			temp = temp + bi;
-			if (temp >= 0) {
+
+			ap_int<24> temp0 = temp * sf;
+#pragma HLS RESOURCE variable=temp0 core=Mul
+			ap_int<24> temp2 = temp0 + bi;
+			if (temp2 >= 0) {
 				buf[(2 + 1) & 0x1][idx] = 1;
 			} else {
 				buf[(2 + 1) & 0x1][idx] = 0;
@@ -457,22 +460,21 @@ void layer3(ap_uint<1> buf[2][6 * 28 * 28]){
 
 #pragma HLS RESOURCE variable=coef_w_3 core=ROM_2P_LUTRAM
 
-	/*ap_uint<12>*/int x = 0, y = 0;
-	/*ap_uint<14>*/int coef_offset = 0;
+	ap_uint<12> x = 0, y = 0;
+	ap_uint<14> coef_offset = 0;
 	ap_uint<16> idx = 0;
 
 LAYER3:
 	for (ap_uint<5> dmap = 0; dmap < 16; dmap++) {
 #pragma HLS LOOP_FLATTEN off
-
 		for (ap_uint<5> i = 0; i < 5 * 5; i++) {
 #pragma HLS PIPELINE
 			ap_int<24> temp = 0;
 //			for (int smap = 0; smap < 1; smap++) {
 				for (ap_uint<2> oy = 0; oy < 2; oy++) {
 					for (ap_uint<2> ox = 0; ox < 2; ox++) {
-						ap_int<18> dat;
-						ap_int<8> coef;
+						ap_int<2> dat;
+						ap_int<7> coef;
 
 						if (buf[3 & 0x1][dmap * (10 * 10)
 								+ (y + oy) * 10 + (x + ox)] == 1) {
@@ -497,17 +499,10 @@ LAYER3:
 			sf = scale_f_3[idx];
 			bi = bias_3[idx];
 
-//			ap_int<24> temp0 = temp * sf;
-//#pragma HLS RESOURCE variable=temp0 core=Mul
-//			ap_int<24> temp2 = temp0 + bi;
-//			if (temp2 >= 0) {
-//				buf[(0 + 1) & 0x1][idx] = 1;
-//			} else {
-//				buf[(0 + 1) & 0x1][idx] = 0;
-//			}
-			temp = temp * sf; // 8b x 8b = 16b
-			temp = temp + bi;
-			if (temp >= 0) {
+			ap_int<24> temp0 = temp * sf;
+#pragma HLS RESOURCE variable=temp0 core=Mul
+			ap_int<24> temp2 = temp0 + bi;
+			if (temp2 >= 0) {
 				buf[(3 + 1) & 0x1][idx] = 1;
 			} else {
 				buf[(3 + 1) & 0x1][idx] = 0;
@@ -529,20 +524,23 @@ LAYER3:
 
 void layer4(ap_uint<1> buf[2][6 * 28 * 28]){
 #pragma HLS INLINE
-	int x = 0, y = 0;
-	int coef_offset = 0;
 
+#pragma HLS RESOURCE variable=coef_w_4 core=ROM_2P_LUTRAM
+
+	ap_uint<7> x = 0, y = 0;
+	ap_uint<20> coef_offset = 0;
 	ap_uint<16> idx = 0;
 
 LAYER4:
-	LOOP_DMAP: for (ap_uint<7> dmap = 0; dmap < 120; dmap++) {
+	for (ap_uint<7> dmap = 0; dmap < 120; dmap++) {
+#pragma HLS LOOP_FLATTEN off
 		ap_int<24> temp = 0;
-		LOOP_SMAP: for (ap_uint<5> smap = 0; smap < 16; smap++) {
+		for (ap_uint<5> smap = 0; smap < 16; smap++) {
 #pragma HLS PIPELINE
-			LOOP_OY: for (ap_uint<3> oy = 0; oy < 5; oy++) {
-				LOOP_OX: for (ap_uint<3> ox = 0; ox < 5; ox++) {
-					ap_int<18> dat;
-					ap_int<8> coef;
+			for (ap_uint<3> oy = 0; oy < 5; oy++) {
+				for (ap_uint<3> ox = 0; ox < 5; ox++) {
+					ap_int<2> dat;
+					ap_int<7> coef;
 
 					if (buf[4 & 0x1][smap * (5 * 5) + (y + oy) * 5 + (x + ox)]
 							== 1){
@@ -561,14 +559,15 @@ LAYER4:
 
 		} // end for smap
 
-		ap_int<8> sf, bi;
+		ap_int<7> sf, bi;
 
 		sf = scale_f_4[idx];
 		bi = bias_4[idx];
 
-		temp = temp * sf; // 8b x 8b = 16b
-		temp = temp + bi;
-		if (temp >= 0) {
+		ap_int<24> temp0 = temp * sf;
+#pragma HLS RESOURCE variable=temp0 core=Mul
+		ap_int<24> temp2 = temp0 + bi;
+		if (temp2 >= 0) {
 			buf[(4 + 1) & 0x1][idx] = 1;
 		} else {
 			buf[(4 + 1) & 0x1][idx] = 0;
@@ -589,18 +588,22 @@ LAYER4:
 
 void layer5(ap_uint<1> buf[2][6 * 28 * 28], ap_int<24> result[10]){
 #pragma HLS INLINE
-	int x = 0, y = 0;
-	int coef_offset = 0;
-	ap_uint<16> idx = 0;
+
+#pragma HLS RESOURCE variable=coef_w_5 core=ROM_1P_LUTRAM
+
+	ap_uint<4> x = 0, y = 0;
+	ap_uint<11> coef_offset = 0;
+	ap_uint<4> idx = 0;
 
 LAYER5:
 	for (ap_uint<4> dmap = 0; dmap < 10; dmap++) {
+#pragma HLS LOOP_FLATTEN off
 		ap_int<24> temp = 0;
 		for (ap_uint<7> smap = 0; smap < 120; smap++) {
 #pragma HLS PIPELINE
 			const int ox = 0, oy = 0;
-			ap_int<18> dat;
-			ap_int<8> coef;
+			ap_int<2> dat;
+			ap_int<7> coef;
 
 			if (buf[5 & 0x1][smap * (1 * 1) + (y + oy) * 1 + (x + ox)] == 1){
 				dat = 1;
@@ -615,7 +618,7 @@ LAYER5:
 			coef_offset += (1 * 1);
 		} // end for smap
 
-		ap_int<8> bi;
+		ap_int<7> bi;
 		bi = bias_5[idx];
 		temp = temp + bi;
 		result[idx] = temp;
