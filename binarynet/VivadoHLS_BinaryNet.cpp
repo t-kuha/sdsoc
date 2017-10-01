@@ -240,7 +240,7 @@ void layer0(ap_uint<1> buf[2][6 * 28 * 28]){
 #pragma HLS INLINE
 
 #pragma HLS RESOURCE variable=bias_0 core=ROM_1P_LUTRAM
-#pragma HLS RESOURCE variable=scale_f_0 core=ROM_1P_LUTRAM
+//#pragma HLS RESOURCE variable=scale_f_0 core=ROM_1P_LUTRAM
 
 	ap_uint<13> x = 0, y = 0;
 	ap_uint<20> coef_offset = 0;
@@ -306,7 +306,7 @@ void layer1(ap_uint<1> buf[2][6 * 28 * 28]){
 #pragma HLS INLINE
 
 #pragma HLS RESOURCE variable=coef_w_1 core=ROM_2P_LUTRAM
-#pragma HLS RESOURCE variable=scale_f_1 core=ROM_2P_LUTRAM
+//#pragma HLS RESOURCE variable=scale_f_1 core=ROM_2P_LUTRAM
 #pragma HLS RESOURCE variable=bias_1 core=ROM_2P_LUTRAM
 
 	ap_uint<14> x = 0, y = 0;
@@ -372,7 +372,7 @@ LAYER1:
 void layer2(ap_uint<1> buf[2][6 * 28 * 28]){
 #pragma HLS INLINE
 
-#pragma HLS RESOURCE variable=scale_f_2 core=ROM_1P_LUTRAM
+//#pragma HLS RESOURCE variable=scale_f_2 core=ROM_1P_LUTRAM
 #pragma HLS RESOURCE variable=bias_2 core=ROM_1P_LUTRAM
 
 	const static ap_uint<1> cnct_tbl[16][6] = {
