@@ -23,12 +23,12 @@ ap_int<7> coef_w_3[6400];
 ap_int<7> coef_w_4[48000];
 ap_int<7> coef_w_5[1200];
 
-ap_int<7> scale_f_0[4704];
-ap_int<7> scale_f_1[1176];
-ap_int<7> scale_f_2[1600];
-ap_int<7> scale_f_3[400];
-ap_int<7> scale_f_4[120];
-ap_int<7> scale_f_5[10];
+//ap_int<7> scale_f_0[4704];
+//ap_int<7> scale_f_1[1176];
+//ap_int<7> scale_f_2[1600];
+//ap_int<7> scale_f_3[400];
+//ap_int<7> scale_f_4[120];
+//ap_int<7> scale_f_5[10];
 
 ap_int<7> bias_0[4704];
 ap_int<7> bias_1[1176];
@@ -110,12 +110,12 @@ int main(void) {
     load_weight("weight/coef_w_4.bin",   48000, coef_w_4);
     load_weight("weight/coef_w_5.bin",    1200, coef_w_5);
 
-    load_weight("weight/scale_f_0.bin",   4704, scale_f_0);
-    load_weight("weight/scale_f_1.bin",   1176, scale_f_1);
-    load_weight("weight/scale_f_2.bin",   1600, scale_f_2);
-    load_weight("weight/scale_f_3.bin",    400, scale_f_3);
-    load_weight("weight/scale_f_4.bin",    120, scale_f_4);
-    load_weight("weight/scale_f_5.bin",     10, scale_f_5);
+//    load_weight("weight/scale_f_0.bin",   4704, scale_f_0);
+//    load_weight("weight/scale_f_1.bin",   1176, scale_f_1);
+//    load_weight("weight/scale_f_2.bin",   1600, scale_f_2);
+//    load_weight("weight/scale_f_3.bin",    400, scale_f_3);
+//    load_weight("weight/scale_f_4.bin",    120, scale_f_4);
+//    load_weight("weight/scale_f_5.bin",     10, scale_f_5);
 
     load_weight("weight/bias_0.bin",      4704, bias_0);
     load_weight("weight/bias_1.bin",      1176, bias_1);
@@ -276,10 +276,10 @@ LAYER0:
 
 			ap_int<7> sf, bi;
 
-			sf = scale_f_0[idx];
+//			sf = scale_f_0[idx];
 			bi = bias_0[idx];
 
-			ap_int<24> temp0 = temp * sf;
+			ap_int<24> temp0 = temp * 32/*sf*/;
 #pragma HLS RESOURCE variable=temp0 core=Mul
 			ap_int<24> temp2 = temp0 + bi;
 			if (temp2 >= 0) {
@@ -343,10 +343,10 @@ LAYER1:
 
 			ap_int<7> sf, bi;
 
-			sf = scale_f_1[idx];
+//			sf = scale_f_1[idx];
 			bi = bias_1[idx];
 
-			ap_int<24> temp0 = temp * sf;
+			ap_int<24> temp0 = temp * 8/*sf*/;
 #pragma HLS RESOURCE variable=temp0 core=Mul
 			ap_int<24> temp2 = temp0 + bi;
 			if (temp2 >= 0) {
@@ -429,10 +429,10 @@ LAYER2:
 
 			ap_int<7> sf, bi;
 
-			sf = scale_f_2[idx];
+//			sf = scale_f_2[idx];
 			bi = bias_2[idx];
 
-			ap_int<24> temp0 = temp * sf;
+			ap_int<24> temp0 = temp * 32/*sf*/;
 #pragma HLS RESOURCE variable=temp0 core=Mul
 			ap_int<24> temp2 = temp0 + bi;
 			if (temp2 >= 0) {
@@ -496,10 +496,10 @@ LAYER3:
 
 			ap_int<7> sf, bi;
 
-			sf = scale_f_3[idx];
+//			sf = scale_f_3[idx];
 			bi = bias_3[idx];
 
-			ap_int<24> temp0 = temp * sf;
+			ap_int<24> temp0 = temp * 8/*sf*/;
 #pragma HLS RESOURCE variable=temp0 core=Mul
 			ap_int<24> temp2 = temp0 + bi;
 			if (temp2 >= 0) {
@@ -561,10 +561,10 @@ LAYER4:
 
 		ap_int<7> sf, bi;
 
-		sf = scale_f_4[idx];
+//		sf = scale_f_4[idx];
 		bi = bias_4[idx];
 
-		ap_int<24> temp0 = temp * sf;
+		ap_int<24> temp0 = temp * 32/*sf*/;
 #pragma HLS RESOURCE variable=temp0 core=Mul
 		ap_int<24> temp2 = temp0 + bi;
 		if (temp2 >= 0) {
