@@ -239,6 +239,7 @@ LOOP_OUTPUT:
 void layer0(ap_uint<1> buf[2][6 * 28 * 28]){
 #pragma HLS INLINE
 
+#pragma HLS RESOURCE variable=coef_w_0 core=ROM_2P_LUTRAM
 #pragma HLS RESOURCE variable=bias_0 core=ROM_1P_LUTRAM
 //#pragma HLS RESOURCE variable=scale_f_0 core=ROM_1P_LUTRAM
 
