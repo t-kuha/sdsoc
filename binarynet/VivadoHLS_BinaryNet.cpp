@@ -19,7 +19,7 @@
 ap_int<7> coef_w_0[117600];
 ap_int<7> coef_w_1[4704];
 ap_int<7> coef_w_2[240000];
-ap_int<7> coef_w_3[6400];
+ap_int<7> coef_w_3[1600];
 ap_int<7> coef_w_4[48000];
 ap_int<7> coef_w_5[1200];
 
@@ -300,7 +300,6 @@ void layer1(ap_uint<1> buf[2][6 * 28 * 28]){
 #pragma HLS INLINE
 
 #pragma HLS RESOURCE variable=coef_w_1 core=ROM_2P_LUTRAM
-//#pragma HLS RESOURCE variable=scale_f_1 core=ROM_2P_LUTRAM
 #pragma HLS RESOURCE variable=bias_1 core=ROM_2P_LUTRAM
 
 	ap_uint<14> x = 0, y = 0;
@@ -336,7 +335,7 @@ LAYER1:
 
 			ap_int<7> bi = bias_1[idx];
 
-			ap_int<24> temp0 = temp * 8/*sf*/;
+			ap_int<24> temp0 = temp * 8;
 //#pragma HLS RESOURCE variable=temp0 core=Mul
 			ap_int<24> temp2 = temp0 + bi;
 #pragma HLS RESOURCE variable=temp2 core=AddSub
@@ -363,7 +362,6 @@ LAYER1:
 void layer2(ap_uint<1> buf[2][6 * 28 * 28]){
 #pragma HLS INLINE
 
-//#pragma HLS RESOURCE variable=scale_f_2 core=ROM_1P_LUTRAM
 #pragma HLS RESOURCE variable=bias_2 core=ROM_1P_LUTRAM
 
 	const static ap_uint<1> cnct_tbl[16][6] = {
@@ -418,12 +416,9 @@ LAYER2:
 				} // end for is_connect
 			} // end for smap
 
-			ap_int<7> sf, bi;
+			ap_int<7> bi = bias_2[idx];
 
-//			sf = scale_f_2[idx];
-			bi = bias_2[idx];
-
-			ap_int<24> temp0 = temp * 32/*sf*/;
+			ap_int<24> temp0 = temp * 32;
 #pragma HLS RESOURCE variable=temp0 core=Mul
 			ap_int<24> temp2 = temp0 + bi;
 			if (temp2 >= 0) {
@@ -485,7 +480,7 @@ LAYER3:
 
 			ap_int<7> bi = bias_3[idx];
 
-			ap_int<24> temp0 = temp * 8/*sf*/;
+			ap_int<24> temp0 = temp * 8;
 #pragma HLS RESOURCE variable=temp0 core=Mul
 			ap_int<24> temp2 = temp0 + bi;
 #pragma HLS RESOURCE variable=temp2 core=AddSub
