@@ -100,7 +100,7 @@ int main(void) {
 		printf("\n");
 	}
 
-#ifndef __SYNTHESIS__
+#if !defined(__SYNTHESIS__) && !defined(__SDSCC__)
     printf("READING WEIGHT DATA...\n");
 
     load_weight("weight/coef_w_0.bin",  117600, coef_w_0);
@@ -320,6 +320,7 @@ LAYER1:
 		for (ap_uint<8> i = 0; i < 14 * 14; i++) {
 #pragma HLS PIPELINE
 			ap_int<24> temp = 0;
+#pragma HLS RESOURCE variable=temp core=AddSub
 //			for (int smap = 0; smap < 1; smap++) {
 			for (ap_uint<2>  oy = 0; oy < 2; oy++) {
 				for (ap_uint<2>  ox = 0; ox < 2; ox++) {
@@ -348,8 +349,9 @@ LAYER1:
 			bi = bias_1[idx];
 
 			ap_int<24> temp0 = temp * 8/*sf*/;
-#pragma HLS RESOURCE variable=temp0 core=Mul
+//#pragma HLS RESOURCE variable=temp0 core=Mul
 			ap_int<24> temp2 = temp0 + bi;
+#pragma HLS RESOURCE variable=temp2 core=AddSub
 			if (temp2 >= 0) {
 				buf[(1 + 1) & 0x1][idx] = 1;
 			} else {
@@ -471,6 +473,7 @@ LAYER3:
 		for (ap_uint<5> i = 0; i < 5 * 5; i++) {
 #pragma HLS PIPELINE
 			ap_int<24> temp = 0;
+#pragma HLS RESOURCE variable=temp core=AddSub
 //			for (int smap = 0; smap < 1; smap++) {
 				for (ap_uint<2> oy = 0; oy < 2; oy++) {
 					for (ap_uint<2> ox = 0; ox < 2; ox++) {
@@ -503,6 +506,7 @@ LAYER3:
 			ap_int<24> temp0 = temp * 8/*sf*/;
 #pragma HLS RESOURCE variable=temp0 core=Mul
 			ap_int<24> temp2 = temp0 + bi;
+#pragma HLS RESOURCE variable=temp2 core=AddSub
 			if (temp2 >= 0) {
 				buf[(3 + 1) & 0x1][idx] = 1;
 			} else {
@@ -528,113 +532,93 @@ void layer4(ap_uint<1> buf[2][6 * 28 * 28]){
 
 #pragma HLS RESOURCE variable=coef_w_4 core=ROM_2P_LUTRAM
 
-	ap_uint<7> x = 0, y = 0;
-	ap_uint<20> coef_offset = 0;
-	ap_uint<16> idx = 0;
+#pragma HLS ARRAY_PARTITION variable=coef_w_4 cyclic factor=4
+#pragma HLS RESOURCE variable=coef_w_4 core=ROM_2P_LUTRAM
+
+	ap_int<22> tmp[120] = {0};
+#pragma HLS ARRAY_PARTITION variable=tmp cyclic factor=4
+
+	ap_uint<24> idx0 = 0;
+	ap_uint<12> idx1 = 0;
 
 LAYER4:
-	for (ap_uint<7> dmap = 0; dmap < 120; dmap++) {
+	for (ap_uint<5> smap = 0; smap < 16; smap++) {
 #pragma HLS LOOP_FLATTEN off
-		ap_int<24> temp = 0;
-		for (ap_uint<5> smap = 0; smap < 16; smap++) {
+
+		ap_int<22> temp = 0;
+		for (ap_uint<3> oy = 0; oy < 5; oy++) {
+#pragma HLS LOOP_FLATTEN off
+
+			for (ap_uint<3> ox = 0; ox < 5; ox++) {
+#pragma HLS LOOP_FLATTEN off
+				ap_int<2> dat;
+				ap_int<7> coef;
+
+				if (buf[4 & 0x1][idx1] == 1){
+					dat = 1;
+				}else{
+					dat = -1;
+				}
+				for (ap_uint<7> dmap = 0; dmap < 120; dmap++) {
+#pragma HLS UNROLL factor=4
 #pragma HLS PIPELINE
-			for (ap_uint<3> oy = 0; oy < 5; oy++) {
-				for (ap_uint<3> ox = 0; ox < 5; ox++) {
-					ap_int<2> dat;
-					ap_int<7> coef;
+					coef = coef_w_4[idx0++];
 
-					if (buf[4 & 0x1][smap * (5 * 5) + (y + oy) * 5 + (x + ox)]
-							== 1){
-						dat = 1;
-					}else{
-						dat = -1;
-					}
+					tmp[dmap] += (dat * coef);
+				}// end for dmap
+				idx1++;
+			} // end for oy
+		} // end for ox
+	} // end for smap
 
-					coef = coef_w_4[coef_offset + oy * 5 + ox];
+	//
+	for (ap_uint<7> dmap = 0; dmap < 120; dmap++) {
+#pragma HLS PIPELINE
+		ap_int<7> bi = bias_4[dmap];
 
-					temp += (dat * coef);
-				} // end for oy
-			} // end for ox
-
-			coef_offset += (5 * 5);
-
-		} // end for smap
-
-		ap_int<7> sf, bi;
-
-//		sf = scale_f_4[idx];
-		bi = bias_4[idx];
-
-		ap_int<24> temp0 = temp * 32/*sf*/;
+		ap_int<24> temp0 = tmp[dmap] * 32;
 #pragma HLS RESOURCE variable=temp0 core=Mul
 		ap_int<24> temp2 = temp0 + bi;
 		if (temp2 >= 0) {
-			buf[(4 + 1) & 0x1][idx] = 1;
+			buf[(4 + 1) & 0x1][dmap] = 1;
 		} else {
-			buf[(4 + 1) & 0x1][idx] = 0;
+			buf[(4 + 1) & 0x1][dmap] = 0;
 		}
+	}
 
-		// Update indices
-		idx++;
-		x += 1;
-		if (x > (5 - 5)) {
-			x = 0;
-			y += 1;
-			if (y > (5 - 5)) {
-				y = 0;
-			}
-		}
-	} // end for dmap
 }
 
 void layer5(ap_uint<1> buf[2][6 * 28 * 28], ap_int<24> result[10]){
 #pragma HLS INLINE
 
-#pragma HLS RESOURCE variable=coef_w_5 core=ROM_1P_LUTRAM
-
-	ap_uint<4> x = 0, y = 0;
-	ap_uint<11> coef_offset = 0;
-	ap_uint<4> idx = 0;
+#pragma HLS ARRAY_PARTITION variable=coef_w_5 cyclic factor=10
 
 LAYER5:
-	for (ap_uint<4> dmap = 0; dmap < 10; dmap++) {
-#pragma HLS LOOP_FLATTEN off
-		ap_int<24> temp = 0;
-		for (ap_uint<7> smap = 0; smap < 120; smap++) {
+	ap_uint<11> idx = 0;
+	for (ap_uint<7> smap = 0; smap < 120; smap++) {
 #pragma HLS PIPELINE
-			const int ox = 0, oy = 0;
+		for (ap_uint<4> dmap = 0; dmap < 10; dmap++) {
 			ap_int<2> dat;
 			ap_int<7> coef;
 
-			if (buf[5 & 0x1][smap * (1 * 1) + (y + oy) * 1 + (x + ox)] == 1){
+			if (buf[5 & 0x1][smap] == 1){
 				dat = 1;
 			}else{
 				dat = -1;
 			}
 
-			coef = coef_w_5[coef_offset + oy * 1 + ox];
+			coef = coef_w_5[idx];
+			idx++;
 
-			temp += (dat * coef);
+			result[dmap] += (dat * coef);
+		} // end for dmap
+	} // end for smap
 
-			coef_offset += (1 * 1);
-		} // end for smap
-
-		ap_int<7> bi;
-		bi = bias_5[idx];
-		temp = temp + bi;
-		result[idx] = temp;
-
-		// Update indices
-		idx++;
-		x += 1;
-		if (x > (1 - 1)) {
-			x = 0;
-			y += 1;
-			if (y > (1 - 1)) {
-				y = 0;
-			}
-		}
-	} // end for dmap
+LOOP_SUM:
+	for (ap_uint<4> dmap = 0; dmap < 10; dmap++) {
+#pragma HLS PIPELINE
+		result[dmap] += bias_5[dmap];
+	}
 }
 
 /* #############################################################*/
