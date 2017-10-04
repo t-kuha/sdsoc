@@ -457,8 +457,7 @@ void layer3(ap_uint<1> buf[2][6 * 28 * 28]){
 #pragma HLS RESOURCE variable=coef_w_3 core=ROM_2P_LUTRAM
 
 	ap_uint<12> x = 0, y = 0;
-	ap_uint<14> coef_offset = 0;
-	ap_uint<16> idx = 0;
+	ap_uint<9> idx = 0;
 
 LAYER3:
 	for (ap_uint<5> dmap = 0; dmap < 16; dmap++) {
@@ -487,14 +486,9 @@ LAYER3:
 						temp += (dat * coef);
 					} // end for oy
 				} // end for ox
-
-				coef_offset += (2 * 2);
 //			} // end for smap
 
-			ap_int<7> sf, bi;
-
-//			sf = scale_f_3[idx];
-			bi = bias_3[idx];
+			ap_int<7> bi = bias_3[idx];
 
 			ap_int<24> temp0 = temp * 8/*sf*/;
 #pragma HLS RESOURCE variable=temp0 core=Mul
