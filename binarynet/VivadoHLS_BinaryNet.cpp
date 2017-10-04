@@ -304,7 +304,6 @@ void layer1(ap_uint<1> buf[2][6 * 28 * 28]){
 #pragma HLS RESOURCE variable=bias_1 core=ROM_2P_LUTRAM
 
 	ap_uint<14> x = 0, y = 0;
-	ap_uint<16> coef_offset = 0;
 	ap_uint<16> idx = 0;
 
 LAYER1:
@@ -333,13 +332,9 @@ LAYER1:
 					temp += (dat * coef);
 				} // end for oy
 			} // end for ox
-			coef_offset += (2 * 2);
 //			} // end for smap
 
-			ap_int<7> sf, bi;
-
-//			sf = scale_f_1[idx];
-			bi = bias_1[idx];
+			ap_int<7> bi = bias_1[idx];
 
 			ap_int<24> temp0 = temp * 8/*sf*/;
 //#pragma HLS RESOURCE variable=temp0 core=Mul
