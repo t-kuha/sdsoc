@@ -23,13 +23,6 @@ ap_int<7> coef_w_3[6400];
 ap_int<7> coef_w_4[48000];
 ap_int<7> coef_w_5[1200];
 
-//ap_int<7> scale_f_0[4704];
-//ap_int<7> scale_f_1[1176];
-//ap_int<7> scale_f_2[1600];
-//ap_int<7> scale_f_3[400];
-//ap_int<7> scale_f_4[120];
-//ap_int<7> scale_f_5[10];
-
 ap_int<7> bias_0[4704];
 ap_int<7> bias_1[1176];
 ap_int<7> bias_2[1600];
