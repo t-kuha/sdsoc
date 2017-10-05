@@ -56,9 +56,10 @@ void load_weight(const char* path, int numel, ap_int<7>* dst)
 
 // Cソース版はping-pongバッファを外部に持っていましたが, 内部に持つように
 // BinaryNet()内部で宣言しました.
-void BinaryNet(unsigned char *predict_num, // 認識した数字のインデックス
-		ap_uint<32> pbuf[32] // 入力画像32x32ピクセル白黒画像
-		);
+//
+// predict_num: 認識した数字のインデックス. 学習時にインデックス=数字としたのでそのまま利用できる.
+// pbuf:        入力画像32x32ピクセル２値化済み.
+void BinaryNet(unsigned char *predict_num, ap_uint<32> pbuf[32]);
 
 // メイン関数. 認識用のBinaryNetのテストベンチになっています
 int main(void) {
@@ -103,13 +104,6 @@ int main(void) {
     load_weight("weight/coef_w_4.bin",   48000, coef_w_4);
     load_weight("weight/coef_w_5.bin",    1200, coef_w_5);
 
-//    load_weight("weight/scale_f_0.bin",   4704, scale_f_0);
-//    load_weight("weight/scale_f_1.bin",   1176, scale_f_1);
-//    load_weight("weight/scale_f_2.bin",   1600, scale_f_2);
-//    load_weight("weight/scale_f_3.bin",    400, scale_f_3);
-//    load_weight("weight/scale_f_4.bin",    120, scale_f_4);
-//    load_weight("weight/scale_f_5.bin",     10, scale_f_5);
-
     load_weight("weight/bias_0.bin",      4704, bias_0);
     load_weight("weight/bias_1.bin",      1176, bias_1);
     load_weight("weight/bias_2.bin",      1600, bias_2);
@@ -146,10 +140,8 @@ void layer5(ap_uint<1> buf[2][6 * 28 * 28], ap_int<24> result[10]);
 // 幸い, ディープニューラルネットワークが全てFPGAに納まって余裕もありましたので
 // インタフェースも全てHLSに任せることができました.
 // RTLはホストPCとの通信に使うUART部のみ記述しました.
-void BinaryNet(unsigned char *predict_num, // 認識した数字のインデックス. 学習時にインデックス=数字としたのでそのまま利用できる.
-		ap_uint<32> pbuf[32] //, 入力画像32x32ピクセル２値化済み.
-		) {
-
+void BinaryNet(unsigned char *predict_num, ap_uint<32> pbuf[32])
+{
 	// This version uses a ping-pong memory
 	// 途中結果は2値(Binarized)した値を保持します. なのでuint1で済みました.
 	// 最初は18ビットでDSP48Eを使うネットワークだったのでVirtexクラスのFPGAが必要で
@@ -234,7 +226,6 @@ void layer0(ap_uint<1> buf[2][6 * 28 * 28]){
 
 #pragma HLS RESOURCE variable=coef_w_0 core=ROM_2P_LUTRAM
 #pragma HLS RESOURCE variable=bias_0 core=ROM_1P_LUTRAM
-//#pragma HLS RESOURCE variable=scale_f_0 core=ROM_1P_LUTRAM
 
 	ap_uint<13> x = 0, y = 0;
 	ap_uint<20> coef_offset = 0;
@@ -268,12 +259,9 @@ LAYER0:
 			coef_offset += (5 * 5);
 //			} // end for smap
 
-			ap_int<7> sf, bi;
+			ap_int<7> bi = bias_0[idx];
 
-//			sf = scale_f_0[idx];
-			bi = bias_0[idx];
-
-			ap_int<24> temp0 = temp * 32/*sf*/;
+			ap_int<24> temp0 = temp * 32;
 #pragma HLS RESOURCE variable=temp0 core=Mul
 			ap_int<24> temp2 = temp0 + bi;
 			if (temp2 >= 0) {
