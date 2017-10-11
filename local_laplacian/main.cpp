@@ -6,6 +6,8 @@
 #include "opencv_utils.h"
 #include "remapping_function.h"
 
+#include "hls_filter.h"
+
 #include <iostream>
 #include <sstream>
 
@@ -112,6 +114,7 @@ int main(int argc, char** argv) {
   cout << "Input image: " << argv[1] << " Size: " << input.cols << " x "
        << input.rows << " Channels: " << input.channels() << endl;
 
+#if 0
   cv::Mat output;
   if (input.channels() == 1) {
     output = LocalLaplacianFilter<double>(input, kAlpha, kBeta, kSigmaR);
@@ -126,6 +129,25 @@ int main(int argc, char** argv) {
   output.convertTo(output, input.type());
 
   imwrite("output.png", output);
+#endif
+
+  // HW-accelerated
+  cv::Mat output_hw;
+  if (input.channels() == 1) {
+	  output_hw = hlsLocalLaplacianFilter< double >(input, kAlpha, kBeta, kSigmaR);
+  }
+  else if (input.channels() == 3) {
+	  output_hw = hlsLocalLaplacianFilter< cv::Vec3d >(input, kAlpha, kBeta, kSigmaR);
+  }
+  else {
+	  cerr << "Input image must have 1 or 3 channels." << endl;
+	  return 1;
+  }
+
+  output_hw *= 255;
+  output_hw.convertTo(output_hw, input.type());
+
+  imwrite("hls_output.png", output_hw);
 
   return 0;
 }
