@@ -33,8 +33,6 @@ cv::Mat hls_laplacian(const cv::Mat& input,
                              double alpha,
                              double beta,
                              double sigma_r) {
-  std::cout << "..." << __FUNCTION__ << "..." << std::endl;
-
   RemappingFunction r(alpha, beta);
 
   int num_levels = LaplacianPyramid::GetLevelCount(input.rows, input.cols, 30);
