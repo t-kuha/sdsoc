@@ -17,14 +17,14 @@
 #include "gaussian_pyramid.h"
 #include "laplacian_pyramid.h"
 #include "opencv_utils.h"
-#include "remapping_function.h"
+#include "hls_remapping_function.h"
 
 template<typename T>
 cv::Mat hlsLocalLaplacianFilter(const cv::Mat& input,
 	double alpha,
 	double beta,
 	double sigma_r) {
-	RemappingFunction r(alpha, beta);
+	hlsRemappingFunction r(alpha, beta);
 
 	int num_levels = LaplacianPyramid::GetLevelCount(input.rows, input.cols, 30);
 	std::cout << "Number of levels: " << num_levels << std::endl;
