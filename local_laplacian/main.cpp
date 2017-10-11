@@ -11,17 +11,6 @@
 
 using namespace std;
 
-//void OutputBinaryImage(const std::string& filename, cv::Mat image) {
-//  FILE* f = fopen(filename.c_str(), "wb");
-//  for (int x = 0; x < image.cols; x++) {
-//    for (int y = 0; y < image.rows; y++) {
-//      double tmp = image.at<double>(y, x);
-//      fwrite(&tmp, sizeof(double), 1, f);
-//    }
-//  }
-//  fclose(f);
-//}
-
 // Perform Local Laplacian filtering on the given image.
 //
 // Arguments:
