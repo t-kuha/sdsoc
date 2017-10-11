@@ -71,10 +71,10 @@ cv::Mat hlsLocalLaplacianFilter(const cv::Mat& input,
 }
 
 
-// Wrapper for accel()
+// HW function
 template<typename T, int CH>
-void accel_wrap(
-	const cv::Mat& _output,
+void accel(
+	const cv::Mat& output,
 	const cv::Mat& gauss,
 	const cv::Mat& input,
 	const int l,
@@ -84,9 +84,12 @@ void accel_wrap(
 	const double sigma_r,
 	hlsRemappingFunction &r)
 {
-	cv::Mat output = _output;	// circumbent "const"
+	cv::Mat _output = output;	// circumbent "const"
 
-	for (int y = 0; y < output/*[l]*/.rows; y++) {
+	// TODO: Apply DATAFLOW
+	// TODO: Use hls::Mat
+
+	for (int y = 0; y < _output/*[l]*/.rows; y++) {
 		// Calculate the y-bounds of the region in the full-res image.
 		int full_res_y = (1 << l) * y;
 		int roi_y0 = full_res_y - subregion_r;
@@ -94,7 +97,7 @@ void accel_wrap(
 		cv::Range row_range(std::max(0, roi_y0), std::min(roi_y1, kRows));
 		int full_res_roi_y = full_res_y - row_range.start;
 
-		for (int x = 0; x < output/*[l]*/.cols; x++) {
+		for (int x = 0; x < _output/*[l]*/.cols; x++) {
 			// Calculate the x-bounds of the region in the full-res image.
 			int full_res_x = (1 << l) * x;
 			int roi_x0 = full_res_x - subregion_r;
@@ -112,15 +115,39 @@ void accel_wrap(
 			LaplacianPyramid tmp_pyr(remapped, l + 1,
 			{ row_range.start, row_range.end - 1,
 				col_range.start, col_range.end - 1 });
-			output.at< cv::Vec<T, CH> >(y, x) = tmp_pyr.at< cv::Vec<T, CH> >(l, full_res_roi_y >> l,
+			_output.at< cv::Vec<T, CH> >(y, x) = tmp_pyr.at< cv::Vec<T, CH> >(l, full_res_roi_y >> l,
 				full_res_roi_x >> l);
 		}
-		std::cout << "Level " << (l + 1) << " (" << output/*[l]*/.rows << " x "
-			<< output/*[l]*/.cols << "), subregion: " << subregion_r << "x"
-			<< subregion_r << " ... " << round(100.0 * y / output/*[l]*/.rows)
+		std::cout << "Level " << (l + 1) << " (" << _output/*[l]*/.rows << " x "
+			<< _output/*[l]*/.cols << "), subregion: " << subregion_r << "x"
+			<< subregion_r << " ... " << round(100.0 * y / _output/*[l]*/.rows)
 			<< "%\r";
 		std::cout.flush();
 	}
+
+
+	// TODO: Back to normal array
 }
 
+
+// Wrapper for accel()
+template<typename T, int CH>
+void accel_wrap(
+	const cv::Mat& output,
+	const cv::Mat& gauss,
+	const cv::Mat& input,
+	const int l,
+	const int subregion_r,
+	const int kRows,
+	const int kCols,
+	const double sigma_r,
+	hlsRemappingFunction &r)
+{
+	// TODO: copy data to normal array
+
+	accel<T, CH>(output, gauss, input, l, subregion_r, kRows, kCols, sigma_r, r);
+
+	// TODO: copy back data
+
+}
 #endif /* HLS_FILTER_H_ */
