@@ -134,10 +134,10 @@ int main(int argc, char** argv) {
   // HW-accelerated
   cv::Mat output_hw;
   if (input.channels() == 1) {
-	  output_hw = hlsLocalLaplacianFilter< double >(input, kAlpha, kBeta, kSigmaR);
+	  output_hw = hlsLocalLaplacianFilter< double, 1 >(input, kAlpha, kBeta, kSigmaR);
   }
   else if (input.channels() == 3) {
-	  output_hw = hlsLocalLaplacianFilter< cv::Vec3d >(input, kAlpha, kBeta, kSigmaR);
+	  output_hw = hlsLocalLaplacianFilter< double, 3 >(input, kAlpha, kBeta, kSigmaR);
   }
   else {
 	  cerr << "Input image must have 1 or 3 channels." << endl;

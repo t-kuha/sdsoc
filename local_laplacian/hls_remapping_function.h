@@ -17,41 +17,26 @@ public:
 		beta_ = beta;
 	}
 
-	template<typename T>
+	template<typename T, int CH>
 	void Evaluate(const cv::Mat& input, cv::Mat& output,
-		const T& reference, double sigma_r) 
+		const cv::Vec<T, CH>& reference, double sigma_r)
 	{
 		output.create(input.rows, input.cols, input.type());
 		for (int i = 0; i < input.rows; i++) {
 			for (int j = 0; j < input.cols; j++) {
-				Evaluate(input.at<T>(i, j), reference, sigma_r, output.at<T>(i, j));
+				Evaluate(input.at< cv::Vec<T, CH> >(i, j), reference, sigma_r, output.at< cv::Vec<T, CH> >(i, j));
 			}
 		}
 	}
 
 private:
-	void Evaluate(double value,
-		double reference,
+	template<typename T, int CH>
+	void Evaluate(const cv::Vec<T, CH>& value,
+		const cv::Vec<T, CH>& reference,
 		double sigma_r,
-		double& output) 
+		cv::Vec<T, CH>& output)
 	{
-		double delta = std::abs(value - reference);
-		int sign = value < reference ? -1 : 1;
-
-		if (delta < sigma_r) {
-			output = reference + sign * sigma_r * DetailRemap(delta, sigma_r);
-		}
-		else {
-			output = reference + sign * (EdgeRemap(delta - sigma_r) + sigma_r);
-		}
-	}
-
-	void Evaluate(const cv::Vec3d& value,
-		const cv::Vec3d& reference,
-		double sigma_r,
-		cv::Vec3d& output) 
-	{
-		cv::Vec3d delta = value - reference;
+		cv::Vec<T, CH> delta = value - reference;
 		double mag = cv::norm(delta);
 		if (mag > 1e-10) delta /= mag;
 
