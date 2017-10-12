@@ -16,14 +16,24 @@
 #if defined(__SYNTHESIS__)
 #include "weight.h"
 #else
-ap_int<7> coef_w_0[117600];
+ap_int<7> coef_w_0[6 * 5 * 5] = {
+	0,  2,  2,   2,   0,   0,  -1,  -2,  -1,   0,   1,   0,   0,   2,  -1,   0,   0,   2,  -2,   2,   0,   1,   0,   1,   1,
+	0,  0,  1,  -1,   0,  -5,   0,  -3,  -3,  -2,  -6,  -5,  -4,   0,  -3,  -1,   0,  -5,   0,  -1,  -1,   0,   1,   0,  -3,
+	-29, -3, 12,   9,   6,  -8,  14,  18,  11,  15,  -3,   8,  13,  14,  17,  -7,  -2,  10,   7,   0, -11,  -9, -14, -10, -22,
+	-7, -5, -5,  -7, -13,  17,   5,  10,   6, -10,  24,  10,  24,  11, -10,   8,   7,  18,   8, -11,  -3,  -3,   0,  -7, -14,
+	0,  1,  0,   0,   1,   0,   2,   1,   3,   1,   0,   3,  -1,   2,   0,   1,  -1,  -1,   3,   0,   1,   0,  -2,  -1,   0,
+	0,  0,  1,  -1,   0,   1,   2,  -3,  -3,  -1,   0,  -4,   1,  -2,  -2,  -4,  -4,   2,  -2,   0,  -2,  -3,  -1,   0,   2
+};
+
 ap_int<7> coef_w_1[4704];
 ap_int<7> coef_w_2[240000];
 ap_int<7> coef_w_3[1600];
 ap_int<7> coef_w_4[48000];
 ap_int<7> coef_w_5[1200];
 
-ap_int<7> bias_0[4704];
+ap_int<7> bias_0[6] = {
+		2,  0, 13, 18,  2,  2
+};
 ap_int<7> bias_1[1176];
 ap_int<7> bias_2[1600];
 ap_int<7> bias_3[400];
@@ -97,14 +107,14 @@ int main(void) {
 #if !defined(__SYNTHESIS__) && !defined(__SDSCC__)
     printf("READING WEIGHT DATA...\n");
 
-    load_weight("weight/coef_w_0.bin",  117600, coef_w_0);
+//    load_weight("weight/coef_w_0.bin",  117600, coef_w_0);
     load_weight("weight/coef_w_1.bin",    4704, coef_w_1);
     load_weight("weight/coef_w_2.bin",  240000, coef_w_2);
     load_weight("weight/coef_w_3.bin",    6400, coef_w_3);
     load_weight("weight/coef_w_4.bin",   48000, coef_w_4);
     load_weight("weight/coef_w_5.bin",    1200, coef_w_5);
 
-    load_weight("weight/bias_0.bin",      4704, bias_0);
+//    load_weight("weight/bias_0.bin",      4704, bias_0);
     load_weight("weight/bias_1.bin",      1176, bias_1);
     load_weight("weight/bias_2.bin",      1600, bias_2);
     load_weight("weight/bias_3.bin",       400, bias_3);
