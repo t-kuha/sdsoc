@@ -15,7 +15,7 @@
 #include "opencv2/highgui/highgui.hpp"
 
 #include "gaussian_pyramid.h"
-#include "laplacian_pyramid.h"
+#include "hls_laplacian_pyramid.h"
 #include "opencv_utils.h"
 #include "hls_remapping_function.h"
 
@@ -112,11 +112,19 @@ void accel(
 
 			// Construct the Laplacian pyramid for the remapped region and copy the
 			// coefficient over to the ouptut Laplacian pyramid.
-			LaplacianPyramid tmp_pyr(remapped, l + 1,
-			{ row_range.start, row_range.end - 1,
-				col_range.start, col_range.end - 1 });
-			_output.at< cv::Vec<T, CH> >(y, x) = tmp_pyr.at< cv::Vec<T, CH> >(l, full_res_roi_y >> l,
-				full_res_roi_x >> l);
+//			LaplacianPyramid tmp_pyr(remapped, l + 1,
+//			{ row_range.start, row_range.end - 1,
+//				col_range.start, col_range.end - 1 });
+//			_output.at< cv::Vec<T, CH> >(y, x) = tmp_pyr.at< cv::Vec<T, CH> >(l, full_res_roi_y >> l,
+//				full_res_roi_x >> l);
+
+			cv::Mat lap;
+			hlsLaplacianPyramid2(
+				remapped, lap, l + 1,
+				{ row_range.start, row_range.end - 1, col_range.start, col_range.end - 1 });
+
+			// Only the last one of laplacian pyramid is required
+			_output.at< cv::Vec<T, CH> >(y, x) = lap.at< cv::Vec<T, CH> >(full_res_roi_y >> l, full_res_roi_x >> l);
 		}
 		std::cout << "Level " << (l + 1) << " (" << _output/*[l]*/.rows << " x "
 			<< _output/*[l]*/.cols << "), subregion: " << subregion_r << "x"
