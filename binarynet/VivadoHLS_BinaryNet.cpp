@@ -224,64 +224,64 @@ LOOP_OUTPUT:
 void layer0(ap_uint<1> buf[2][6 * 28 * 28]){
 #pragma HLS INLINE
 
-#pragma HLS RESOURCE variable=coef_w_0 core=ROM_2P_LUTRAM
-#pragma HLS RESOURCE variable=bias_0 core=ROM_1P_LUTRAM
-
-	ap_uint<13> x = 0, y = 0;
-	ap_uint<20> coef_offset = 0;
-	ap_uint<16> idx = 0;
+	ap_uint<1> win[5][5];
 
 LAYER0:
-	for (ap_uint<3> dmap = 0; dmap < 6; dmap++) {
-#pragma HLS LOOP_FLATTEN off
-		for (ap_uint<10> i = 0; i < 28 * 28; i++) {
-#pragma HLS PIPELINE
-			ap_int<24> temp = 0;
-//			for (int smap = 0; smap < 1; smap++) {
-			for (ap_uint<3> oy = 0; oy < 5; oy++) {
-				for (ap_uint<3> ox = 0; ox < 5; ox++) {
-					ap_int<18> dat;
-					ap_int<8> coef;
+	for(int r = 0; r < 32; r++){		// Input - Row
 
-					if (buf[0 & 0x1][/*smap*/0 * (32 * 32) + (y + oy) * 32
-							+ (x + ox)] == 1) {
-						dat = 1;
-					} else {
-						dat = -1;
-					}
+		for(int c = 0; c < 32; c++){	// Input - Column
 
-					coef = coef_w_0[coef_offset + oy * 5 + ox];
-
-					temp += (dat * coef);
-				} // end for oy
-			} // end for ox
-
-			coef_offset += (5 * 5);
-//			} // end for smap
-
-			ap_int<7> bi = bias_0[idx];
-
-			ap_int<24> temp0 = temp * 32;
-#pragma HLS RESOURCE variable=temp0 core=Mul
-			ap_int<24> temp2 = temp0 + bi;
-			if (temp2 >= 0) {
-				buf[(0 + 1) & 0x1][idx] = 1;
-			} else {
-				buf[(0 + 1) & 0x1][idx] = 0;
-			}
-
-			// Update indices
-			idx++;
-			x += 1;
-			if (x > (32 - 5)) {
-				x = 0;
-				y += 1;
-				if (y > (32 - 5)) {
-					y = 0;
+			// Shift - left
+			for(int c0 = 0; c0 < 5 - 1; c0++){
+				for(int r0 = 0; r0 < 5; r0++){
+					win[r0][c0] = win[r0][c0 + 1];
 				}
 			}
-		} // end for i
-	} // end for dmap
+
+			// 値を補充
+			if(r >= 4){
+				for(int r0 = 0; r0 < 5; r0++){
+					if( (r - r0) >= 0){
+						win[ 4 -r0][4] = src[r - r0][c];
+					}else{
+						win[ 4 -r0][4] = 0;
+					}
+				}
+			}
+
+			// Convolution
+			if( (r >= 4) && (c >= 4) ){
+				for (ap_uint<3> dmap = 0; dmap < 6; dmap++) {
+					int temp = 0;
+					for(int r0 = 0; r0 < 5; r0++){
+						for(int c0 = 0; c0 < 5; c0++){
+							if(win[r0][c0] == 1){
+								temp += coef_w_0[ 5*5*dmap + r0*5 + c0 ];
+							}else{
+								temp -= coef_w_0[ 5*5*dmap + r0*5 + c0 ];
+							}
+						}
+					}
+
+					temp = temp*32 + bias_0[dmap];
+
+					if (temp >= 0) {
+						buf[(0 + 1) & 0x1][dmap*28*28 + (r - 4)*28 + (c - 4)] = 1;
+					} else {
+						buf[(0 + 1) & 0x1][dmap*28*28 + (r - 4)*28 + (c - 4)] = 0;
+					}
+
+				}	// dmap
+			}	// if()
+		}	// c
+
+		// Shift - up
+		for(int c0 = 0; c0 < 5; c0++){
+			for(int r0 = 0; r0 < 5 - 1; r0++){
+				win[r0][c0] = win[r0 + 1][c0];
+			}
+		}
+	}	// r
 }
 
 void layer1(ap_uint<1> buf[2][6 * 28 * 28]){
