@@ -48,13 +48,18 @@ ap_int<7> bias_1[6] = {
 		-8, -13, -3, 8, -1, 3
 };
 
-ap_int<7> bias_2[1600];
+ap_int<7> bias_2[16] = {
+		0, 20, -19, -1, 0, 0, -2, 6, -11, 0, 0, 0, 2, 5, 8, -1
+};
 
 ap_int<7> bias_3[16] = {
 		0, -26, -6, 0, 0, 0, 2, 9, -5, -1, 0, -2, 0, 7, -6, -1
 };
 
-ap_int<7> bias_4[120];
+ap_int<7> bias_4[120] = {
+		-7,1,3,0,6,0,0,0,4,0,2,-11,-1,3,2,-2,6,2,-3,5,2,5,-1,-2,-6,0,4,-4,1,-3,-7,2,1,-1,4,-4,0,-2,0,0,-4,11,-5,-11,2,-2,-7,3,0,6,0,3,0,-6,-7,0,-3,-5,8,5,0,-1,2,4,-9,4,-3,-4,7,-3,8,-1,0,7,0,1,-6,0,0,0,-6,-5,0,5,-9,-5,-6,0,4,-2,-13,4,1,-6,-6,3,4,2,-2,-9,0,4,2,-2,4,-2,1,-2,3,0,13,-11,10,-6,-1,-13,2,-2,1,-1
+};
+
 ap_int<7> bias_5[10] = {
 	0,0,0,-1,0,-1,-1,-1,-1,0
 };
@@ -135,9 +140,9 @@ int main(void) {
 
 //    load_weight("weight/bias_0.bin",      4704, bias_0);
 //    load_weight("weight/bias_1.bin",      1176, bias_1);
-    load_weight("weight/bias_2.bin",      1600, bias_2);
+//    load_weight("weight/bias_2.bin",      1600, bias_2);
 //    load_weight("weight/bias_3.bin",       400, bias_3);
-    load_weight("weight/bias_4.bin",       120, bias_4);
+//    load_weight("weight/bias_4.bin",       120, bias_4);
 //    load_weight("weight/bias_5.bin",        10, bias_5);
 #endif
 
@@ -432,7 +437,7 @@ LAYER2:
 				} // end for is_connect
 			} // end for smap
 
-			ap_int<7> bi = bias_2[idx];
+			ap_int<7> bi = bias_2[dmap];
 
 			ap_int<24> temp0 = temp * 32;
 #pragma HLS RESOURCE variable=temp0 core=Mul
