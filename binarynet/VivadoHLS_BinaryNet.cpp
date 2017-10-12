@@ -276,7 +276,7 @@ LAYER0:
 			if(r >= 4){
 				for(int r0 = 0; r0 < 5; r0++){
 					if( (r - r0) >= 0){
-						win[ 4 -r0][4] = src[r - r0][c];
+						win[ 4 -r0][4] = buf[0][(r - r0)*32 + c];
 					}else{
 						win[ 4 -r0][4] = 0;
 					}
