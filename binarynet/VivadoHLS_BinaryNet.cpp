@@ -7,6 +7,7 @@
 // Developed by H. Nakahara
 
 #include <stdio.h>
+#include <assert.h>
 
 // FPGA実装のためにビット幅を調整します. そのためのヘッダ
 #include "ap_int.h"
