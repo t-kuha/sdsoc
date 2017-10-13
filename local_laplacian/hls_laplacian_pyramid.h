@@ -10,21 +10,20 @@
 
 #include "opencv2/core/core.hpp"
 
-#include "gaussian_pyramid.h"
+#include "hls_gaussian_pyramid.h"
 
 
 void hlsLaplacianPyramid2(const cv::Mat& input, cv::Mat& output, int num_levels,
 	const std::vector<int>& subwindow)
 {
-	GaussianPyramid gauss_pyramid(input, num_levels, subwindow);
+	hlsGaussianPyramid gauss_pyramid(input, num_levels, subwindow);
 
-	cv::Mat _out;
-	for (int i = 0; i < num_levels; i++) {
-		_out = gauss_pyramid[i] - gauss_pyramid.Expand(i + 1, 1);
-	}
-	output = _out;
+	//for (int i = 0; i < num_levels - 1; i++) {
+	//	gauss_pyramid[i] - gauss_pyramid.Expand(i + 1, 1);
+	//}
+
+	output = gauss_pyramid[num_levels - 1] - gauss_pyramid.Expand(num_levels, 1);
 }
-
 
 
 #endif /* HLS_LAPLACIAN_PYRAMID_H_ */
