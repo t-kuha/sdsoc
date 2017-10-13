@@ -33,7 +33,7 @@
       
     - histogram
       
-      Example of performance improvement by not using xf::caclHist()
+      Example of performance improvement by not using xf::calcHist()
       
 
     
