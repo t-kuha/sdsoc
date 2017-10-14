@@ -440,8 +440,6 @@ LAYER3:
 void layer4(ap_uint<1> buf[2][6 * 28 * 28]){
 #pragma HLS INLINE
 
-#pragma HLS RESOURCE variable=coef_w_4 core=ROM_2P_LUTRAM
-
 #pragma HLS ARRAY_PARTITION variable=coef_w_4 cyclic factor=4
 #pragma HLS RESOURCE variable=coef_w_4 core=ROM_2P_LUTRAM
 
