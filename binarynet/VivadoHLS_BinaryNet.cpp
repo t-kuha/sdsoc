@@ -327,7 +327,7 @@ LAYER2:
 		for (ap_uint<8> i = 0; i < 10 * 10; i++) {
 #pragma HLS PIPELINE
 			ap_int<24> temp = 0;
-			int s = 0;
+			ap_uint<8> s = 0;
 			for (ap_uint<3> smap = 0; smap < 6; smap++) {
 				if (cnct_tbl[dmap][smap]) {
 					for (ap_uint<3>  oy = 0; oy < 5; oy++) {
@@ -342,13 +342,11 @@ LAYER2:
 								dat = -1;
 							}
 
-							coef = coef_w_2[cumsum[dmap]*25 + s*5*5 + oy * 5 + ox];
-
+							coef = coef_w_2[s + cumsum[dmap]*25];
+							s++;
 							temp += (dat * coef);
 						} // end for oy
 					} // end for ox
-					coef_offset += (5 * 5);
-					s++;
 				} // end for is_connect
 			} // end for smap
 
