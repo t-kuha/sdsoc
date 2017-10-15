@@ -58,8 +58,9 @@ cv::Mat hlsLocalLaplacianFilter(const cv::Mat& input,
 		int subregion_size = 3 * ((1 << (l + 2)) - 1);
 		int subregion_r = subregion_size / 2;
 
+		// HW-accelerated function
 		accel_wrap<T, CH>(output[l], gauss_input[l], input,
-			l, subregion_r, kRows, kCols, sigma_r, r);
+			l, subregion_r, sigma_r, r);
 
 		std::stringstream ss;
 		ss << "hls_level" << l << ".png";
@@ -146,14 +147,13 @@ void accel_wrap(
 	const cv::Mat& input,
 	const int l,
 	const int subregion_r,
-	const int kRows,
-	const int kCols,
+//	const int kRows,
+//	const int kCols,
 	const double sigma_r,
 	hlsRemappingFunction &r)
 {
 	// TODO: copy data to normal array
-
-	accel<T, CH>(output, gauss, input, l, subregion_r, kRows, kCols, sigma_r, r);
+	accel<T, CH>(output, gauss, input, l, subregion_r, input.rows, input.cols, sigma_r, r);
 
 	// TODO: copy back data
 
