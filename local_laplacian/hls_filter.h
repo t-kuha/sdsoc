@@ -27,8 +27,6 @@ void accel_wrap(
 	const cv::Mat& input,
 	const int l,
 	const int subregion_r,
-	const int kRows,
-	const int kCols,
 	const double sigma_r,
 	hlsRemappingFunction &r);
 
