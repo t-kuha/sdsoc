@@ -14,7 +14,6 @@
 #include "opencv2/core/core.hpp"
 #include "opencv2/highgui/highgui.hpp"
 
-#include "gaussian_pyramid.h"
 #include "hls_laplacian_pyramid.h"
 #include "opencv_utils.h"
 #include "hls_remapping_function.h"
@@ -79,9 +78,9 @@ cv::Mat hlsLocalLaplacianFilter(const cv::Mat& input,
 // HW function
 template<typename T, int CH>
 void accel(
-	/*const cv::Mat&*/T* _output,
-	/*const cv::Mat&*/T* _gauss,
-	/*const cv::Mat&*/T* _input,
+	T* _output,
+	T* _gauss,
+	T* _input,
 	const int l,
 	const int subregion_r,
 	const int rows_in,
@@ -127,7 +126,7 @@ void accel(
 			r.Evaluate<T, CH>(r0, remapped, gauss.at< cv::Vec<T, CH> >(y, x), sigma_r);
 
 			// Construct the Laplacian pyramid for the remapped region and copy the
-			// coefficient over to the ouptut Laplacian pyramid.
+			// coefficient over to the output Laplacian pyramid.
 			cv::Mat lap;
 			hlsLaplacianPyramid2(
 				remapped, lap, l + 1,
