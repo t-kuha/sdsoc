@@ -10,6 +10,9 @@
 
 #include "opencv2/core/core.hpp"
 
+#include "hls_video.h"
+
+
 class hlsRemappingFunction {
 public:
 	hlsRemappingFunction(double alpha, double beta) {
@@ -17,9 +20,21 @@ public:
 		beta_ = beta;
 	}
 
+//	template<typename T, int CH>
+//	void Evaluate(const cv::Mat& input, cv::Mat& output,
+//		const cv::Vec<T, CH>& reference, double sigma_r)
+//	{
+//		output.create(input.rows, input.cols, input.type());
+//		for (int i = 0; i < input.rows; i++) {
+//			for (int j = 0; j < input.cols; j++) {
+//				Evaluate(input.at< cv::Vec<T, CH> >(i, j), reference, sigma_r, output.at< cv::Vec<T, CH> >(i, j));
+//			}
+//		}
+//	}
+
 	template<typename T, int CH>
 	void Evaluate(const cv::Mat& input, cv::Mat& output,
-		const cv::Vec<T, CH>& reference, double sigma_r)
+		hls::Scalar<CH, T>& reference, double sigma_r)
 	{
 		output.create(input.rows, input.cols, input.type());
 		for (int i = 0; i < input.rows; i++) {
@@ -29,22 +44,48 @@ public:
 		}
 	}
 
+
 private:
+//	template<typename T, int CH>
+//	void Evaluate(const cv::Vec<T, CH>& value,
+//		const cv::Vec<T, CH>& reference,
+//		double sigma_r,
+//		cv::Vec<T, CH>& output)
+//	{
+//		cv::Vec<T, CH> delta = value - reference;
+//		double mag = cv::norm(delta);
+//		if (mag > 1e-10) delta /= mag;
+//
+//		if (mag < sigma_r) {
+//			output = reference + delta * sigma_r * DetailRemap(mag, sigma_r);
+//		}
+//		else {
+//			output = reference + delta * (EdgeRemap(mag - sigma_r) + sigma_r);
+//		}
+//	}
+
 	template<typename T, int CH>
 	void Evaluate(const cv::Vec<T, CH>& value,
-		const cv::Vec<T, CH>& reference,
+		hls::Scalar<CH, T>& reference,
 		double sigma_r,
 		cv::Vec<T, CH>& output)
 	{
-		cv::Vec<T, CH> delta = value - reference;
+		cv::Vec<T, CH> delta;
+		for(int i = 0; i < CH; i++){
+			delta[i] = value[i] - reference.val[i];
+		}
 		double mag = cv::norm(delta);
 		if (mag > 1e-10) delta /= mag;
 
 		if (mag < sigma_r) {
-			output = reference + delta * sigma_r * DetailRemap(mag, sigma_r);
+			for(int i = 0; i < CH; i++){
+			output[i] = reference.val[i] + delta[i] * sigma_r * DetailRemap(mag, sigma_r);
+			}
 		}
 		else {
-			output = reference + delta * (EdgeRemap(mag - sigma_r) + sigma_r);
+			for(int i = 0; i < CH; i++){
+			output[i] = reference.val[i] + delta[i] * (EdgeRemap(mag - sigma_r) + sigma_r);
+			}
 		}
 	}
 

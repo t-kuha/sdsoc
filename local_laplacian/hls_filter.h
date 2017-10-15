@@ -18,6 +18,9 @@
 #include "opencv_utils.h"
 #include "hls_remapping_function.h"
 
+#include "hls_video.h"
+#include "hls_util.h"
+#include "hls_def.h"
 
 template<typename T, int CH>
 void accel_wrap(
@@ -42,6 +45,9 @@ cv::Mat hlsLocalLaplacianFilter(const cv::Mat& input,
 
 	const int kRows = input.rows;
 	const int kCols = input.cols;
+
+	assert(kRows <= _MAX_IMG_ROWS_);
+	assert(kCols <= _MAX_IMG_COLS_);
 
 	GaussianPyramid gauss_input(input, num_levels);
 
@@ -91,14 +97,16 @@ void accel(
 	hlsRemappingFunction &r)
 {
 	cv::Mat input(rows_in, cols_in, CV_MAKETYPE(CV_64F,CH) );
-	cv::Mat gauss(rows_out, cols_out, CV_MAKETYPE(CV_64F,CH));
 	cv::Mat output(rows_out, cols_out, CV_MAKETYPE(CV_64F,CH));
 
 	memcpy(input.data, _input, rows_in*cols_in*CH*sizeof(T));
-	memcpy(gauss.data, _gauss, rows_out*cols_out*CH*sizeof(T));
 
 	// TODO: Apply DATAFLOW
 	// TODO: Use hls::Mat
+	hls::Mat<_MAX_IMG_ROWS_, _MAX_IMG_COLS_, HLS_MAKETYPE(HLS_64F, CH)> gauss(rows_out, cols_out);
+	fb2hlsmat(_gauss, CH, gauss);
+
+	hls::Scalar<CH, T> px_gauss;
 
 	for (int y = 0; y < rows_out; y++) {
 		// Calculate the y-bounds of the region in the full-res image.
@@ -123,7 +131,8 @@ void accel(
 			// Remap the region around the current pixel.
 			cv::Mat r0 = input({row_start, row_end}, {col_start, col_end});
 			cv::Mat remapped;
-			r.Evaluate<T, CH>(r0, remapped, gauss.at< cv::Vec<T, CH> >(y, x), sigma_r);
+			gauss >> px_gauss;
+			r.Evaluate<T, CH>(r0, remapped, /*gauss.at< cv::Vec<T, CH> >(y, x)*/px_gauss, sigma_r);
 
 			// Construct the Laplacian pyramid for the remapped region and copy the
 			// coefficient over to the output Laplacian pyramid.
