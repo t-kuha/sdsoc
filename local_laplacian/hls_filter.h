@@ -81,35 +81,44 @@ cv::Mat hlsLocalLaplacianFilter(const cv::Mat& input,
 // HW function
 template<typename T, int CH>
 void accel(
-	const cv::Mat& output,
-	const cv::Mat& gauss,
-	const cv::Mat& input,
+	/*const cv::Mat&*/T* _output,
+	/*const cv::Mat&*/T* _gauss,
+	/*const cv::Mat&*/T* _input,
 	const int l,
 	const int subregion_r,
-	const int kRows,
-	const int kCols,
+	const int rows_in,
+	const int cols_in,
+	const int rows_out,
+	const int cols_out,
 	const double sigma_r,
 	hlsRemappingFunction &r)
 {
-	cv::Mat _output = output;	// circumvent "const"
+	cv::Mat input(rows_in, cols_in, CV_MAKETYPE(CV_64F,CH) );
+	cv::Mat gauss(rows_out, cols_out, CV_MAKETYPE(CV_64F,CH));
+	cv::Mat output(rows_out, cols_out, CV_MAKETYPE(CV_64F,CH));
+
+	memcpy(input.data, _input, rows_in*cols_in*CH*sizeof(T));
+	memcpy(gauss.data, _gauss, rows_out*cols_out*CH*sizeof(T));
+
+//	cv::Mat _output = output;	// circumvent "const"
 
 	// TODO: Apply DATAFLOW
 	// TODO: Use hls::Mat
 
-	for (int y = 0; y < _output/*[l]*/.rows; y++) {
+	for (int y = 0; y < rows_out; y++) {
 		// Calculate the y-bounds of the region in the full-res image.
 		int full_res_y = (1 << l) * y;
 		int roi_y0 = full_res_y - subregion_r;
 		int roi_y1 = full_res_y + subregion_r + 1;
-		cv::Range row_range(std::max(0, roi_y0), std::min(roi_y1, kRows));
+		cv::Range row_range(std::max(0, roi_y0), std::min(roi_y1, rows_in));
 		int full_res_roi_y = full_res_y - row_range.start;
 
-		for (int x = 0; x < _output/*[l]*/.cols; x++) {
+		for (int x = 0; x < cols_out; x++) {
 			// Calculate the x-bounds of the region in the full-res image.
 			int full_res_x = (1 << l) * x;
 			int roi_x0 = full_res_x - subregion_r;
 			int roi_x1 = full_res_x + subregion_r + 1;
-			cv::Range col_range(std::max(0, roi_x0), std::min(roi_x1, kCols));
+			cv::Range col_range(std::max(0, roi_x0), std::min(roi_x1, cols_in));
 			int full_res_roi_x = full_res_x - col_range.start;
 
 			// Remap the region around the current pixel.
@@ -131,17 +140,18 @@ void accel(
 				{ row_range.start, row_range.end - 1, col_range.start, col_range.end - 1 });
 
 			// Only the last one of laplacian pyramid is required
-			_output.at< cv::Vec<T, CH> >(y, x) = lap.at< cv::Vec<T, CH> >(full_res_roi_y >> l, full_res_roi_x >> l);
+			output.at< cv::Vec<T, CH> >(y, x) = lap.at< cv::Vec<T, CH> >(full_res_roi_y >> l, full_res_roi_x >> l);
 		}
-		std::cout << "Level " << (l + 1) << " (" << _output/*[l]*/.rows << " x "
-			<< _output/*[l]*/.cols << "), subregion: " << subregion_r << "x"
-			<< subregion_r << " ... " << round(100.0 * y / _output/*[l]*/.rows)
+		std::cout << "Level " << (l + 1) << " (" << rows_out << " x "
+			<< cols_out << "), subregion: " << subregion_r << "x"
+			<< subregion_r << " ... " << round(100.0 * y / rows_out)
 			<< "%\r";
 		std::cout.flush();
 	}
 
 
 	// TODO: Back to normal array
+	memcpy(_output, output.data, rows_out*cols_out*CH*sizeof(T));
 }
 
 
@@ -158,10 +168,32 @@ void accel_wrap(
 	const double sigma_r,
 	hlsRemappingFunction &r)
 {
-	// TODO: copy data to normal array
-	accel<T, CH>(output, gauss, input, l, subregion_r, input.rows, input.cols, sigma_r, r);
+	// Copy data to normal array
+	T* _output = NULL;
+	T* _gauss = NULL;
+	T* _input = NULL;
 
-	// TODO: copy back data
+	_input = new T [input.rows*input.cols*CH];
+	_gauss = new T [gauss.rows*gauss.cols*CH];
+	_output = new T [output.rows*output.cols*CH];
 
+	memcpy(_input, input.data, input.rows*input.cols*CH*sizeof(T));
+	memcpy(_gauss, gauss.data, gauss.rows*gauss.cols*CH*sizeof(T));
+
+	accel<T, CH>(_output, _gauss, _input, l, subregion_r,
+			input.rows, input.cols, output.rows, output.cols, sigma_r, r);
+
+	// Copy back data
+	memcpy(output.data, _output, output.rows*output.cols*CH*sizeof(T));
+
+	if(_output){
+		delete [] _output;
+	}
+	if(_gauss){
+		delete [] _gauss;
+	}
+	if(_input){
+		delete [] _input;
+	}
 }
 #endif /* HLS_FILTER_H_ */
