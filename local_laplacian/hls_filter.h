@@ -58,6 +58,12 @@ cv::Mat hlsLocalLaplacianFilter(const cv::Mat& input,
 		int subregion_size = 3 * ((1 << (l + 2)) - 1);
 		int subregion_r = subregion_size / 2;
 
+		// Show some info
+		std::cout << "Layer" << l << ": " << std::endl;
+		std::cout << "\t Input:  " << input.rows << " x " << input.cols << " x " << input.channels() << std::endl;
+		std::cout << "\t Gauss:  " << gauss_input[l].rows << " x " << gauss_input[l].cols << " x " << gauss_input[l].channels() << std::endl;
+		std::cout << "\t Output: " << output[l].rows << " x " << output[l].cols << " x " << output[l].channels() << std::endl;
+
 		// HW-accelerated function
 		accel_wrap<T, CH>(output[l], gauss_input[l], input,
 			l, subregion_r, sigma_r, r);
