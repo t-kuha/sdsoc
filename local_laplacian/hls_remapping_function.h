@@ -28,8 +28,6 @@ public:
 		hls::Scalar<CH, T> px1;
 		hls::Scalar<CH, T> px2;
 
-		output.create(input.rows, input.cols, input.type());
-
 		for (int i = 0; i < input.rows; i++) {
 			for (int j = 0; j < input.cols; j++) {
 				tmp = input.at< cv::Vec<T, CH> >(i, j);

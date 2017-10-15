@@ -130,6 +130,8 @@ void accel(
 			// Remap the region around the current pixel.
 			cv::Mat r0 = input({row_start, row_end}, {col_start, col_end});
 			cv::Mat remapped;
+			remapped.create(r0.rows, r0.cols, r0.type());
+
 			gauss >> px_gauss;
 			r.Evaluate<T, CH>(r0, remapped, /*gauss.at< cv::Vec<T, CH> >(y, x)*/px_gauss, sigma_r);
 
