@@ -169,31 +169,21 @@ public:
 	// less than or equal to level, since the pyramid is used to determine the
 	// size of the output. Having level equal to times will upsample the image to
 	// the initial pixel dimensions.
-	cv::Mat Expand(int level, int times) const {
-		if (times < 1) return pyramid_.at(level);
-		times = std::min(times, level);
-
+//	template<typename T, int CH>
+	cv::Mat ExpandOnce(int level) const {
 		cv::Mat base = pyramid_[level], expanded;
 
-		for (int i = 0; i < times; i++) {
-			std::vector<int> subwindow;
-			GetLevelSize(level - i - 1, &subwindow);
+		std::vector<int> subwindow;
+		GetLevelSize(/*subwindow_,*/ level - 1, &subwindow);
 
-			int out_rows = pyramid_[level - i - 1].rows;
-			int out_cols = pyramid_[level - i - 1].cols;
-			expanded.create(out_rows, out_cols, base.type());
+		int out_rows = pyramid_[level - 1].rows;
+		int out_cols = pyramid_[level - 1].cols;
+		expanded.create(out_rows, out_cols, base.type());
 
-			int row_offset = ((subwindow[0] % 2) == 0) ? 0 : 1;
-			int col_offset = ((subwindow[2] % 2) == 0) ? 0 : 1;
-			if (base.channels() == 1) {
-				Expand<double>(base, row_offset, col_offset, expanded);
-			}
-			else {
-				Expand<cv::Vec3d>(base, row_offset, col_offset, expanded);
-			}
+		int row_offset = ((subwindow[0] % 2) == 0) ? 0 : 1;
+		int col_offset = ((subwindow[2] % 2) == 0) ? 0 : 1;
 
-			base = expanded;
-		}
+		Expand< cv::Vec<T, CH> >(base, row_offset, col_offset, expanded);
 
 		return expanded;
 	}
