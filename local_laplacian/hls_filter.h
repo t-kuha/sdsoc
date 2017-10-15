@@ -97,8 +97,6 @@ void accel(
 	hlsRemappingFunction &r)
 {
 	cv::Mat input(rows_in, cols_in, CV_MAKETYPE(CV_64F,CH) );
-	cv::Mat output(rows_out, cols_out, CV_MAKETYPE(CV_64F,CH));
-
 	memcpy(input.data, _input, rows_in*cols_in*CH*sizeof(T));
 
 	// TODO: Apply DATAFLOW
@@ -107,6 +105,7 @@ void accel(
 	fb2hlsmat(_gauss, CH, gauss);
 
 	hls::Scalar<CH, T> px_gauss;
+	hls::Scalar<CH, T> px_out;
 
 	for (int y = 0; y < rows_out; y++) {
 		// Calculate the y-bounds of the region in the full-res image.
@@ -136,13 +135,22 @@ void accel(
 
 			// Construct the Laplacian pyramid for the remapped region and copy the
 			// coefficient over to the output Laplacian pyramid.
-			cv::Mat lap;
-			hlsLaplacianPyramid2(
-				remapped, lap, l + 1,
-				{ row_start, row_end - 1, col_start, col_end - 1 });
+//			cv::Mat lap;
+//			hlsLaplacianPyramid2(
+//				remapped, lap, l + 1,
+//				{ row_start, row_end - 1, col_start, col_end - 1 });
+//
+//			// Only the last one of laplacian pyramid is required
+//			output.at< cv::Vec<T, CH> >(y, x) = lap.at< cv::Vec<T, CH> >(full_res_roi_y >> l, full_res_roi_x >> l);
 
-			// Only the last one of laplacian pyramid is required
-			output.at< cv::Vec<T, CH> >(y, x) = lap.at< cv::Vec<T, CH> >(full_res_roi_y >> l, full_res_roi_x >> l);
+			hlsLaplacianPyramid2<T, CH>(
+				remapped, px_out, l + 1,
+				{ row_start, row_end - 1, col_start, col_end - 1 },
+				full_res_roi_y >> l, full_res_roi_x >> l);
+
+			for(int i = 0; i < CH; i++){
+				_output[(y*cols_out + x)*CH + i] = px_out.val[i];
+			}
 		}
 		std::cout << "Level " << (l + 1) << " (" << rows_out << " x "
 			<< cols_out << "), subregion: " << subregion_r << "x"
@@ -151,9 +159,6 @@ void accel(
 		std::cout.flush();
 	}
 
-
-	// TODO: Back to normal array
-	memcpy(_output, output.data, rows_out*cols_out*CH*sizeof(T));
 }
 
 
