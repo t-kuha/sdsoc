@@ -98,8 +98,6 @@ void accel(
 	memcpy(input.data, _input, rows_in*cols_in*CH*sizeof(T));
 	memcpy(gauss.data, _gauss, rows_out*cols_out*CH*sizeof(T));
 
-//	cv::Mat _output = output;	// circumvent "const"
-
 	// TODO: Apply DATAFLOW
 	// TODO: Use hls::Mat
 
@@ -108,41 +106,32 @@ void accel(
 		int full_res_y = (1 << l) * y;
 		int roi_y0 = full_res_y - subregion_r;
 		int roi_y1 = full_res_y + subregion_r + 1;
-//		cv::Range row_range(std::max(0, roi_y0), std::min(roi_y1, rows_in));
 		int row_start = std::max(0, roi_y0);
 		int row_end = std::min(roi_y1, rows_in);
 
-		int full_res_roi_y = full_res_y - row_start/*row_range.start*/;
+		int full_res_roi_y = full_res_y - row_start;
 
 		for (int x = 0; x < cols_out; x++) {
 			// Calculate the x-bounds of the region in the full-res image.
 			int full_res_x = (1 << l) * x;
 			int roi_x0 = full_res_x - subregion_r;
 			int roi_x1 = full_res_x + subregion_r + 1;
-			//cv::Range col_range(std::max(0, roi_x0), std::min(roi_x1, cols_in));
 			int col_start = std::max(0, roi_x0);
 			int col_end = std::min(roi_x1, cols_in);
 
-			int full_res_roi_x = full_res_x - col_start/*col_range.start*/;
+			int full_res_roi_x = full_res_x - col_start;
 
 			// Remap the region around the current pixel.
-			cv::Mat r0 = input(/*row_range, col_range*/{row_start, row_end}, {col_start, col_end});
+			cv::Mat r0 = input({row_start, row_end}, {col_start, col_end});
 			cv::Mat remapped;
-			r.Evaluate<T, CH>(r0, remapped, gauss/*_input[l]*/.at< cv::Vec<T, CH> >(y, x), sigma_r);
+			r.Evaluate<T, CH>(r0, remapped, gauss.at< cv::Vec<T, CH> >(y, x), sigma_r);
 
 			// Construct the Laplacian pyramid for the remapped region and copy the
 			// coefficient over to the ouptut Laplacian pyramid.
-//			LaplacianPyramid tmp_pyr(remapped, l + 1,
-//			{ row_range.start, row_range.end - 1,
-//				col_range.start, col_range.end - 1 });
-//			_output.at< cv::Vec<T, CH> >(y, x) = tmp_pyr.at< cv::Vec<T, CH> >(l, full_res_roi_y >> l,
-//				full_res_roi_x >> l);
-
 			cv::Mat lap;
 			hlsLaplacianPyramid2(
 				remapped, lap, l + 1,
 				{ row_start, row_end - 1, col_start, col_end - 1 });
-//				{ row_range.start, row_range.end - 1, col_range.start, col_range.end - 1 });
 
 			// Only the last one of laplacian pyramid is required
 			output.at< cv::Vec<T, CH> >(y, x) = lap.at< cv::Vec<T, CH> >(full_res_roi_y >> l, full_res_roi_x >> l);
@@ -168,8 +157,6 @@ void accel_wrap(
 	const cv::Mat& input,
 	const int l,
 	const int subregion_r,
-//	const int kRows,
-//	const int kCols,
 	const double sigma_r,
 	hlsRemappingFunction &r)
 {
