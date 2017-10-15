@@ -109,17 +109,18 @@ int main(int argc, char** argv) {
   }
   imwrite("original.png", input);
 
-  input.convertTo(input, CV_64F, 1 / 255.0);
 
   cout << "Input image: " << argv[1] << " Size: " << input.cols << " x "
        << input.rows << " Channels: " << input.channels() << endl;
 
 #if 0
+  cv::Mat input_sw;
   cv::Mat output;
+  input.convertTo(input_sw, CV_64F, 1 / 255.0);
   if (input.channels() == 1) {
-    output = LocalLaplacianFilter<double>(input, kAlpha, kBeta, kSigmaR);
+    output = LocalLaplacianFilter<double>(input_sw, kAlpha, kBeta, kSigmaR);
   } else if (input.channels() == 3) {
-    output = LocalLaplacianFilter<cv::Vec3d>(input, kAlpha, kBeta, kSigmaR);
+    output = LocalLaplacianFilter<cv::Vec3d>(input_sw, kAlpha, kBeta, kSigmaR);
   } else {
     cerr << "Input image must have 1 or 3 channels." << endl;
     return 1;
@@ -132,22 +133,24 @@ int main(int argc, char** argv) {
 #endif
 
   // HW-accelerated
-  cv::Mat output_hw;
+  cv::Mat input_hls;
+  cv::Mat output_hls;
+  input.convertTo(input, CV_64F, 1 / 255.0);
   if (input.channels() == 1) {
-	  output_hw = hlsLocalLaplacianFilter< double, 1 >(input, kAlpha, kBeta, kSigmaR);
+	  output_hls = hlsLocalLaplacianFilter< double, 1 >(input, kAlpha, kBeta, kSigmaR);
   }
   else if (input.channels() == 3) {
-	  output_hw = hlsLocalLaplacianFilter< double, 3 >(input, kAlpha, kBeta, kSigmaR);
+	  output_hls = hlsLocalLaplacianFilter< double, 3 >(input, kAlpha, kBeta, kSigmaR);
   }
   else {
 	  cerr << "Input image must have 1 or 3 channels." << endl;
 	  return 1;
   }
 
-  output_hw *= 255;
-  output_hw.convertTo(output_hw, input.type());
+  output_hls *= 255;
+  output_hls.convertTo(output_hls, input.type());
 
-  imwrite("hls_output.png", output_hw);
+  imwrite("hls_output.png", output_hls);
 
   return 0;
 }
