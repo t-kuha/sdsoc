@@ -8,7 +8,7 @@
 #ifndef HLS_REMAPPING_FUNCTION_H_
 #define HLS_REMAPPING_FUNCTION_H_
 
-#include "opencv2/core/core.hpp"
+#include <assert.h>
 
 #include "hls_video.h"
 
@@ -20,29 +20,26 @@ public:
 		beta_ = beta;
 	}
 
-	template<typename T, int CH>
-	void Evaluate(const cv::Mat& input, cv::Mat& output,
-		hls::Scalar<CH, T>& reference, double sigma_r)
+	template<int ROWS, int COLS, int MAT_T>
+	void Evaluate(
+			hls::Mat<ROWS, COLS, MAT_T>& input, hls::Mat<ROWS, COLS, MAT_T>& output,
+			hls::Scalar<HLS_MAT_CN(MAT_T), HLS_TNAME(MAT_T)>& reference, double sigma_r,
+			int rows, int cols)
 	{
-		cv::Vec<T, CH> tmp;
-		hls::Scalar<CH, T> px1;
-		hls::Scalar<CH, T> px2;
+		assert(rows <= ROWS);
+		assert(cols <= COLS);
 
-		for (int i = 0; i < input.rows; i++) {
-			for (int j = 0; j < input.cols; j++) {
-				tmp = input.at< cv::Vec<T, CH> >(i, j);
+		cv::Vec<HLS_TNAME(MAT_T), HLS_MAT_CN(MAT_T)> tmp;
+		hls::Scalar<HLS_MAT_CN(MAT_T), HLS_TNAME(MAT_T)> px1;
+		hls::Scalar<HLS_MAT_CN(MAT_T), HLS_TNAME(MAT_T)> px2;
 
-				for(int i = 0; i < CH; i++){
-					px1.val[i] = tmp[i];
-				}
+		for (int i = 0; i < rows; i++) {
+			for (int j = 0; j < cols; j++) {
+				input >> px1;
 
-				Evaluate(px1, reference, sigma_r, px2);
+				Evaluate<HLS_TNAME(MAT_T), HLS_MAT_CN(MAT_T)>(px1, reference, sigma_r, px2);
 
-				for(int i = 0; i < CH; i++){
-					tmp[i] = px2.val[i];
-				}
-
-				output.at< cv::Vec<T, CH> >(i, j) = tmp;
+				output << px2;
 			}
 		}
 	}

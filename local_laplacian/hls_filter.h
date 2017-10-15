@@ -107,6 +107,9 @@ void accel(
 	hls::Scalar<CH, T> px_gauss;
 	hls::Scalar<CH, T> px_out;
 
+	hls::Mat<_MAX_IMG_ROWS_, _MAX_IMG_COLS_, HLS_MAKETYPE(HLS_64F, CH)> r0;
+	hls::Mat<_MAX_IMG_ROWS_, _MAX_IMG_COLS_, HLS_MAKETYPE(HLS_64F, CH)> r1;
+
 	for (int y = 0; y < rows_out; y++) {
 		// Calculate the y-bounds of the region in the full-res image.
 		int full_res_y = (1 << l) * y;
@@ -128,23 +131,48 @@ void accel(
 			int full_res_roi_x = full_res_x - col_start;
 
 			// Remap the region around the current pixel.
-			cv::Mat r0 = input({row_start, row_end}, {col_start, col_end});
-			cv::Mat remapped;
-			remapped.create(r0.rows, r0.cols, r0.type());
+			for(int r = row_start; r < row_end; r++){
+				for(int c = col_start; c < col_end; c++){
+					cv::Vec<T, CH> tmp;
+					hls::Scalar<CH, T> tmp2;
+					tmp = input.at< cv::Vec<T, CH> >(r, c);
+
+					for(int ch = 0; ch < CH; ch++){
+						tmp2.val[ch] = tmp[ch];
+					}
+
+					r0 << tmp2;
+				}
+			}
 
 			gauss >> px_gauss;
-			r.Evaluate<T, CH>(r0, remapped, /*gauss.at< cv::Vec<T, CH> >(y, x)*/px_gauss, sigma_r);
+			r.Evaluate<_MAX_IMG_ROWS_, _MAX_IMG_COLS_, HLS_MAKETYPE(HLS_64F, CH)>(r0, r1, px_gauss, sigma_r,
+					row_end - row_start, col_end - col_start);
+
+			cv::Mat remapped;
+			remapped.create(row_end - row_start, col_end - col_start, input.type());
+
+			for(int r = 0; r < row_end - row_start; r++){
+				for(int c = 0; c < col_end - col_start; c++){
+					cv::Vec<T, CH> tmp;
+					hls::Scalar<CH, T> tmp2;
+
+					r1 >> tmp2;
+
+					for(int ch = 0; ch < CH; ch++){
+						tmp[ch] = tmp2.val[ch];
+					}
+
+					remapped.at< cv::Vec<T, CH> >(r, c) = tmp;
+				}
+			}
+
+//			if(x == 10 && y == 10)
+//				std::cout << row_start << " " << row_end << " " << col_start << " " << col_end
+//				<< " " << r0.rows << " " << r0.cols << " " << std::endl;
 
 			// Construct the Laplacian pyramid for the remapped region and copy the
 			// coefficient over to the output Laplacian pyramid.
-//			cv::Mat lap;
-//			hlsLaplacianPyramid2(
-//				remapped, lap, l + 1,
-//				{ row_start, row_end - 1, col_start, col_end - 1 });
-//
-//			// Only the last one of laplacian pyramid is required
-//			output.at< cv::Vec<T, CH> >(y, x) = lap.at< cv::Vec<T, CH> >(full_res_roi_y >> l, full_res_roi_x >> l);
-
 			hlsLaplacianPyramid2<T, CH>(
 				remapped, px_out, l + 1,
 				{ row_start, row_end - 1, col_start, col_end - 1 },
