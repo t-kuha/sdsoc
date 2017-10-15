@@ -24,10 +24,27 @@ public:
 	void Evaluate(const cv::Mat& input, cv::Mat& output,
 		hls::Scalar<CH, T>& reference, double sigma_r)
 	{
+		cv::Vec<T, CH> tmp;
+		hls::Scalar<CH, T> px1;
+		hls::Scalar<CH, T> px2;
+
 		output.create(input.rows, input.cols, input.type());
+
 		for (int i = 0; i < input.rows; i++) {
 			for (int j = 0; j < input.cols; j++) {
-				Evaluate(input.at< cv::Vec<T, CH> >(i, j), reference, sigma_r, output.at< cv::Vec<T, CH> >(i, j));
+				tmp = input.at< cv::Vec<T, CH> >(i, j);
+
+				for(int i = 0; i < CH; i++){
+					px1.val[i] = tmp[i];
+				}
+
+				Evaluate(px1, reference, sigma_r, px2);
+
+				for(int i = 0; i < CH; i++){
+					tmp[i] = px2.val[i];
+				}
+
+				output.at< cv::Vec<T, CH> >(i, j) = tmp;
 			}
 		}
 	}
@@ -35,26 +52,35 @@ public:
 
 private:
 	template<typename T, int CH>
-	void Evaluate(const cv::Vec<T, CH>& value,
+	void Evaluate(const hls::Scalar<CH, T>& value,
 		hls::Scalar<CH, T>& reference,
 		double sigma_r,
-		cv::Vec<T, CH>& output)
+		hls::Scalar<CH, T>& output)
 	{
-		cv::Vec<T, CH> delta;
+		hls::Scalar<CH, T> delta;
 		for(int i = 0; i < CH; i++){
-			delta[i] = value[i] - reference.val[i];
+			delta.val[i] = value.val[i] - reference.val[i];
 		}
-		double mag = cv::norm(delta);
-		if (mag > 1e-10) delta /= mag;
+		double mag = 0;
+		for(int i = 0; i < CH; i++){
+			mag += delta.val[i]*delta.val[i];
+		}
+		mag = std::sqrt(mag);
+
+		if (mag > 1e-10){
+			for(int i = 0; i < CH; i++){
+				delta.val[i] /= mag;
+			}
+		}
 
 		if (mag < sigma_r) {
 			for(int i = 0; i < CH; i++){
-			output[i] = reference.val[i] + delta[i] * sigma_r * DetailRemap(mag, sigma_r);
+				output.val[i] = reference.val[i] + delta.val[i] * sigma_r * DetailRemap(mag, sigma_r);
 			}
 		}
 		else {
 			for(int i = 0; i < CH; i++){
-			output[i] = reference.val[i] + delta[i] * (EdgeRemap(mag - sigma_r) + sigma_r);
+				output.val[i] = reference.val[i] + delta.val[i] * (EdgeRemap(mag - sigma_r) + sigma_r);
 			}
 		}
 	}
