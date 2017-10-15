@@ -84,7 +84,7 @@ void accel(
 	const double sigma_r,
 	hlsRemappingFunction &r)
 {
-	cv::Mat _output = output;	// circumbent "const"
+	cv::Mat _output = output;	// circumvent "const"
 
 	// TODO: Apply DATAFLOW
 	// TODO: Use hls::Mat
