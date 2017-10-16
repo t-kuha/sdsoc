@@ -76,12 +76,12 @@ int main(void) {
 	return 0;
 }
 
-void layer0(ap_uint<1> buf[2][6 * 28 * 28]);
-void layer1(ap_uint<1> buf[2][6 * 28 * 28]);
-void layer2(ap_uint<1> buf[2][6 * 28 * 28]);
-void layer3(ap_uint<1> buf[2][6 * 28 * 28]);
-void layer4(ap_uint<1> buf[2][6 * 28 * 28]);
-void layer5(ap_uint<1> buf[2][6 * 28 * 28], ap_int<24> result[10]);
+void layer0(ap_uint<1> src[32][32],    ap_uint<1> pong[6*28*28]);
+void layer1(ap_uint<1> ping[6*28*28],  ap_uint<1> pong[6*14*14]);
+void layer2(ap_uint<1> ping[6*14*14],  ap_uint<1> pong[16*10*10]);
+void layer3(ap_uint<1> ping[16*10*10], ap_uint<1> pong[16*5*5]);
+void layer4(ap_uint<1> ping[16*5*5],   ap_uint<1> pong[120]);
+void layer5(ap_uint<1> ping[120],      ap_int<24> result[10]);
 
 
 // ディープニューラルネットワーク本体. ここから先を高位合成してRTLを出力します.
@@ -101,7 +101,22 @@ void BinaryNet(unsigned char *predict_num, ap_uint<32> pbuf[32])
 	// Artixには入りませんでした. 18ビットと比べて認識精度は若干落ちますがBinaryNetやっぱりすごい。
 	// なお、今回の実装は重み係数は6ビットとしています. BinaryNetの論文は重み係数も1ビットです.
 	// (ちょっとトリックが入ってるので精度はそれほど落ちない)
-	ap_uint<1> buf[2][6 * 28 * 28];
+	ap_uint<1> src[32][32];
+#pragma HLS ARRAY_PARTITION variable=src complete dim=2
+
+	ap_uint<1> tensor01[6*28*28];
+
+	ap_uint<1> tensor12[6*14*14];
+
+	ap_uint<1> tensor23[16*10*10];
+
+	ap_uint<1> tensor34[16*5*5];
+	ap_uint<1> tensor45[120];
+
+	// Output score
+	ap_int<24> result[10];
+#pragma HLS ARRAY_PARTITION variable=result complete
+
 
 	// 入力された画像データをバッファメモリ(ping-pongメモリ)に格納
 LOOP_INPUT_DATA:
@@ -110,32 +125,33 @@ LOOP_INPUT_DATA:
 		ap_uint<32> pict = pbuf[yy];
 		for (int xx = 0; xx < 32; xx++) {
 			if ((pict & 0x1) == 1) {
-				buf[0][yy * 32 + 31 - xx] = 1;
+				src[yy][31 - xx] = 1;
+				//buf[0][yy * 32 + 31 - xx] = 1;
 			} else {
-				buf[0][yy * 32 + 31 - xx] = 0;
+				src[yy][31 - xx] = 0;
+				//buf[0][yy * 32 + 31 - xx] = 0;
 			}
 			pict = pict >> 1;
 		}
 	}
-	 
-	ap_int<24> result[10];		// Output score
 
 	// Layer 0
-	layer0(buf);
+	layer0(src, tensor01);
 
 	// Layer 1
-	layer1(buf);
+	layer1(tensor01, tensor12);
+
 	// Layer 2
-	layer2(buf);
+	layer2(tensor12, tensor23);
 
 	// Layer 3
-	layer3(buf);
+	layer3(tensor23, tensor34);
 
 	// Layer 4
-	layer4(buf);
+	layer4(tensor34, tensor45);
 
 	// Layer 5
-	layer5(buf, result);
+	layer5(tensor45, result);
 
 	// Prediction ----------------------------------------------------
 	ap_int<24> max_val = result[0];
@@ -159,7 +175,7 @@ LOOP_OUTPUT:
 }
 
 
-void layer0(ap_uint<1> buf[2][6 * 28 * 28]){
+void layer0(ap_uint<1> src[32][32],    ap_uint<1> pong[6*28*28]){
 #pragma HLS INLINE
 
 	ap_uint<1> win[5][5];
@@ -180,9 +196,9 @@ LAYER0:
 			if(r >= 4){
 				for(int r0 = 0; r0 < 5; r0++){
 					if( (r - r0) >= 0){
-						win[ 4 -r0][4] = buf[0][(r - r0)*32 + c];
+						win[4 - r0][4] = src[r - r0][c];
 					}else{
-						win[ 4 -r0][4] = 0;
+						win[4 - r0][4] = 0;
 					}
 				}
 			}
@@ -204,9 +220,9 @@ LAYER0:
 					temp = temp*32 + bias_0[dmap];
 
 					if (temp >= 0) {
-						buf[(0 + 1) & 0x1][dmap*28*28 + (r - 4)*28 + (c - 4)] = 1;
+						pong[dmap*28*28 + (r - 4)*28 + (c - 4)] = 1;
 					} else {
-						buf[(0 + 1) & 0x1][dmap*28*28 + (r - 4)*28 + (c - 4)] = 0;
+						pong[dmap*28*28 + (r - 4)*28 + (c - 4)] = 0;
 					}
 
 				}	// dmap
@@ -222,7 +238,7 @@ LAYER0:
 	}	// r
 }
 
-void layer1(ap_uint<1> buf[2][6 * 28 * 28]){
+void layer1(ap_uint<1> ping[6*28*28],  ap_uint<1> pong[6*14*14]){
 #pragma HLS INLINE
 
 #pragma HLS RESOURCE variable=coef_w_1 core=ROM_2P_LUTRAM
@@ -244,7 +260,7 @@ LAYER1:
 					ap_int<2> dat;
 					ap_int<7> coef;
 
-					if (buf[1 & 0x1][dmap * (28 * 28) + (y + oy) * 28 + (x + ox)]
+					if (ping[dmap * (28 * 28) + (y + oy) * 28 + (x + ox)]
 							== 1){
 						dat = 1;
 					}else{
@@ -265,9 +281,9 @@ LAYER1:
 			ap_int<24> temp2 = temp0 + bi;
 #pragma HLS RESOURCE variable=temp2 core=AddSub
 			if (temp2 >= 0) {
-				buf[(1 + 1) & 0x1][idx] = 1;
+				pong[idx] = 1;
 			} else {
-				buf[(1 + 1) & 0x1][idx] = 0;
+				pong[idx] = 0;
 			}
 
 			// Update indices
@@ -284,7 +300,7 @@ LAYER1:
 	} // end for dmap
 }
 
-void layer2(ap_uint<1> buf[2][6 * 28 * 28]){
+void layer2(ap_uint<1> ping[6*14*14],  ap_uint<1> pong[16*10*10]){
 #pragma HLS INLINE
 
 #pragma HLS RESOURCE variable=bias_2 core=ROM_1P_LUTRAM
@@ -329,7 +345,7 @@ LAYER2:
 							ap_int<2> dat;
 							ap_int<7> coef;
 
-							if (buf[2 & 0x1][smap * (14 * 14) + (y + oy) * 14
+							if (ping[smap * (14 * 14) + (y + oy) * 14
 									+ (x + ox)] == 1) {
 								dat = 1;
 							} else {
@@ -350,9 +366,9 @@ LAYER2:
 #pragma HLS RESOURCE variable=temp0 core=Mul
 			ap_int<24> temp2 = temp0 + bi;
 			if (temp2 >= 0) {
-				buf[(2 + 1) & 0x1][idx] = 1;
+				pong[idx] = 1;
 			} else {
-				buf[(2 + 1) & 0x1][idx] = 0;
+				pong[idx] = 0;
 			}
 
 			// Update indices
@@ -369,7 +385,7 @@ LAYER2:
 	} // end for dmap
 }
 
-void layer3(ap_uint<1> buf[2][6 * 28 * 28]){
+void layer3(ap_uint<1> ping[16*10*10], ap_uint<1> pong[16*5*5]){
 #pragma HLS INLINE
 
 #pragma HLS RESOURCE variable=coef_w_3 core=ROM_2P_LUTRAM
@@ -390,7 +406,7 @@ LAYER3:
 						ap_int<2> dat;
 						ap_int<7> coef;
 
-						if (buf[3 & 0x1][dmap * (10 * 10)
+						if (ping[dmap * (10 * 10)
 								+ (y + oy) * 10 + (x + ox)] == 1) {
 							dat = 1;
 						} else {
@@ -412,9 +428,9 @@ LAYER3:
 			ap_int<24> temp2 = temp0 + bi;
 #pragma HLS RESOURCE variable=temp2 core=AddSub
 			if (temp2 >= 0) {
-				buf[(3 + 1) & 0x1][idx] = 1;
+				pong[idx] = 1;
 			} else {
-				buf[(3 + 1) & 0x1][idx] = 0;
+				pong[idx] = 0;
 			}
 
 			// Update indices
@@ -431,7 +447,7 @@ LAYER3:
 	} // end for dmap
 }
 
-void layer4(ap_uint<1> buf[2][6 * 28 * 28]){
+void layer4(ap_uint<1> ping[16*5*5],   ap_uint<1> pong[120]){
 #pragma HLS INLINE
 
 #pragma HLS RESOURCE variable=coef_w_4 core=ROM_2P_LUTRAM
@@ -458,7 +474,7 @@ LAYER4:
 				ap_int<2> dat;
 				ap_int<7> coef;
 
-				if (buf[4 & 0x1][idx1] == 1){
+				if (ping[idx1] == 1){
 					dat = 1;
 				}else{
 					dat = -1;
@@ -484,15 +500,15 @@ LAYER4:
 #pragma HLS RESOURCE variable=temp0 core=Mul
 		ap_int<24> temp2 = temp0 + bi;
 		if (temp2 >= 0) {
-			buf[(4 + 1) & 0x1][dmap] = 1;
+			pong[dmap] = 1;
 		} else {
-			buf[(4 + 1) & 0x1][dmap] = 0;
+			pong[dmap] = 0;
 		}
 	}
 
 }
 
-void layer5(ap_uint<1> buf[2][6 * 28 * 28], ap_int<24> result[10]){
+void layer5(ap_uint<1> ping[120],      ap_int<24> result[10]){
 #pragma HLS INLINE
 
 #pragma HLS ARRAY_PARTITION variable=coef_w_5 cyclic factor=10
@@ -505,7 +521,7 @@ LAYER5:
 			ap_int<2> dat;
 			ap_int<7> coef;
 
-			if (buf[5 & 0x1][smap] == 1){
+			if (ping[smap] == 1){
 				dat = 1;
 			}else{
 				dat = -1;
