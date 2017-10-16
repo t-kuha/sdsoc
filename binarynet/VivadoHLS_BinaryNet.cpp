@@ -13,6 +13,8 @@
 #include "ap_int.h"
 #include "weight.h"
 
+#include "sds_lib.h"
+
 #define INPUT_IS_8
 
 
@@ -60,9 +62,16 @@ int main(void) {
 	printf("START PREDICTION\n");
 	unsigned char est;
 
+	unsigned long long s = sds_clock_counter();
+
 	BinaryNet(&est, pbuf);
 
+	unsigned long long e = sds_clock_counter();
+
 	printf("ESTIMATION = %d\n", est);
+	printf("Took:\n");
+	printf("\t Clock cycle: %llu\n", e - s);
+	printf("\t Time:        %.4f [msec]\n", (e - s)*1000.0/sds_clock_frequency());
 
 	return 0;
 }
