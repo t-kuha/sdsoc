@@ -109,29 +109,14 @@ LOOP_INPUT_DATA:
 #pragma HLS PIPELINE
 		ap_uint<32> pict = pbuf[yy];
 		for (int xx = 0; xx < 32; xx++) {
-//#pragma HLS UNROLL
-//			buf[0][yy * 32 + 31 - xx] = pict.get_bit(xx);
 			if ((pict & 0x1) == 1) {
 				buf[0][yy * 32 + 31 - xx] = 1;
 			} else {
-				buf[0][yy * 32 + 31 - xx] = 0;    //-1;
+				buf[0][yy * 32 + 31 - xx] = 0;
 			}
 			pict = pict >> 1;
 		}
 	}
-
-	// Vivado HLSでは、C検証時に内部のデータをこうやって↓みれるので便利ですね。
-	// RTLシミュレーションだと… (-_-)
-	// for( yy = 0; yy < 32; yy++){
-	// 	for( xx = 0; xx < 32; xx++){
-	// 		if( buf[0][yy * 32 + xx] == 1){
-	// 			printf("#");
-	// 		} else {
-	// 			printf(" ");
-	// 		}
-	// 	}
-	// 	printf("\n");
-	// }
 	 
 	ap_int<24> result[10];		// Output score
 
