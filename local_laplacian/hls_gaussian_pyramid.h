@@ -108,7 +108,7 @@ public:
 		const int kEndCol = col_offset + 2 * top.cols;
 		for (int y = row_offset; y < kEndRow; y += 2) {
 			for (int x = col_offset; x < kEndCol; x += 2) {
-				T value = 0;
+				cv::Vec<T, CH> value = 0;
 				double total_weight = 0;
 
 				int row_start = std::max(0, y - 2);
@@ -121,7 +121,7 @@ public:
 					for (int m = col_start; m <= col_end; m++) {
 						double weight = row_weight * WeightingFunction(m - x, kA);
 						total_weight += weight;
-						value += weight * previous.at<T>(n, m);
+						value += weight * previous.at< cv::Vec<T, CH> >(n, m);
 					}
 				}
 				top.at< cv::Vec<T, CH> >(y >> 1, x >> 1) = value / total_weight;
@@ -139,7 +139,7 @@ public:
 
 		for (int i = row_offset; i < output.rows; i += 2) {
 			for (int j = col_offset; j < output.cols; j += 2) {
-				upsamp.at<T>(i, j) = input.at<T>(i >> 1, j >> 1);
+				upsamp.at< cv::Vec<T, CH> >(i, j) = input.at< cv::Vec<T, CH> >(i >> 1, j >> 1);
 				norm.at<double>(i, j) = 1;
 			}
 		}
@@ -159,12 +159,12 @@ public:
 				int col_start = std::max(0, j - 2);
 				int col_end = std::min(output.cols - 1, j + 2);
 
-				T value = 0;
+				cv::Vec<T, CH> value = 0;
 				double total_weight = 0;
 				for (int n = row_start; n <= row_end; n++) {
 					for (int m = col_start; m <= col_end; m++) {
 						double weight = filter.at<double>(n - i + 2, m - j + 2);
-						value += weight * upsamp.at<T>(n, m);
+						value += weight * upsamp.at< cv::Vec<T, CH> >(n, m);
 						total_weight += weight * norm.at<double>(n, m);
 					}
 				}
