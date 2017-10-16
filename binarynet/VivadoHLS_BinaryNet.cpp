@@ -179,14 +179,15 @@ void layer0(ap_uint<1> src[32][32],    ap_uint<1> pong[6*28*28]){
 #pragma HLS INLINE
 
 	ap_uint<1> win[5][5];
+#pragma HLS ARRAY_PARTITION variable=win complete
 
 LAYER0:
 	for(int r = 0; r < 32; r++){		// Input - Row
-
 		for(int c = 0; c < 32; c++){	// Input - Column
 
 			// Shift - left
 			for(int c0 = 0; c0 < 5 - 1; c0++){
+#pragma HLS PIPELINE
 				for(int r0 = 0; r0 < 5; r0++){
 					win[r0][c0] = win[r0][c0 + 1];
 				}
@@ -195,6 +196,7 @@ LAYER0:
 			// 値を補充
 			if(r >= 4){
 				for(int r0 = 0; r0 < 5; r0++){
+#pragma HLS PIPELINE
 					if( (r - r0) >= 0){
 						win[4 - r0][4] = src[r - r0][c];
 					}else{
@@ -206,6 +208,7 @@ LAYER0:
 			// Convolution
 			if( (r >= 4) && (c >= 4) ){
 				for (ap_uint<3> dmap = 0; dmap < 6; dmap++) {
+#pragma HLS PIPELINE
 					int temp = 0;
 					for(int r0 = 0; r0 < 5; r0++){
 						for(int c0 = 0; c0 < 5; c0++){
@@ -232,6 +235,7 @@ LAYER0:
 		// Shift - up
 		for(int c0 = 0; c0 < 5; c0++){
 			for(int r0 = 0; r0 < 5 - 1; r0++){
+#pragma HLS PIPELINE
 				win[r0][c0] = win[r0 + 1][c0];
 			}
 		}
