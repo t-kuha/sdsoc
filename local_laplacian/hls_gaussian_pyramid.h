@@ -13,13 +13,21 @@
 #include <vector>
 
 
+template<typename T, int CH>
 class hlsGaussianPyramid {
 public:
 	// Indicates that this is a subimage. If the start index is odd, this is
 	// necessary to make the higher levels the correct size.
-	hlsGaussianPyramid(const cv::Mat& image, int num_levels,
-		const std::vector<int>& subwindow)
-		: pyramid_(), subwindow_(subwindow)
+	hlsGaussianPyramid(const std::vector<int>& subwindow)
+	: pyramid_(), subwindow_(subwindow)
+	{
+		// DO NOTHING
+	};
+
+
+	void construct(const cv::Mat& image, int num_levels/*,
+		const std::vector<int>& subwindow*/)
+
 	{
 		pyramid_.reserve(num_levels + 1);
 		pyramid_.emplace_back();
@@ -55,12 +63,13 @@ public:
 			cv::Mat& next = pyramid_.back();
 
 			// Populate the next level.
-			if (next.channels() == 1) {
-				PopulateTopLevel<double>(row_offset, col_offset);
-			}
-			else if (next.channels() == 3) {
-				PopulateTopLevel<cv::Vec3d>(row_offset, col_offset);
-			}
+			PopulateTopLevel/*< cv::Vec<T, CH> >*/(row_offset, col_offset);
+//			if (next.channels() == 1) {
+//				PopulateTopLevel<double>(row_offset, col_offset);
+//			}
+//			else if (next.channels() == 3) {
+//				PopulateTopLevel<cv::Vec3d>(row_offset, col_offset);
+//			}
 		}
 	}
 
@@ -88,7 +97,7 @@ public:
 		GetLevelSize(subwindow_, level, subwindow);
 	}
 
-	template<typename T>
+//	template<typename T>
 	void PopulateTopLevel(int row_offset, int col_offset) {
 		cv::Mat& previous = pyramid_[pyramid_.size() - 2];
 		cv::Mat& top = pyramid_.back();
@@ -115,12 +124,12 @@ public:
 						value += weight * previous.at<T>(n, m);
 					}
 				}
-				top.at<T>(y >> 1, x >> 1) = value / total_weight;
+				top.at< cv::Vec<T, CH> >(y >> 1, x >> 1) = value / total_weight;
 			}
 		}
 	}
 
-	template<typename T>
+//	template<typename T>
 	static void Expand(const cv::Mat& input,
 		int row_offset,
 		int col_offset,
@@ -159,7 +168,7 @@ public:
 						total_weight += weight * norm.at<double>(n, m);
 					}
 				}
-				output.at<T>(i, j) = value / total_weight;
+				output.at< cv::Vec<T, CH> >(i, j) = value / total_weight;
 			}
 		}
 	}
@@ -183,7 +192,7 @@ public:
 		int row_offset = ((subwindow[0] % 2) == 0) ? 0 : 1;
 		int col_offset = ((subwindow[2] % 2) == 0) ? 0 : 1;
 
-		Expand< cv::Vec<T, CH> >(base, row_offset, col_offset, expanded);
+		Expand/*< cv::Vec<T, CH> >*/(base, row_offset, col_offset, expanded);
 
 		return expanded;
 	}
