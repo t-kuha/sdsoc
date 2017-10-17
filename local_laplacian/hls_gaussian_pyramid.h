@@ -60,7 +60,7 @@ public:
 
 			// Push a new level onto the top of the pyramid.
 			pyramid_.emplace_back(kRows, kCols, previous.type());
-			cv::Mat& next = pyramid_.back();
+//			cv::Mat& next = pyramid_.back();
 
 			// Populate the next level.
 			PopulateTopLevel/*< cv::Vec<T, CH> >*/(row_offset, col_offset);
