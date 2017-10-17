@@ -13,13 +13,21 @@
 #include <vector>
 
 
+template<typename T, int CH>
 class hlsGaussianPyramid {
 public:
 	// Indicates that this is a subimage. If the start index is odd, this is
 	// necessary to make the higher levels the correct size.
-	hlsGaussianPyramid(const cv::Mat& image, int num_levels,
-		const std::vector<int>& subwindow)
-		: pyramid_(), subwindow_(subwindow)
+	hlsGaussianPyramid(const std::vector<int>& subwindow)
+	: pyramid_(), subwindow_(subwindow)
+	{
+		// DO NOTHING
+	};
+
+
+	void construct(const cv::Mat& image, int num_levels/*,
+		const std::vector<int>& subwindow*/)
+
 	{
 		pyramid_.reserve(num_levels + 1);
 		pyramid_.emplace_back();
@@ -55,12 +63,13 @@ public:
 			cv::Mat& next = pyramid_.back();
 
 			// Populate the next level.
-			if (next.channels() == 1) {
-				PopulateTopLevel<double>(row_offset, col_offset);
-			}
-			else if (next.channels() == 3) {
-				PopulateTopLevel<cv::Vec3d>(row_offset, col_offset);
-			}
+			PopulateTopLevel/*< cv::Vec<T, CH> >*/(row_offset, col_offset);
+//			if (next.channels() == 1) {
+//				PopulateTopLevel<double>(row_offset, col_offset);
+//			}
+//			else if (next.channels() == 3) {
+//				PopulateTopLevel<cv::Vec3d>(row_offset, col_offset);
+//			}
 		}
 	}
 
@@ -88,7 +97,7 @@ public:
 		GetLevelSize(subwindow_, level, subwindow);
 	}
 
-	template<typename T>
+//	template<typename T>
 	void PopulateTopLevel(int row_offset, int col_offset) {
 		cv::Mat& previous = pyramid_[pyramid_.size() - 2];
 		cv::Mat& top = pyramid_.back();
@@ -99,7 +108,7 @@ public:
 		const int kEndCol = col_offset + 2 * top.cols;
 		for (int y = row_offset; y < kEndRow; y += 2) {
 			for (int x = col_offset; x < kEndCol; x += 2) {
-				T value = 0;
+				cv::Vec<T, CH> value = 0;
 				double total_weight = 0;
 
 				int row_start = std::max(0, y - 2);
@@ -112,15 +121,15 @@ public:
 					for (int m = col_start; m <= col_end; m++) {
 						double weight = row_weight * WeightingFunction(m - x, kA);
 						total_weight += weight;
-						value += weight * previous.at<T>(n, m);
+						value += weight * previous.at< cv::Vec<T, CH> >(n, m);
 					}
 				}
-				top.at<T>(y >> 1, x >> 1) = value / total_weight;
+				top.at< cv::Vec<T, CH> >(y >> 1, x >> 1) = value / total_weight;
 			}
 		}
 	}
 
-	template<typename T>
+//	template<typename T>
 	static void Expand(const cv::Mat& input,
 		int row_offset,
 		int col_offset,
@@ -130,7 +139,7 @@ public:
 
 		for (int i = row_offset; i < output.rows; i += 2) {
 			for (int j = col_offset; j < output.cols; j += 2) {
-				upsamp.at<T>(i, j) = input.at<T>(i >> 1, j >> 1);
+				upsamp.at< cv::Vec<T, CH> >(i, j) = input.at< cv::Vec<T, CH> >(i >> 1, j >> 1);
 				norm.at<double>(i, j) = 1;
 			}
 		}
@@ -150,16 +159,16 @@ public:
 				int col_start = std::max(0, j - 2);
 				int col_end = std::min(output.cols - 1, j + 2);
 
-				T value = 0;
+				cv::Vec<T, CH> value = 0;
 				double total_weight = 0;
 				for (int n = row_start; n <= row_end; n++) {
 					for (int m = col_start; m <= col_end; m++) {
 						double weight = filter.at<double>(n - i + 2, m - j + 2);
-						value += weight * upsamp.at<T>(n, m);
+						value += weight * upsamp.at< cv::Vec<T, CH> >(n, m);
 						total_weight += weight * norm.at<double>(n, m);
 					}
 				}
-				output.at<T>(i, j) = value / total_weight;
+				output.at< cv::Vec<T, CH> >(i, j) = value / total_weight;
 			}
 		}
 	}
@@ -169,31 +178,21 @@ public:
 	// less than or equal to level, since the pyramid is used to determine the
 	// size of the output. Having level equal to times will upsample the image to
 	// the initial pixel dimensions.
-	cv::Mat Expand(int level, int times) const {
-		if (times < 1) return pyramid_.at(level);
-		times = std::min(times, level);
-
+//	template<typename T, int CH>
+	cv::Mat ExpandOnce(int level) const {
 		cv::Mat base = pyramid_[level], expanded;
 
-		for (int i = 0; i < times; i++) {
-			std::vector<int> subwindow;
-			GetLevelSize(level - i - 1, &subwindow);
+		std::vector<int> subwindow;
+		GetLevelSize(/*subwindow_,*/ level - 1, &subwindow);
 
-			int out_rows = pyramid_[level - i - 1].rows;
-			int out_cols = pyramid_[level - i - 1].cols;
-			expanded.create(out_rows, out_cols, base.type());
+		int out_rows = pyramid_[level - 1].rows;
+		int out_cols = pyramid_[level - 1].cols;
+		expanded.create(out_rows, out_cols, base.type());
 
-			int row_offset = ((subwindow[0] % 2) == 0) ? 0 : 1;
-			int col_offset = ((subwindow[2] % 2) == 0) ? 0 : 1;
-			if (base.channels() == 1) {
-				Expand<double>(base, row_offset, col_offset, expanded);
-			}
-			else {
-				Expand<cv::Vec3d>(base, row_offset, col_offset, expanded);
-			}
+		int row_offset = ((subwindow[0] % 2) == 0) ? 0 : 1;
+		int col_offset = ((subwindow[2] % 2) == 0) ? 0 : 1;
 
-			base = expanded;
-		}
+		Expand/*< cv::Vec<T, CH> >*/(base, row_offset, col_offset, expanded);
 
 		return expanded;
 	}
