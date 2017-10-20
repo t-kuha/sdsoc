@@ -30,7 +30,7 @@ int NUM_B	// Num. of bias
 >
 void conv(ap_uint<1>* ping, ap_uint<1>* pong, const ap_int<7> weight[NUM_W], const ap_int<7> bias[NUM_B])
 {
-//#pragma HLS INLINE
+#pragma HLS INLINE
 
 	ap_uint<16>/*int*/ idx = 0;
 
@@ -38,9 +38,9 @@ void conv(ap_uint<1>* ping, ap_uint<1>* pong, const ap_int<7> weight[NUM_W], con
 
 LAYER_CONV:
 	for(int dmap = 0; dmap < N_DMAP; dmap++){
-//#pragma HLS LOOP_FLATTEN off
+#pragma HLS LOOP_FLATTEN off
 		for(int i = 0; i < DMAP_X * DMAP_Y; i++){
-//#pragma HLS PIPELINE
+#pragma HLS PIPELINE
 			ap_int<24> temp = 0;
 			ap_int<2> dat;
 			ap_int<7> coef;
@@ -113,8 +113,8 @@ int NUM_B	// Num. of bias
 >
 void pool(ap_uint<1>* ping, ap_uint<1>* pong, const ap_int<7> weight[NUM_W], const ap_int<7> bias[NUM_B])
 {
-//#pragma HLS INLINE
-//
+#pragma HLS INLINE
+
 //#pragma HLS RESOURCE variable=coef_w_1 core=ROM_2P_LUTRAM
 //#pragma HLS RESOURCE variable=bias_1 core=ROM_2P_LUTRAM
 
@@ -123,9 +123,9 @@ void pool(ap_uint<1>* ping, ap_uint<1>* pong, const ap_int<7> weight[NUM_W], con
 
 LAYER_POOL:
 	for (/*ap_uint<3>*/int dmap = 0; dmap < N_DMAP; dmap++) {
-//#pragma HLS LOOP_FLATTEN off
+#pragma HLS LOOP_FLATTEN off
 		for (/*ap_uint<8>*/int i = 0; i < DMAP_X * DMAP_Y; i++) {
-//#pragma HLS PIPELINE
+#pragma HLS PIPELINE
 			ap_int<24> temp = 0;
 //#pragma HLS RESOURCE variable=temp core=AddSub
 			for (/*ap_uint<2>*/int  oy = 0; oy < WY; oy++) {
@@ -191,29 +191,27 @@ int NUM_B	// Num. of bias
 >
 void fc(ap_uint<1>* ping, ap_uint<1>* pong, const ap_int<7> weight[NUM_W], const ap_int<7> bias[NUM_B])
 {
-//#pragma HLS INLINE
-//
+#pragma HLS INLINE
+
 //#pragma HLS RESOURCE variable=coef_w_4 core=ROM_2P_LUTRAM
 //
 //#pragma HLS ARRAY_PARTITION variable=coef_w_4 cyclic factor=4
 //#pragma HLS RESOURCE variable=coef_w_4 core=ROM_2P_LUTRAM
 
-	ap_int<22> tmp[NUM_B] = {0};
-//#pragma HLS ARRAY_PARTITION variable=tmp cyclic factor=4
+	ap_int<22> tmp[NUM_B];// = {0};
+#pragma HLS ARRAY_PARTITION variable=tmp cyclic factor=4
 
 	ap_uint<24> idx0 = 0;
 	ap_uint<12> idx1 = 0;
 
 LAYER_FC:
 	for (int/*ap_uint<5>*/ smap = 0; smap < N_SMAP; smap++) {
-//#pragma HLS LOOP_FLATTEN off
-
+#pragma HLS LOOP_FLATTEN off
 		ap_int<22> temp = 0;
 		for (ap_uint<3> oy = 0; oy < WX; oy++) {
-//#pragma HLS LOOP_FLATTEN off
-
+#pragma HLS LOOP_FLATTEN off
 			for (ap_uint<3> ox = 0; ox < WY; ox++) {
-//#pragma HLS LOOP_FLATTEN off
+#pragma HLS LOOP_FLATTEN off
 				ap_int<2> dat;
 				ap_int<7> coef;
 
@@ -223,8 +221,8 @@ LAYER_FC:
 					dat = -1;
 				}
 				for (ap_uint<7> dmap = 0; dmap < N_DMAP; dmap++) {
-//#pragma HLS UNROLL factor=4
-//#pragma HLS PIPELINE
+#pragma HLS UNROLL factor=4
+#pragma HLS PIPELINE
 					coef = weight[idx0++];
 
 					tmp[dmap] += (dat * coef);
@@ -236,7 +234,7 @@ LAYER_FC:
 
 	//
 	for (/*ap_uint<7>*/int dmap = 0; dmap < N_DMAP; dmap++) {
-//#pragma HLS PIPELINE
+#pragma HLS PIPELINE
 		ap_int<7> bi = bias[dmap];
 
 		ap_int<24> temp0 = tmp[dmap] * SF;
@@ -269,15 +267,16 @@ int NUM_B	// Num. of bias
 >
 void layer0(ap_uint<1>* ping, ap_uint<1>* pong, const ap_int<7> weight[NUM_W], const ap_int<7> bias[NUM_B])
 {
-//#pragma HLS INLINE
+#pragma HLS INLINE
 
 	ap_uint<1> win[5][5];
-//#pragma HLS ARRAY_PARTITION variable=win complete
+#pragma HLS ARRAY_PARTITION variable=win complete
 
 LAYER0:
 	for(int r = 0; r < 32; r++){		// Input - Row
+#pragma HLS LOOP_FLATTEN off
 		for(int c = 0; c < 32; c++){	// Input - Column
-
+#pragma HLS LOOP_FLATTEN off
 			// Shift - left
 			for(int c0 = 0; c0 < 5 - 1; c0++){
 #pragma HLS PIPELINE
@@ -354,10 +353,12 @@ int NUM_B	// Num. of bias
 >
 void layer5(ap_uint<1> ping[120], ap_int<24> result[10], const ap_int<7> weight[NUM_W], const ap_int<7> bias[NUM_B])
 {
+#pragma HLS INLINE
+
 LAYER5:
 	ap_uint<11> idx = 0;
 	for (ap_uint<7> smap = 0; smap < N_SMAP; smap++) {
-//#pragma HLS PIPELINE
+#pragma HLS PIPELINE
 		for (ap_uint<4> dmap = 0; dmap < N_DMAP; dmap++) {
 			ap_int<2> dat;
 			ap_int<7> coef;
@@ -377,7 +378,7 @@ LAYER5:
 
 LOOP_SUM:
 	for (ap_uint<4> dmap = 0; dmap < N_DMAP; dmap++) {
-//#pragma HLS PIPELINE
+#pragma HLS PIPELINE
 		result[dmap] += bias[dmap];
 	}
 }

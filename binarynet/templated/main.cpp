@@ -48,7 +48,8 @@ int main(int argc, char* argv[])
 		std::cout << std::endl;
 	}
 
-	// Load weight
+	std::cout <<"START PREDICTION" << std::endl;
+
 	unsigned char est = 0;
 
 	accel(pbuf, &est);
@@ -59,30 +60,30 @@ int main(int argc, char* argv[])
 }
 
 
+
 #include "weight.h"
 void accel(ap_uint<32> pbuf[32], unsigned char *predict_num)
 {
-    // Tensor
+	// Resource directive for weights
+#pragma HLS RESOURCE variable=coef_w_4 core=ROM_2P_LUTRAM
+
+	// Tensor
 	ap_uint<1> src[32][32];
-//#pragma HLS ARRAY_PARTITION variable=src complete dim=2
+#pragma HLS ARRAY_PARTITION variable=src complete dim=2
 
 	ap_uint<1> tensor01[6*28*28];
-
 	ap_uint<1> tensor12[6*14*14];
-//#pragma HLS ARRAY_PARTITION variable=tensor12 cyclic factor=4
-
 	ap_uint<1> tensor23[16*10*10];
-
 	ap_uint<1> tensor34[16*5*5];
 	ap_uint<1> tensor45[120];
 
 	ap_int<24> result[10];		// Output score
-//#pragma HLS ARRAY_PARTITION variable=result complete
+#pragma HLS ARRAY_PARTITION variable=result complete
 
-	// 入力された画像データをバ�?ファメモリ(ping-pongメモリ)に格�?
+	// 入力された画像データをバ?��?ファメモリ(ping-pongメモリ)に格?��?
 LOOP_INPUT_DATA:
 	for (int yy = 0; yy < 32; yy++) {
-//#pragma HLS PIPELINE
+#pragma HLS PIPELINE
 		ap_uint<32> pict = pbuf[yy];
 		for (int xx = 0; xx < 32; xx++) {
 			if ((pict & 0x1) == 1) {
@@ -93,8 +94,6 @@ LOOP_INPUT_DATA:
 			pict = pict >> 1;
 		}
 	}
-
-	std::cout <<"START PREDICTION" << std::endl;
 
 //	int LAYER, 	// Layer No.
 //	int WX, 		// Width of convolution kernel
@@ -128,14 +127,6 @@ LOOP_INPUT_DATA:
 
 	// Layer 5
 	net::layer5<5, 1, 1, 1, 1, 120, 1, 1, 10, 1, 1, 1, 1200, 10>(tensor45, result, coef_w_5, bias_5);
-//	int layer = 5;
-//	for(int i = 0; i < 10; i++){
-//		std::cout << buf[(layer + 1) & 0x1][i];
-//		if((i + 1) % 20 == 0){
-//			std::cout << std::endl;
-//		}
-//	}
-//	std::cout << std::endl;
 
 
 	// Prediction ----------------------------------------------------
@@ -143,14 +134,14 @@ LOOP_INPUT_DATA:
 	unsigned char max_idx = 0;
 LOOP_OUTPUT:
 	for (ap_uint<4> i = 1; i < 10; i++) {
-//#pragma HLS PIPELINE
+#pragma HLS PIPELINE
 		if (max_val < result[i]) {
 			max_val = result[i];
 			max_idx = i;
 		}
-		std::cout <<"idx=" << i << "  \t" << result[i] << std::endl;;
+//		std::cout <<"idx=" << i << "  \t" << result[i] << std::endl;;
 	}
-	std::cout << "max index = " << (int) max_idx << std::endl;
+//	std::cout << "max index = " << (int) max_idx << std::endl;
 
 	*predict_num = max_idx;
 }
