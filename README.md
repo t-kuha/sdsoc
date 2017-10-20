@@ -2,8 +2,9 @@
 
 #### binarynet
   - Binary CNN code
+    - __optimized__: Optimized code (Fits in Zybo (Zynq-7010))
+    - __templated__: Templated version (Does not fit in Zybo)
   - Original source: http://www.cqpub.co.jp/interface/download/2016/9/IF1609F.zip
-  - Project in progress
 
 ***
 #### embed\_build\_date
