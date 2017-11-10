@@ -18,7 +18,12 @@
 #include "opencv_utils.h"
 #include "hls_remapping_function.h"
 
-#include "hls_video.h"
+//#include "hls_video.h"
+#include "ap_int.h"
+#include "hls_stream.h"
+#include "hls/hls_video_types.h"
+#include "hls/hls_video_core.h"
+
 #include "hls_util.h"
 #include "hls_def.h"
 
@@ -96,9 +101,6 @@ void accel(
 	const double sigma_r,
 	hlsRemappingFunction &r)
 {
-	cv::Mat input(rows_in, cols_in, CV_MAKETYPE(CV_64F,CH) );
-	memcpy(input.data, _input, rows_in*cols_in*CH*sizeof(T));
-
 	// TODO: Apply DATAFLOW
 	// TODO: Use hls::Mat
 	hls::Mat<_MAX_IMG_ROWS_, _MAX_IMG_COLS_, HLS_MAKETYPE(HLS_64F, CH)> gauss(rows_out, cols_out);
@@ -109,6 +111,8 @@ void accel(
 
 	hls::Mat<_MAX_IMG_ROWS_, _MAX_IMG_COLS_, HLS_MAKETYPE(HLS_64F, CH)> r0;
 	hls::Mat<_MAX_IMG_ROWS_, _MAX_IMG_COLS_, HLS_MAKETYPE(HLS_64F, CH)> r1;
+
+	int height = 0, width = 0;
 
 	for (int y = 0; y < rows_out; y++) {
 		// Calculate the y-bounds of the region in the full-res image.
@@ -133,12 +137,10 @@ void accel(
 			// Remap the region around the current pixel.
 			for(int r = row_start; r < row_end; r++){
 				for(int c = col_start; c < col_end; c++){
-					cv::Vec<T, CH> tmp;
 					hls::Scalar<CH, T> tmp2;
-					tmp = input.at< cv::Vec<T, CH> >(r, c);
 
 					for(int ch = 0; ch < CH; ch++){
-						tmp2.val[ch] = tmp[ch];
+						tmp2.val[ch] = _input[ (r*cols_in + c)*CH + ch];
 					}
 
 					r0 << tmp2;
@@ -150,7 +152,15 @@ void accel(
 					row_end - row_start, col_end - col_start);
 
 			cv::Mat remapped;
-			remapped.create(row_end - row_start, col_end - col_start, input.type());
+			remapped.create(row_end - row_start, col_end - col_start, CV_MAKETYPE(CV_64F, CH)/*input.type()*/);
+
+			if (width < col_end - col_start) {
+				width = col_end - col_start;
+			}
+			if (height < row_end - row_start) {
+				height = row_end - row_start;
+			}
+
 
 			for(int r = 0; r < row_end - row_start; r++){
 				for(int c = 0; c < col_end - col_start; c++){
@@ -189,6 +199,8 @@ void accel(
 		std::cout.flush();
 	}
 
+	// 9x9, 21x21, 45x45
+	std::cout << "----------" << width << " x " << height << "----------" << std::endl;
 }
 
 

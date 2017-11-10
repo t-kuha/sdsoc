@@ -11,7 +11,11 @@
 #include "opencv2/core/core.hpp"
 
 #include "hls_gaussian_pyramid.h"
-#include "hls_video.h"
+//#include "hls_video.h"
+#include "ap_int.h"
+#include "hls_stream.h"
+#include "hls/hls_video_types.h"
+#include "hls/hls_video_core.h"
 
 template<typename T, int CH>
 void hlsLaplacianPyramid2(const cv::Mat& input, hls::Scalar<CH, T>& px_output, int num_levels,
