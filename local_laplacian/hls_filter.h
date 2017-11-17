@@ -54,12 +54,29 @@ cv::Mat hlsLocalLaplacianFilter(const cv::Mat& input,
 	assert(kRows <= _MAX_IMG_ROWS_);
 	assert(kCols <= _MAX_IMG_COLS_);
 
+	// TODO: Can be accelerated
 	GaussianPyramid gauss_input(input, num_levels);
+
+#if 0
+	for (int i = 0; i <= num_levels; i++) {
+		std::string win_name = "Gauss Input: " + std::to_string(i);
+		cv::imshow(win_name, gauss_input[i]);
+		cv::waitKey();
+	}
+#endif
 
 	// Construct the unfilled Laplacian pyramid of the output. Copy the residual
 	// over from the top of the Gaussian pyramid.
 	LaplacianPyramid output(kRows, kCols, input.channels(), num_levels);
-	gauss_input[num_levels].copyTo(output[num_levels]);
+	gauss_input[num_levels].copyTo(output[num_levels]);		// Empty / black image / ÅI’iˆÈŠO‚Í
+
+#if 0
+	for (int i = 0; i <= num_levels; i++) {
+		std::string win_name = "Output: " + std::to_string(i);
+		cv::imshow(win_name, output[i]);
+		cv::waitKey();
+	}
+#endif
 
 	// Calculate each level of the ouput Laplacian pyramid.
 	for (int l = 0; l < num_levels; l++) {
@@ -72,7 +89,6 @@ cv::Mat hlsLocalLaplacianFilter(const cv::Mat& input,
 		std::cout << "\t Gauss:  " << gauss_input[l].rows << " x " << gauss_input[l].cols << " x " << gauss_input[l].channels() << std::endl;
 		std::cout << "\t Output: " << output[l].rows << " x " << output[l].cols << " x " << output[l].channels() << std::endl;
 
-		// HW-accelerated function
 		accel_wrap<T, CH>(output[l], gauss_input[l], input,
 			l, subregion_r, sigma_r, r);
 
@@ -102,7 +118,6 @@ void accel(
 	hlsRemappingFunction &r)
 {
 	// TODO: Apply DATAFLOW
-	// TODO: Use hls::Mat
 	hls::Mat<_MAX_IMG_ROWS_, _MAX_IMG_COLS_, HLS_MAKETYPE(HLS_64F, CH)> gauss(rows_out, cols_out);
 	fb2hlsmat(_gauss, CH, gauss);
 
@@ -227,6 +242,7 @@ void accel_wrap(
 	memcpy(_input, input.data, input.rows*input.cols*CH*sizeof(T));
 	memcpy(_gauss, gauss.data, gauss.rows*gauss.cols*CH*sizeof(T));
 
+	// HW-accelerated function
 	accel<T, CH>(_output, _gauss, _input, l, subregion_r,
 			input.rows, input.cols, output.rows, output.cols, sigma_r, r);
 

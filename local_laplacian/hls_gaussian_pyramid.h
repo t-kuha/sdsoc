@@ -22,6 +22,12 @@ public:
 	: pyramid_(), subwindow_(subwindow)
 	{
 		// DO NOTHING
+		for (int i = -2; i <= 2; i++) {
+			for (int j = -2; j <= 2; j++) {
+				filter_[i + 2][j + 2] =
+					WeightingFunction(i, kA) * WeightingFunction(j, kA);
+			}
+		}
 	};
 
 
@@ -60,7 +66,7 @@ public:
 
 			// Push a new level onto the top of the pyramid.
 			pyramid_.emplace_back(kRows, kCols, previous.type());
-//			cv::Mat& next = pyramid_.back();
+			//cv::Mat& next = pyramid_.back();
 
 			// Populate the next level.
 			PopulateTopLevel/*< cv::Vec<T, CH> >*/(row_offset, col_offset);
@@ -144,13 +150,13 @@ public:
 			}
 		}
 
-		cv::Mat filter(5, 5, CV_64F);
-		for (int i = -2; i <= 2; i++) {
-			for (int j = -2; j <= 2; j++) {
-				filter.at<double>(i + 2, j + 2) =
-					WeightingFunction(i, kA) * WeightingFunction(j, kA);
-			}
-		}
+		//cv::Mat filter(5, 5, CV_64F);
+		//for (int i = -2; i <= 2; i++) {
+		//	for (int j = -2; j <= 2; j++) {
+		//		filter.at<double>(i + 2, j + 2) =
+		//			WeightingFunction(i, kA) * WeightingFunction(j, kA);
+		//	}
+		//}
 
 		for (int i = 0; i < output.rows; i++) {
 			int row_start = std::max(0, i - 2);
@@ -163,7 +169,7 @@ public:
 				double total_weight = 0;
 				for (int n = row_start; n <= row_end; n++) {
 					for (int m = col_start; m <= col_end; m++) {
-						double weight = filter.at<double>(n - i + 2, m - j + 2);
+						double weight = filter_[n - i + 2][m - j + 2];
 						value += weight * upsamp.at< cv::Vec<T, CH> >(n, m);
 						total_weight += weight * norm.at<double>(n, m);
 					}
@@ -220,6 +226,9 @@ private:
 	std::vector<int> subwindow_;
 
 	constexpr static const double kA = 0.4;
+
+	//cv::Mat filter_;
+	double filter_[5][5];
 };
 
 #endif /* HLS_GAUSSIAN_PYRAMID_H_ */

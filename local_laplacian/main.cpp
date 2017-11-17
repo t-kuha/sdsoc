@@ -96,8 +96,8 @@ cv::Mat LocalLaplacianFilter(const cv::Mat& input,
 
 int main(int argc, char** argv) {
   const double kSigmaR = 0.3;
-  const double kAlpha = 1;
-  const double kBeta = 0;
+  const double kAlpha = 0.5;
+  const double kBeta = 1;
 
   if (argc != 2) {
     cerr << "Usage: " << argv[0] << " image_file" << endl;
