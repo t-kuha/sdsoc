@@ -31,9 +31,9 @@
 #endif
 
 void my_split(
-	hls::Mat<_MAX_ROWS_, _MAX_COLS_, MAT_TYPE>& src,
-	hls::Mat<_MAX_ROWS_, _MAX_COLS_, MAT_TYPE>& dst1,
-	hls::Mat<_MAX_ROWS_, _MAX_COLS_, MAT_TYPE>& dst2);
+	hls::Mat<_MAX_ROWS_, _MAX_COLS_, _MAT_TYPE_>& src,
+	hls::Mat<_MAX_ROWS_, _MAX_COLS_, _MAT_TYPE_>& dst1,
+	hls::Mat<_MAX_ROWS_, _MAX_COLS_, _MAT_TYPE_>& dst2);
 
 
 void hls_local_laplacian_wrap(cv::Mat& src, cv::Mat& dst, float sigma, float fact, int N)
@@ -252,8 +252,8 @@ void hls_local_laplacian(float* I, float** gau, float** dst,
 }
 
 void downsample(
-	hls::Mat<_MAX_ROWS_, _MAX_COLS_, MAT_TYPE>& src,
-	hls::Mat<_MAX_ROWS_, _MAX_COLS_, MAT_TYPE>& dst)
+	hls::Mat<_MAX_ROWS_, _MAX_COLS_, _MAT_TYPE_>& src,
+	hls::Mat<_MAX_ROWS_, _MAX_COLS_, _MAT_TYPE_>& dst)
 {
 #pragma HLS DATAFLOW
 
@@ -286,11 +286,11 @@ void downsample(
 
 	// Convolve
 	hls::Point p(-1, -1);
-	hls::Mat<_MAX_ROWS_, _MAX_COLS_, MAT_TYPE> tmp(src.rows, src.cols);
+	hls::Mat<_MAX_ROWS_, _MAX_COLS_, _MAT_TYPE_> tmp(src.rows, src.cols);
 	hls::Filter2D(src, tmp, kernel, p);	//	cv::filter2D(src, dst, -1, kernel);
 
 	// Decimate
-	hls::Scalar<HLS_MAT_CN(MAT_TYPE), HLS_TNAME(MAT_TYPE)> px;
+	hls::Scalar<HLS_MAT_CN(_MAT_TYPE_), HLS_TNAME(_MAT_TYPE_)> px;
 	for (int r = 0; r < src.rows; r++) {
 #pragma HLS PIPELINE
 		for (int c = 0; c < src.cols; c++) {
@@ -305,8 +305,8 @@ void downsample(
 }
 
 void upsample(
-	hls::Mat<_MAX_ROWS_, _MAX_COLS_, MAT_TYPE>& src,
-	hls::Mat<_MAX_ROWS_, _MAX_COLS_, MAT_TYPE>& dst,
+	hls::Mat<_MAX_ROWS_, _MAX_COLS_, _MAT_TYPE_>& src,
+	hls::Mat<_MAX_ROWS_, _MAX_COLS_, _MAT_TYPE_>& dst,
 	int rows, int cols)
 {
 	// Convolution Kernel
@@ -337,9 +337,9 @@ void upsample(
 #endif
 
 	// Up-scaling
-	hls::Mat<_MAX_ROWS_, _MAX_COLS_, MAT_TYPE> tmp(rows, cols);
-	hls::Scalar<HLS_MAT_CN(MAT_TYPE), HLS_TNAME(MAT_TYPE)> px;
-	hls::Window<1, _MAX_ROWS_, HLS_TNAME(MAT_TYPE)> buf;	// Line buffer
+	hls::Mat<_MAX_ROWS_, _MAX_COLS_, _MAT_TYPE_> tmp(rows, cols);
+	hls::Scalar<HLS_MAT_CN(_MAT_TYPE_), HLS_TNAME(_MAT_TYPE_)> px;
+	hls::Window<1, _MAX_ROWS_, HLS_TNAME(_MAT_TYPE_)> buf;	// Line buffer
 	for (int r = 0; r < rows; r++) {
 		for (int c = 0; c < cols; c++) {
 			if ((r % 2 == 0) && (c % 2 == 0)) {
@@ -369,7 +369,7 @@ void gaussian_pyramid(float* src, float** dst, int num_levels,
 	assert(num_levels <= _MAX_LEVELS_);
 
 	// Inter-loop buffer
-	hls::Mat<_MAX_ROWS_, _MAX_ROWS_, MAT_TYPE> buf_;
+	hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE_> buf_;
 	hls::Scalar<1, float> px;
 
 	for (int l = 1; l < num_levels; l++) {
@@ -377,7 +377,7 @@ void gaussian_pyramid(float* src, float** dst, int num_levels,
 		int cols_ = pyr_width[l - 1];
 
 		// Before downsampling
-		hls::Mat<_MAX_ROWS_, _MAX_ROWS_, MAT_TYPE> in(rows_, cols_);
+		hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE_> in(rows_, cols_);
 
 		if (l == 1) {
 			// Copy from source
@@ -403,7 +403,7 @@ void gaussian_pyramid(float* src, float** dst, int num_levels,
 		int cols2_ = pyr_width[l];
 
 		// Perform down-sampling
-		hls::Mat<_MAX_ROWS_, _MAX_ROWS_, MAT_TYPE> out(rows2_, cols2_);
+		hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE_> out(rows2_, cols2_);
 		downsample(in, out);
 
 		// Transfer data - Add to pyramid
@@ -441,15 +441,15 @@ void laplacian_pyramid(float* src, float** dst, int num_levels,
 	assert(num_levels <= _MAX_LEVELS_);
 	
 	// Inter-loop buffer
-	hls::Mat<_MAX_ROWS_, _MAX_ROWS_, MAT_TYPE> buf_;
+	hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE_> buf_;
 	hls::Scalar<1, float> px;
 
 	for (int l = 0; l < num_levels - 1; l++) {
 		int rows_ = pyr_height[l];
 		int cols_ = pyr_width[l];
 
-		hls::Mat<_MAX_ROWS_, _MAX_ROWS_, MAT_TYPE> in(rows_, cols_);	// for downsampling
-		hls::Mat<_MAX_ROWS_, _MAX_ROWS_, MAT_TYPE> in2(rows_, cols_);	// 
+		hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE_> in(rows_, cols_);	// for downsampling
+		hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE_> in2(rows_, cols_);	// 
 
 		if (l == 0) {
 			// Copy from source
@@ -476,8 +476,8 @@ void laplacian_pyramid(float* src, float** dst, int num_levels,
 		int rows2_ = pyr_height[l + 1];
 		int cols2_ = pyr_width[l + 1];
 
-		hls::Mat<_MAX_ROWS_, _MAX_ROWS_, MAT_TYPE> out_down(rows2_, cols2_);	// For down-sampling
-		hls::Mat<_MAX_ROWS_, _MAX_ROWS_, MAT_TYPE> out_down2(rows2_, cols2_);	// For up-sampling
+		hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE_> out_down(rows2_, cols2_);	// For down-sampling
+		hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE_> out_down2(rows2_, cols2_);	// For up-sampling
 		downsample(in, out_down);
 		
 		buf_.init(rows2_, cols2_);
@@ -485,12 +485,12 @@ void laplacian_pyramid(float* src, float** dst, int num_levels,
 		my_split(out_down, buf_, out_down2);
 
 		// Up-sample
-		hls::Mat<_MAX_ROWS_, _MAX_ROWS_, MAT_TYPE> out_up(rows_, cols_);
+		hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE_> out_up(rows_, cols_);
 		upsample(out_down2, out_up, rows_, cols_);
 
 		// Diff
 		hls::Scalar<1, float> px0, px1;
-		hls::Mat<_MAX_ROWS_, _MAX_ROWS_, MAT_TYPE> diff(rows_, cols_);
+		hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE_> diff(rows_, cols_);
 		for (int r = 0; r < rows_; r++) {
 			for (int c = 0; c < cols_; c++) {
 				in2 >> px0;
@@ -523,8 +523,8 @@ void laplacian_pyramid(float* src, float** dst, int num_levels,
 void reconstruct(float** src, float* dst, int num_levels, int* rows, int* cols)
 {
 	// Inter-loop buffer
-	hls::Mat<_MAX_ROWS_, _MAX_COLS_, MAT_TYPE> buf_;	// Inter-loop buffer
-	hls::Mat<_MAX_ROWS_, _MAX_COLS_, MAT_TYPE> in(rows[num_levels - 1], cols[num_levels - 1]);
+	hls::Mat<_MAX_ROWS_, _MAX_COLS_, _MAT_TYPE_> buf_;	// Inter-loop buffer
+	hls::Mat<_MAX_ROWS_, _MAX_COLS_, _MAT_TYPE_> in(rows[num_levels - 1], cols[num_levels - 1]);
 	hls::Scalar<1, float> px;
 
 	for (int r = 0; r < rows[num_levels - 1]; r++) {
@@ -536,7 +536,7 @@ void reconstruct(float** src, float* dst, int num_levels, int* rows, int* cols)
 
 	hls::Scalar<1, float> px2;
 	for (int i = num_levels - 2; i >= 0; i--) {
-		hls::Mat<_MAX_ROWS_, _MAX_COLS_, MAT_TYPE> out(rows[i], cols[i]);
+		hls::Mat<_MAX_ROWS_, _MAX_COLS_, _MAT_TYPE_> out(rows[i], cols[i]);
 
 		// Upsample
 		if (i == num_levels - 2) {
@@ -574,15 +574,15 @@ void remap(float* src, float* dst, float ref, float fact, float sigma, int rows,
 		for (int c = 0; c < cols; c++) {
 			I = src[r*cols + c];
 			dst[r*cols + c] =
-				fact*(I - ref)*hls::exp(-(I - ref)*(I - ref) / (2 * sigma*sigma));
+				fact*(I - ref)*hls::expf(-(I - ref)*(I - ref) / (2 * sigma*sigma));
 		}
 	}
 }
 
 void my_split(
-	hls::Mat<_MAX_ROWS_, _MAX_COLS_, MAT_TYPE>& src,
-	hls::Mat<_MAX_ROWS_, _MAX_COLS_, MAT_TYPE>& dst1,
-	hls::Mat<_MAX_ROWS_, _MAX_COLS_, MAT_TYPE>& dst2)
+	hls::Mat<_MAX_ROWS_, _MAX_COLS_, _MAT_TYPE_>& src,
+	hls::Mat<_MAX_ROWS_, _MAX_COLS_, _MAT_TYPE_>& dst1,
+	hls::Mat<_MAX_ROWS_, _MAX_COLS_, _MAT_TYPE_>& dst2)
 {
 	int rows_ = src.rows;
 	int cols_ = src.cols;
@@ -592,7 +592,7 @@ void my_split(
 
 	for (int r = 0; r < rows_; r++) {
 		for (int c = 0; c < cols_; c++) {
-			hls::Scalar<HLS_MAT_CN(MAT_TYPE), HLS_TNAME(MAT_TYPE)> px;
+			hls::Scalar<HLS_MAT_CN(_MAT_TYPE_), HLS_TNAME(_MAT_TYPE_)> px;
 			src >> px;
 
 			dst1 << px;

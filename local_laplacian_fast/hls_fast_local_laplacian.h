@@ -12,7 +12,11 @@
 #define		_MAX_LEVELS_		9
 
 // Data types
-#define		MAT_TYPE			HLS_32FC1
+#define		_MAT_TYPE_			HLS_32FC1
+
+typedef		float			data_in_t;		// Input data type
+typedef		float			data_out_t;		// output data type
+
 typedef		float			pipe_t;
 
 
