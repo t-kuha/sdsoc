@@ -184,7 +184,7 @@ void hls_local_laplacian_wrap(cv::Mat& src, cv::Mat& dst, float sigma, float fac
 }
 
 
-// Accelerated funcsion
+// Accelerated function
 // I:    Original image
 // gau:  Pre-built Gaussian pyramid
 // dst:  Remapped Laplacian pyramid
