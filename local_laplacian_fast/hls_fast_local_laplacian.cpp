@@ -36,7 +36,6 @@ void my_split(
 	hls::Mat<_MAX_ROWS_, _MAX_COLS_, MAT_TYPE>& dst2);
 
 
-
 void hls_local_laplacian_wrap(cv::Mat& src, cv::Mat& dst, float sigma, float fact, int N)
 {
 	// Check input
@@ -226,10 +225,10 @@ void hls_local_laplacian(float* I, float** gau, float** dst,
 			float x_ = 0;
 			for (int r = 0; r < pyr_height[level]; r++) {
 				for (int c = 0; c < pyr_width[level]; c++) {
-					x_ = 0;
-					x_ = 1 - std::abs(gau[level][r*pyr_width[level] + c] - ref) / discretisation_step;
-					x_ = x_ * temp_laplace_pyr[level][r*pyr_width[level] + c];
-					if(std::abs(gau[level][r*pyr_width[level] + c] - ref) >= discretisation_step){
+					if(std::abs(gau[level][r*pyr_width[level] + c] - ref) < discretisation_step){
+						x_ = 1 - std::abs(gau[level][r*pyr_width[level] + c] - ref) / discretisation_step;
+						x_ = x_ * temp_laplace_pyr[level][r*pyr_width[level] + c];
+					}else{
 						x_ = 0;
 					}
 					x_ = x_ + dst[level][r*pyr_width[level] + c];
