@@ -240,6 +240,15 @@ void hls_local_laplacian(float* I, float** gau, float** dst,
 		}
 	}
 
+	// Release memory
+	for (int i = 0; i < num_levels; i++) {
+		delete [] temp_laplace_pyr[i];
+	}
+
+	if(temp_laplace_pyr){
+		free(temp_laplace_pyr);
+	}
+
 	delete [] I_remap;
 }
 
