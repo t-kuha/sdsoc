@@ -29,7 +29,7 @@ void gaussian_pyramid(float* src, float** dst, int n_levels, int* pyr_height, in
 
 void laplacian_pyramid(float* src, float** dst, int n_levels, int* pyr_height, int* pyr_width);
 
-void reconstruct(float** src, float* dst, int num_levels, int* rows, int* cols);
+void reconstruct(float** src, data_out_t* dst, int num_levels, int* rows, int* cols);
 
 void remap(float* src, float* dst, float ref, float fact, float sigma, int rows, int cols);
 

@@ -49,12 +49,12 @@ void hls_local_laplacian_wrap(cv::Mat& src, cv::Mat& dst, float sigma, float fac
 //	float discretisation_step = 1.0f / (N - 1);
 
 	// Original image
-	float* buf_src;
-	float* buf_dst;
-	buf_src = new float[src.rows*src.cols];
-	buf_dst = new float[src.rows*src.cols];
+	data_in_t*  buf_src;
+	data_out_t* buf_dst;
+	buf_src = new data_in_t[src.rows*src.cols];
+	buf_dst = new data_out_t[src.rows*src.cols];
 
-	memcpy(buf_src, src.data, src.rows*src.cols*sizeof(float));
+	memcpy(buf_src, src.data, src.rows*src.cols*sizeof(data_in_t));
 
 	// Pyramids
 	float** input_gaussian_pyr = NULL;
@@ -62,6 +62,7 @@ void hls_local_laplacian_wrap(cv::Mat& src, cv::Mat& dst, float sigma, float fac
 	input_gaussian_pyr = (float**) malloc(num_levels*sizeof(float*));
 	output_laplace_pyr = (float**) malloc(num_levels * sizeof(float*));
 
+	// List for pyramid's widths & heights
 	int* pyr_width = NULL;
 	int* pyr_height = NULL;
 	pyr_width = new int[num_levels];
@@ -147,7 +148,7 @@ void hls_local_laplacian_wrap(cv::Mat& src, cv::Mat& dst, float sigma, float fac
 
 	// Copy back
 	dst.create(src.rows, src.cols, src.type());
-	memcpy(dst.data, buf_dst, dst.rows*dst.cols * sizeof(float));
+	memcpy(dst.data, buf_dst, dst.rows*dst.cols * sizeof(data_out_t));
 
 	// Release memory
 	for (int i = 0; i < num_levels; i++) {
