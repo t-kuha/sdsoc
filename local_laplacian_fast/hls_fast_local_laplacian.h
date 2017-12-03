@@ -18,8 +18,7 @@ typedef		float			pipe_t;
 
 void hls_local_laplacian_wrap(cv::Mat& src, cv::Mat& dst, float sigma, float fact, int N);
 
-void hls_local_laplacian(float* I, float** lap, float** dst,
-		int* pyr_height, int* pyr_width,
+void hls_local_laplacian(float* I, float** lap, float** dst, int* pyr_height, int* pyr_width,
 		int num_levels, float sigma, float fact, int N);
 
 void gaussian_pyramid(float* src, float** dst, int n_levels, int* pyr_height, int* pyr_width);
@@ -29,8 +28,6 @@ void laplacian_pyramid(float* src, float** dst, int n_levels, int* pyr_height, i
 void reconstruct(float** src, float* dst, int num_levels, int* rows, int* cols);
 
 void remap(float* src, float* dst, float ref, float fact, float sigma, int rows, int cols);
-
-//void my_ceil(int* in, int* out);
 
 
 #endif

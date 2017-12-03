@@ -47,7 +47,7 @@ void hls_local_laplacian_wrap(cv::Mat& src, cv::Mat& dst, float sigma, float fac
 	// Settings
 	// num_levels: Max. 9 (for 1024 x 1024 image)
 	int num_levels = 4;// std::ceil(std::log(std::min(src.rows, src.cols)) - log(2)) + 2;
-	float discretisation_step = 1.0f / (N - 1);
+//	float discretisation_step = 1.0f / (N - 1);
 
 	// Original image
 	float* buf_src;
@@ -68,13 +68,11 @@ void hls_local_laplacian_wrap(cv::Mat& src, cv::Mat& dst, float sigma, float fac
 	pyr_width = new int[num_levels];
 	pyr_height = new int[num_levels];
 
-
 	int width = src.cols, height = src.rows;
 	for (int i = 0; i < num_levels; i++) {
 		pyr_width[i] = width;
 		pyr_height[i] = height;
 
-		//input_gaussian_pyr.push_back(ptr);
 		input_gaussian_pyr[i] = new float[height*width];
 		output_laplace_pyr[i] = new float[height*width];
 
@@ -83,9 +81,7 @@ void hls_local_laplacian_wrap(cv::Mat& src, cv::Mat& dst, float sigma, float fac
 	}
 
 	// Construct Laplacian pyramid
-	laplacian_pyramid(buf_src, output_laplace_pyr, num_levels,
-			//src.rows, src.cols
-			pyr_height, pyr_width);
+	laplacian_pyramid(buf_src, output_laplace_pyr, num_levels, pyr_height, pyr_width);
 #if 0
 	// Show pyramid image
 	int h_ = src.rows, w_ = src.cols;
@@ -107,9 +103,7 @@ void hls_local_laplacian_wrap(cv::Mat& src, cv::Mat& dst, float sigma, float fac
 	// Gaussian Pyramid
 	// Copy finest level
 	memcpy(input_gaussian_pyr[0], buf_src, src.rows*src.cols*sizeof(float));
-	gaussian_pyramid(buf_src, input_gaussian_pyr, num_levels,
-			//src.rows, src.cols
-			pyr_height, pyr_width);
+	gaussian_pyramid(buf_src, input_gaussian_pyr, num_levels, pyr_height, pyr_width);
 #if 0
 	// Show pyramid image
 	int h_ = src.rows, w_ = src.cols;
@@ -129,10 +123,7 @@ void hls_local_laplacian_wrap(cv::Mat& src, cv::Mat& dst, float sigma, float fac
 #endif
 
 	hls_local_laplacian(
-		buf_src, input_gaussian_pyr, output_laplace_pyr,
-		//pyr_height[0], pyr_width[0],
-		//src.rows, src.cols,
-		pyr_height, pyr_width,
+		buf_src, input_gaussian_pyr, output_laplace_pyr, pyr_height, pyr_width,
 		num_levels, sigma, fact, N);
 #if 0
 		// Show pyramid image
@@ -198,7 +189,6 @@ void hls_local_laplacian_wrap(cv::Mat& src, cv::Mat& dst, float sigma, float fac
 // gau:  Pre-built Gaussian pyramid
 // dst:  Remapped Laplacian pyramid
 void hls_local_laplacian(float* I, float** gau, float** dst,
-		//int rows_, int cols_,
 		int* pyr_height, int* pyr_width,
 		int num_levels, float sigma, float fact, int N)
 {
@@ -206,20 +196,8 @@ void hls_local_laplacian(float* I, float** gau, float** dst,
 	float** temp_laplace_pyr = NULL;
 	temp_laplace_pyr = (float**)malloc(num_levels * sizeof(float*));
 
-//	int* pyr_width = NULL;
-//	int* pyr_height = NULL;
-//	pyr_width = new int[num_levels];
-//	pyr_height = new int[num_levels];
-
-//	int width = cols_, height = rows_;
 	for (int i = 0; i < num_levels; i++) {
-//		pyr_width[i] = width;
-//		pyr_height[i] = height;
-
 		temp_laplace_pyr[i] = new float[pyr_height[i]*pyr_width[i]];
-
-//		height = std::ceil(height / 2.0);
-//		width = std::ceil(width / 2.0);
 	}
 
 	// Copy
@@ -592,68 +570,6 @@ void remap(float* src, float* dst, float ref, float fact, float sigma, int rows,
 		}
 	}
 }
-
-#if 0
-void my_ceil(int* in, int* out)
-{
-	// TODO Apply inlining
-#if 0
-	//+ Timing(ns) :
-	//	*Summary :
-	//	+-------- + ------ - +---------- + ------------ +
-	//	| Clock | Target | Estimated | Uncertainty |
-	//	+-------- + ------ - +---------- + ------------ +
-	//	| ap_clk | 5.00 | 4.60 | 0.63 |
-	//	+-------- + ------ - +---------- + ------------ +
-
-	//	+Latency(clock cycles) :
-	//	*Summary :
-	//	+---- - +---- - +---- - +---- - +-------- - +
-	//	| Latency | Interval | Pipeline |
-	//	| min | max | min | max | Type |
-	//	+---- - +---- - +---- - +---- - +-------- - +
-	//	| 24 | 24 | 25 | 25 | none |
-	//	+---- - +---- - +---- - +---- - +-------- - +
-
-	//	+---------------- - +-------- - +------ - +-------- + ------ - +
-	//	| Name | BRAM_18K | DSP48E | FF | LUT |
-	//	+---------------- - +-------- - +------ - +-------- + ------ - +
-	//	| Total | 2 | 11 | 2004 | 2739 |
-	//	+---------------- - +-------- - +------ - +-------- + ------ - +
-	//	| Utilization(%) | ~0 | 5 | 1 | 5 |
-	//	+---------------- - +-------- - +------ - +-------- + ------ - +
-
-	*out = std::ceil(*in / 2.0);
-
-#else
-	// + Timing (ns): 
-	//* Summary:
-	//	+-------- + ------ - +---------- + ------------ +
-	//	| Clock | Target | Estimated | Uncertainty |
-	//	+-------- + ------ - +---------- + ------------ +
-	//	| ap_clk | 5.00 | 3.48 | 0.63 |
-	//	+-------- + ------ - +---------- + ------------ +
-	//	
-	//	+Latency(clock cycles) :
-	//	*Summary :
-	//	+---- - +---- - +---- - +---- - +-------- - +
-	//	| Latency | Interval | Pipeline |
-	//	| min | max | min | max | Type |
-	//	+---- - +---- - +---- - +---- - +-------- - +
-	//	| 1 | 1 | 2 | 2 | none |
-	//	+---- - +---- - +---- - +---- - +-------- - +
-	//	
-	//	+---------------- - +-------- - +------ - +-------- + ------ - +
-	//	| Name | BRAM_18K | DSP48E | FF | LUT |
-	//	| Total | 0 | 0 | 66 | 151 |
-	//	+---------------- - +-------- - +------ - +-------- + ------ - +
-	//	| Utilization(%) | 0 | 0 | ~0 | ~0 |
-	//	+---------------- - +-------- - +------ - +-------- + ------ - +
-
-	*out = (*in >> 1) + (*in % 2);
-#endif
-}
-#endif
 
 void my_split(
 	hls::Mat<_MAX_ROWS_, _MAX_COLS_, MAT_TYPE>& src,
