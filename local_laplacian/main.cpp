@@ -1,7 +1,7 @@
 // File Description
 // Author: Philip Salvaggio
 
-#include "stdafx.h"
+//#include "stdafx.h"
 
 #include "gaussian_pyramid.h"
 #include "laplacian_pyramid.h"
