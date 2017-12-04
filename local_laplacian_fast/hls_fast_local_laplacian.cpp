@@ -574,8 +574,13 @@ void remap(float* src, float* dst, float ref, float fact, float sigma, int rows,
 	for (int r = 0; r < rows; r++) {
 		for (int c = 0; c < cols; c++) {
 			I = src[r*cols + c];
+#ifdef _WIN32
+			dst[r*cols + c] =
+				fact*(I - ref)*std::exp(-(I - ref)*(I - ref) / (2 * sigma*sigma)); 
+#else
 			dst[r*cols + c] =
 				fact*(I - ref)*hls::expf(-(I - ref)*(I - ref) / (2 * sigma*sigma));
+#endif
 		}
 	}
 }
