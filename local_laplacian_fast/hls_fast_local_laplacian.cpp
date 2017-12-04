@@ -512,7 +512,7 @@ void laplacian_pyramid(float* src, float** dst, int num_levels,
 	}
 }
 
-void reconstruct(float** src, float* dst, int num_levels, int* rows, int* cols)
+void reconstruct(float** src, data_out_t* dst, int num_levels, int* rows, int* cols)
 {
 	// Inter-loop buffer
 	hls::Mat<_MAX_ROWS_, _MAX_COLS_, _MAT_TYPE_> buf_;	// Inter-loop buffer
