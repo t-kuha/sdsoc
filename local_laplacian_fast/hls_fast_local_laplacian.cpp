@@ -196,18 +196,14 @@ void hls_local_laplacian(float* I, float* gau, float* dst,
 		int num_levels, float sigma, float fact, int N)
 {
 	float discretisation_step = 1.0f / (N - 1);
-	float** temp_laplace_pyr = NULL;
-	temp_laplace_pyr = (float**)malloc(num_levels * sizeof(float*));
-
 
 	int sz_temp_pyr = 0;
 	for (int i = 0; i < num_levels; i++) {
-		temp_laplace_pyr[i] = new float[pyr_rows[i]*pyr_cols[i]];
 		sz_temp_pyr += pyr_rows[i] * pyr_cols[i];
 	}
 
-	float* temp_laplace_pyr2 = NULL;
-	temp_laplace_pyr2 = new float [sz_temp_pyr];
+	float* temp_laplace_pyr = NULL;
+	temp_laplace_pyr = new float [sz_temp_pyr];
 
 	// Copy
 	int offset2 = 0;
@@ -234,7 +230,7 @@ void hls_local_laplacian(float* I, float* gau, float* dst,
 		remap(I, I_remap, ref, fact, sigma, rows, cols);
 
 		// Create laplacian pyramid from remapped image
-		laplacian_pyramid(I_remap, temp_laplace_pyr2, num_levels, pyr_rows, pyr_cols);
+		laplacian_pyramid(I_remap, temp_laplace_pyr, num_levels, pyr_rows, pyr_cols);
 
 		int offset = 0;
 		for (int level = 0; level < num_levels - 1; level++) {
@@ -243,7 +239,7 @@ void hls_local_laplacian(float* I, float* gau, float* dst,
 				for (int c = 0; c < pyr_cols[level]; c++) {
 					if (std::abs(gau[offset + r*pyr_cols[level] + c] - ref) < discretisation_step) {
 						x_ = 1 - std::abs(gau[offset + r*pyr_cols[level] + c] - ref) / discretisation_step;
-						x_ = x_ * temp_laplace_pyr2[offset + r*pyr_cols[level] + c];
+						x_ = x_ * temp_laplace_pyr[offset + r*pyr_cols[level] + c];
 					}
 					else {
 						x_ = 0;
@@ -259,12 +255,8 @@ void hls_local_laplacian(float* I, float* gau, float* dst,
 	}
 
 	// Release memory
-	for (int i = 0; i < num_levels; i++) {
-		delete [] temp_laplace_pyr[i];
-	}
-
 	if(temp_laplace_pyr){
-		free(temp_laplace_pyr);
+		delete [] temp_laplace_pyr;
 	}
 
 	delete [] I_remap;
@@ -277,16 +269,6 @@ void downsample(
 //#pragma HLS DATAFLOW
 
 	// Convolution Kernel
-#if 0
-	static const float x[5] = { .05, .25, .4, .25, .05 };
-	hls::Window<5, 5, float> kernel;// = cv::Mat(5, 5, CV_32FC1);
-	for (int r = 0; r < 5; r++) {
-		for (int c = 0; c < 5; c++) {
-//#pragma HLS PIPELINE
-			kernel.val[r][c] = x[r] * x[c];
-		}
-	}
-#else
 	// This sums to unity
 	static const float x[25] = {
 		0.0025, 0.0125, 0.0200, 0.0125, 0.0025,
@@ -301,12 +283,11 @@ void downsample(
 			kernel.val[r][c] = x[r * 5 + c];
 		}
 	}
-#endif
 
 	// Convolve
 	hls::Point p(-1, -1);
 	hls::Mat<_MAX_ROWS_, _MAX_COLS_, _MAT_TYPE_> tmp(src.rows, src.cols);
-	hls::Filter2D(src, tmp, kernel, p);	//	cv::filter2D(src, dst, -1, kernel);
+	hls::Filter2D(src, tmp, kernel, p);
 
 	// Decimate
 	hls::Scalar<HLS_MAT_CN(_MAT_TYPE_), HLS_TNAME(_MAT_TYPE_)> px;
@@ -329,16 +310,6 @@ void upsample(
 	int rows, int cols)
 {
 	// Convolution Kernel
-#if 0
-	static const float x[5] = { .05, .25, .4, .25, .05 };
-	hls::Window<5, 5, float> kernel;// = cv::Mat(5, 5, CV_32FC1);
-	for (int r = 0; r < 5; r++) {
-		for (int c = 0; c < 5; c++) {
-//#pragma HLS PIPELINE
-			kernel.val[r][c] = x[r] * x[c];
-		}
-	}
-#else
 	// This sums to unity
 	static const float x[25] = {
 		0.0025, 0.0125, 0.0200, 0.0125, 0.0025,
@@ -353,7 +324,6 @@ void upsample(
 			kernel.val[r][c] = x[r * 5 + c];
 		}
 	}
-#endif
 
 	// Up-scaling
 	hls::Mat<_MAX_ROWS_, _MAX_COLS_, _MAT_TYPE_> tmp(rows, cols);
