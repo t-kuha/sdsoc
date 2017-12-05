@@ -547,57 +547,57 @@ void laplacian_pyramid(float* src, float* dst, int num_levels,
 	}
 }
 
-void reconstruct(float* src, data_out_t* dst, int num_levels, int* rows, int* cols)
+void reconstruct(float* src, data_out_t* dst, int num_levels, int pyr_rows[_MAX_LEVELS_], int pyr_cols[_MAX_LEVELS_])
 {
 	// Inter-loop buffer
 	hls::Mat<_MAX_ROWS_, _MAX_COLS_, _MAT_TYPE_> buf_;	// Inter-loop buffer
-	hls::Mat<_MAX_ROWS_, _MAX_COLS_, _MAT_TYPE_> in(rows[num_levels - 1], cols[num_levels - 1]);
+	hls::Mat<_MAX_ROWS_, _MAX_COLS_, _MAT_TYPE_> in(pyr_rows[num_levels - 1], pyr_cols[num_levels - 1]);
 	hls::Scalar<1, float> px;
 
 	// Last layer in the pyramid
 	int offset = 0;
 	for (int l = 0; l < num_levels - 1; l++) {
-		offset += rows[l] * cols[l];
+		offset += pyr_rows[l] * pyr_cols[l];
 	}
 
-	for (int r = 0; r < rows[num_levels - 1]; r++) {
-		for (int c = 0; c < cols[num_levels - 1]; c++) {
-			px.val[0] = src[offset + r*cols[num_levels - 1] + c];
+	for (int r = 0; r < pyr_rows[num_levels - 1]; r++) {
+		for (int c = 0; c < pyr_cols[num_levels - 1]; c++) {
+			px.val[0] = src[offset + r*pyr_cols[num_levels - 1] + c];
 			in << px;
 		}
 	}
 
 	hls::Scalar<1, float> px2;
 	for (int i = num_levels - 2; i >= 0; i--) {
-		hls::Mat<_MAX_ROWS_, _MAX_COLS_, _MAT_TYPE_> out(rows[i], cols[i]);
+		hls::Mat<_MAX_ROWS_, _MAX_COLS_, _MAT_TYPE_> out(pyr_rows[i], pyr_cols[i]);
 
-		offset -= rows[i] * cols[i];
+		offset -= pyr_rows[i] * pyr_cols[i];
 
 		// Upsample
 		if (i == num_levels - 2) {
-			upsample(in, out, rows[i], cols[i]);
+			upsample(in, out, pyr_rows[i], pyr_cols[i]);
 		}
 		else {
-			upsample(buf_, out, rows[i], cols[i]);
+			upsample(buf_, out, pyr_rows[i], pyr_cols[i]);
 		}
 
-		buf_.init(rows[i], cols[i]);
+		buf_.init(pyr_rows[i], pyr_cols[i]);
 		
 		// Load data
-		for (int r = 0; r < rows[i]; r++) {
-			for (int c = 0; c < cols[i]; c++) {
+		for (int r = 0; r < pyr_rows[i]; r++) {
+			for (int c = 0; c < pyr_cols[i]; c++) {
 				out >> px;
-				px.val[0] += src[offset + r*cols[i] + c];
+				px.val[0] += src[offset + r*pyr_cols[i] + c];
 				buf_ << px;
 			}
 		}
 	}
 
 	// Output
-	for (int r = 0; r < rows[0]; r++) {
-		for (int c = 0; c < cols[0]; c++) {
+	for (int r = 0; r < pyr_rows[0]; r++) {
+		for (int c = 0; c < pyr_cols[0]; c++) {
 			buf_ >> px;
-			dst[r*cols[0] + c] = px.val[0];
+			dst[r*pyr_cols[0] + c] = px.val[0];
 		}
 	}
 }
