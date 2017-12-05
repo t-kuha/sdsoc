@@ -56,67 +56,84 @@ void hls_local_laplacian_wrap(cv::Mat& src, cv::Mat& dst, float sigma, float fac
 
 	memcpy(buf_src, src.data, src.rows*src.cols*sizeof(data_in_t));
 
-	// Pyramids
-	float** input_gaussian_pyr = NULL;
-	float** output_laplace_pyr = NULL;
-	input_gaussian_pyr = (float**) malloc(num_levels*sizeof(float*));
-	output_laplace_pyr = (float**) malloc(num_levels * sizeof(float*));
 
 	// List for pyramid's widths & heights
 	int pyr_rows[_MAX_LEVELS_] = { 0 };
 	int pyr_cols[_MAX_LEVELS_] = { 0 };
+
+	// Total memory size for pyramids (measured in num. of elements)
+	int sz_gaussian_pyr = 0;
+	int sz_laplacian_pyr = 0;
 
 	int width = src.cols, height = src.rows;
 	for (int i = 0; i < num_levels; i++) {
 		pyr_cols[i] = width;
 		pyr_rows[i] = height;
 
-		input_gaussian_pyr[i] = new float[height*width];
-		output_laplace_pyr[i] = new float[height*width];
+		sz_gaussian_pyr += width*height;
+		sz_laplacian_pyr += width*height;
 
 		height = std::ceil(height / 2.0);
 		width = std::ceil(width / 2.0);
 	}
 
+
+	// Pyramids
+	float* input_gaussian_pyr = NULL;
+	float* output_laplace_pyr = NULL;
+	input_gaussian_pyr = new float [sz_gaussian_pyr];
+	output_laplace_pyr = new float [sz_laplacian_pyr];
+
+
 	// Construct Laplacian pyramid
 	laplacian_pyramid(buf_src, output_laplace_pyr, num_levels, pyr_rows, pyr_cols);
 #if 0
-	// Show pyramid image
-	int h_ = src.rows, w_ = src.cols;
-	for (int l = 0; l < num_levels; l++) {
-		std::string name = "L - ";
-		name += std::to_string(l);
+	{
+		// Show pyramid image
+		int h_ = src.rows, w_ = src.cols;
+		int offset = 0;
+		for (int l = 0; l < num_levels; l++) {
+			std::string name = "L - ";
+			name += std::to_string(l);
 
-		cv::Mat tmp(h_, w_, CV_32FC1);
-		tmp.data = (unsigned char*)(output_laplace_pyr[l]);
-		cv::imshow(name, tmp + 0.5);
-		cv::waitKey(1.0*1000);
-		cv::destroyWindow(name);
+			cv::Mat tmp(h_, w_, CV_32FC1);
+			tmp.data = (unsigned char*)(&output_laplace_pyr[offset]);
+			cv::imshow(name, tmp + 0.5);
+			cv::waitKey(1.0 * 1000);
+			cv::destroyWindow(name);
 
-		h_ = std::ceil(h_ / 2.0);
-		w_ = std::ceil(w_ / 2.0);
+			offset += h_*w_;
+
+			h_ = std::ceil(h_ / 2.0);
+			w_ = std::ceil(w_ / 2.0);
+		}
 	}
 #endif
 
 	// Gaussian Pyramid
 	// Copy finest level
-	memcpy(input_gaussian_pyr[0], buf_src, src.rows*src.cols*sizeof(float));
+	memcpy(input_gaussian_pyr, buf_src, src.rows*src.cols * sizeof(float));
 	gaussian_pyramid(buf_src, input_gaussian_pyr, num_levels, pyr_rows, pyr_cols);
 #if 0
-	// Show pyramid image
-	int h_ = src.rows, w_ = src.cols;
-	for (int l = 0; l < num_levels; l++) {
-		std::string name = "G - ";
-		name += std::to_string(l);
+	{
+		// Show pyramid image
+		int h_ = src.rows, w_ = src.cols;
+		int offset = 0;
+		for (int l = 0; l < num_levels; l++) {
+			std::string name = "G - ";
+			name += std::to_string(l);
 
-		cv::Mat tmp(h_, w_, CV_32FC1);
-		tmp.data = (unsigned char*)(input_gaussian_pyr[l]);
-		cv::imshow(name, tmp);
-		cv::waitKey(1.0 * 1000);
-		cv::destroyWindow(name);
+			cv::Mat tmp(h_, w_, CV_32FC1);
+			tmp.data = (unsigned char*)(&input_gaussian_pyr[offset]);
+			cv::imshow(name, tmp);
+			cv::waitKey(1.0 * 1000);
+			cv::destroyWindow(name);
 
-		h_ = std::ceil(h_ / 2.0);
-		w_ = std::ceil(w_ / 2.0);
+			offset += h_*w_;
+
+			h_ = std::ceil(h_ / 2.0);
+			w_ = std::ceil(w_ / 2.0);
+		}
 	}
 #endif
 
@@ -124,21 +141,26 @@ void hls_local_laplacian_wrap(cv::Mat& src, cv::Mat& dst, float sigma, float fac
 		buf_src, input_gaussian_pyr, output_laplace_pyr, pyr_rows, pyr_cols,
 		num_levels, sigma, fact, N);
 #if 0
+	{
 		// Show pyramid image
 		int h_ = src.rows, w_ = src.cols;
+		int offset = 0;
 		for (int l = 0; l < num_levels; l++) {
 			std::string name = "L - ";
 			name += std::to_string(l);
 
 			cv::Mat tmp(h_, w_, CV_32FC1);
-			tmp.data = (unsigned char*)(output_laplace_pyr[l]);
+			tmp.data = (unsigned char*)(&output_laplace_pyr[offset]);
 			cv::imshow(name, tmp + 0.5);
-			cv::waitKey(1.0*1000);
+			cv::waitKey(1.0 * 1000);
 			cv::destroyWindow(name);
+
+			offset += h_*w_;
 
 			h_ = std::ceil(h_ / 2.0);
 			w_ = std::ceil(w_ / 2.0);
 		}
+	}
 #endif
 
 	// Reconstruct
@@ -149,21 +171,11 @@ void hls_local_laplacian_wrap(cv::Mat& src, cv::Mat& dst, float sigma, float fac
 	memcpy(dst.data, buf_dst, dst.rows*dst.cols * sizeof(data_out_t));
 
 	// Release memory
-	for (int i = 0; i < num_levels; i++) {
-		if (input_gaussian_pyr[i] != NULL) {
-			delete [] input_gaussian_pyr[i];
-		}
-
-		if (output_laplace_pyr[i] != NULL) {
-			delete[] output_laplace_pyr[i];
-		}
-	}
-
 	if (input_gaussian_pyr) {
-		free(input_gaussian_pyr);
+		delete [] input_gaussian_pyr;
 	}
 	if (output_laplace_pyr) {
-		free(output_laplace_pyr);
+		delete [] output_laplace_pyr;
 	}
 
 	if (buf_src) {
@@ -179,7 +191,7 @@ void hls_local_laplacian_wrap(cv::Mat& src, cv::Mat& dst, float sigma, float fac
 // I:    Original image
 // gau:  Pre-built Gaussian pyramid
 // dst:  Remapped Laplacian pyramid
-void hls_local_laplacian(float* I, float** gau, float** dst,
+void hls_local_laplacian(float* I, float* gau, float* dst,
 		int pyr_rows[_MAX_LEVELS_], int pyr_cols[_MAX_LEVELS_],
 		int num_levels, float sigma, float fact, int N)
 {
@@ -187,14 +199,25 @@ void hls_local_laplacian(float* I, float** gau, float** dst,
 	float** temp_laplace_pyr = NULL;
 	temp_laplace_pyr = (float**)malloc(num_levels * sizeof(float*));
 
+
+	int sz_temp_pyr = 0;
 	for (int i = 0; i < num_levels; i++) {
 		temp_laplace_pyr[i] = new float[pyr_rows[i]*pyr_cols[i]];
+		sz_temp_pyr += pyr_rows[i] * pyr_cols[i];
 	}
 
+	float* temp_laplace_pyr2 = NULL;
+	temp_laplace_pyr2 = new float [sz_temp_pyr];
+
 	// Copy
+	int offset2 = 0;
+	for (int l = 0; l < num_levels - 1; l++) {
+		offset2 += pyr_rows[l] * pyr_cols[l];
+	}
+
 	for (int r = 0; r < pyr_rows[num_levels - 1]; r++) {
 		for (int c = 0; c < pyr_cols[num_levels - 1]; c++) {
-			dst[num_levels - 1][r*pyr_cols[num_levels - 1] + c] = gau[num_levels - 1][r*pyr_cols[num_levels - 1] + c];
+			dst[offset2 + r*pyr_cols[num_levels - 1] + c] = gau[offset2 + r*pyr_cols[num_levels - 1] + c];
 		}
 	}
 
@@ -211,23 +234,27 @@ void hls_local_laplacian(float* I, float** gau, float** dst,
 		remap(I, I_remap, ref, fact, sigma, rows, cols);
 
 		// Create laplacian pyramid from remapped image
-		laplacian_pyramid(I_remap, temp_laplace_pyr, num_levels, pyr_rows, pyr_cols);
+		laplacian_pyramid(I_remap, temp_laplace_pyr2, num_levels, pyr_rows, pyr_cols);
 
+		int offset = 0;
 		for (int level = 0; level < num_levels - 1; level++) {
 			float x_ = 0;
 			for (int r = 0; r < pyr_rows[level]; r++) {
 				for (int c = 0; c < pyr_cols[level]; c++) {
-					if(std::abs(gau[level][r*pyr_cols[level] + c] - ref) < discretisation_step){
-						x_ = 1 - std::abs(gau[level][r*pyr_cols[level] + c] - ref) / discretisation_step;
-						x_ = x_ * temp_laplace_pyr[level][r*pyr_cols[level] + c];
-					}else{
+					if (std::abs(gau[offset + r*pyr_cols[level] + c] - ref) < discretisation_step) {
+						x_ = 1 - std::abs(gau[offset + r*pyr_cols[level] + c] - ref) / discretisation_step;
+						x_ = x_ * temp_laplace_pyr2[offset + r*pyr_cols[level] + c];
+					}
+					else {
 						x_ = 0;
 					}
-					x_ = x_ + dst[level][r*pyr_cols[level] + c];
+					x_ = x_ + dst[offset + r*pyr_cols[level] + c];
 
-					dst[level][r*pyr_cols[level] + c] = x_;
+					dst[offset + r*pyr_cols[level] + c] = x_;
 				}
 			}
+
+			offset += pyr_rows[level] * pyr_cols[level];
 		}
 	}
 
@@ -354,7 +381,7 @@ void upsample(
 }
 
 // Marked for HW acceleration
-void gaussian_pyramid(float* src, float** dst, int num_levels,
+void gaussian_pyramid(float* src, float* dst, int num_levels,
 		int pyr_rows[_MAX_LEVELS_], int pyr_cols[_MAX_LEVELS_])
 {
 	// Check range of input for determining trip count
@@ -364,9 +391,13 @@ void gaussian_pyramid(float* src, float** dst, int num_levels,
 	hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE_> buf_;
 	hls::Scalar<1, float> px;
 
+	int offset = 0;
+
 	for (int l = 1; l < num_levels; l++) {
 		int rows_ = pyr_rows[l - 1];
 		int cols_ = pyr_cols[l - 1];
+
+		offset += rows_*cols_;
 
 		// Before downsampling
 		hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE_> in(rows_, cols_);
@@ -405,7 +436,7 @@ void gaussian_pyramid(float* src, float** dst, int num_levels,
 				out >> px;
 
 				// Output
-				dst[l][r*cols2_ + c] = px.val[0];
+				dst[offset + r*cols2_ + c] = px.val[0];
 
 				// For next loop
 				if (l != num_levels - 1) {
@@ -426,7 +457,7 @@ void gaussian_pyramid(float* src, float** dst, int num_levels,
 	}
 }
 
-void laplacian_pyramid(float* src, float** dst, int num_levels,
+void laplacian_pyramid(float* src, float* dst, int num_levels,
 		int pyr_rows[_MAX_LEVELS_], int pyr_cols[_MAX_LEVELS_])
 {
 	// Check range of input for determining trip count
@@ -435,6 +466,8 @@ void laplacian_pyramid(float* src, float** dst, int num_levels,
 	// Inter-loop buffer
 	hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE_> buf_;
 	hls::Scalar<1, float> px;
+
+	int offset = 0;
 
 	for (int l = 0; l < num_levels - 1; l++) {
 		int rows_ = pyr_rows[l];
@@ -496,9 +529,11 @@ void laplacian_pyramid(float* src, float** dst, int num_levels,
 		for (int r = 0; r < rows_; r++) {
 			for (int c = 0; c < cols_; c++) {
 				diff >> px;
-				dst[l][r*cols_ + c] = px.val[0];
+				dst[offset + r*cols_ + c] = px.val[0];
 			}
 		}
+
+		offset += rows_*cols_;
 	}
 
 	// Transfer last layer
@@ -507,21 +542,27 @@ void laplacian_pyramid(float* src, float** dst, int num_levels,
 	for (int r = 0; r < rows_; r++) {
 		for (int c = 0; c < cols_; c++) {
 			buf_ >> px;
-			dst[num_levels - 1][r*cols_ + c] = px.val[0];
+			dst[offset + r*cols_ + c] = px.val[0];
 		}
 	}
 }
 
-void reconstruct(float** src, data_out_t* dst, int num_levels, int* rows, int* cols)
+void reconstruct(float* src, data_out_t* dst, int num_levels, int* rows, int* cols)
 {
 	// Inter-loop buffer
 	hls::Mat<_MAX_ROWS_, _MAX_COLS_, _MAT_TYPE_> buf_;	// Inter-loop buffer
 	hls::Mat<_MAX_ROWS_, _MAX_COLS_, _MAT_TYPE_> in(rows[num_levels - 1], cols[num_levels - 1]);
 	hls::Scalar<1, float> px;
 
+	// Last layer in the pyramid
+	int offset = 0;
+	for (int l = 0; l < num_levels - 1; l++) {
+		offset += rows[l] * cols[l];
+	}
+
 	for (int r = 0; r < rows[num_levels - 1]; r++) {
 		for (int c = 0; c < cols[num_levels - 1]; c++) {
-			px.val[0] = src[num_levels - 1][r*cols[num_levels - 1] +c];
+			px.val[0] = src[offset + r*cols[num_levels - 1] + c];
 			in << px;
 		}
 	}
@@ -529,6 +570,8 @@ void reconstruct(float** src, data_out_t* dst, int num_levels, int* rows, int* c
 	hls::Scalar<1, float> px2;
 	for (int i = num_levels - 2; i >= 0; i--) {
 		hls::Mat<_MAX_ROWS_, _MAX_COLS_, _MAT_TYPE_> out(rows[i], cols[i]);
+
+		offset -= rows[i] * cols[i];
 
 		// Upsample
 		if (i == num_levels - 2) {
@@ -544,7 +587,7 @@ void reconstruct(float** src, data_out_t* dst, int num_levels, int* rows, int* c
 		for (int r = 0; r < rows[i]; r++) {
 			for (int c = 0; c < cols[i]; c++) {
 				out >> px;
-				px.val[0] += src[i][r*cols[i] + c];
+				px.val[0] += src[offset + r*cols[i] + c];
 				buf_ << px;
 			}
 		}
