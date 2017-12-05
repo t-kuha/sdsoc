@@ -274,7 +274,7 @@ void downsample(
 	hls::Mat<_MAX_ROWS_, _MAX_COLS_, _MAT_TYPE_>& src,
 	hls::Mat<_MAX_ROWS_, _MAX_COLS_, _MAT_TYPE_>& dst)
 {
-#pragma HLS DATAFLOW
+//#pragma HLS DATAFLOW
 
 	// Convolution Kernel
 #if 0
@@ -282,7 +282,7 @@ void downsample(
 	hls::Window<5, 5, float> kernel;// = cv::Mat(5, 5, CV_32FC1);
 	for (int r = 0; r < 5; r++) {
 		for (int c = 0; c < 5; c++) {
-#pragma HLS PIPELINE
+//#pragma HLS PIPELINE
 			kernel.val[r][c] = x[r] * x[c];
 		}
 	}
@@ -297,7 +297,7 @@ void downsample(
 	hls::Window<5, 5, float> kernel;
 	for (int r = 0; r < 5; r++) {
 		for (int c = 0; c < 5; c++) {
-#pragma HLS PIPELINE
+//#pragma HLS PIPELINE
 			kernel.val[r][c] = x[r * 5 + c];
 		}
 	}
@@ -311,10 +311,10 @@ void downsample(
 	// Decimate
 	hls::Scalar<HLS_MAT_CN(_MAT_TYPE_), HLS_TNAME(_MAT_TYPE_)> px;
 	for (int r = 0; r < src.rows; r++) {
-#pragma HLS PIPELINE
+//#pragma HLS PIPELINE
 		for (int c = 0; c < src.cols; c++) {
-#pragma HLS PIPELINE
-#pragma HLS LOOP_TRIPCOUNT max=1024
+//#pragma HLS PIPELINE
+//#pragma HLS LOOP_TRIPCOUNT max=1024
 			tmp >> px;
 			if ( (r % 2 == 0) && (c % 2 == 0) ) {
 				dst << px;
@@ -334,7 +334,7 @@ void upsample(
 	hls::Window<5, 5, float> kernel;// = cv::Mat(5, 5, CV_32FC1);
 	for (int r = 0; r < 5; r++) {
 		for (int c = 0; c < 5; c++) {
-#pragma HLS PIPELINE
+//#pragma HLS PIPELINE
 			kernel.val[r][c] = x[r] * x[c];
 		}
 	}
@@ -349,7 +349,7 @@ void upsample(
 	hls::Window<5, 5, float> kernel;
 	for (int r = 0; r < 5; r++) {
 		for (int c = 0; c < 5; c++) {
-#pragma HLS PIPELINE
+//#pragma HLS PIPELINE
 			kernel.val[r][c] = x[r * 5 + c];
 		}
 	}
@@ -632,6 +632,7 @@ void my_split(
 
 	for (int r = 0; r < rows_; r++) {
 		for (int c = 0; c < cols_; c++) {
+//#pragma HLS PIPELINE
 			hls::Scalar<HLS_MAT_CN(_MAT_TYPE_), HLS_TNAME(_MAT_TYPE_)> px;
 			src >> px;
 
