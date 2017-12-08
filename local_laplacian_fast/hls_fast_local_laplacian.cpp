@@ -91,7 +91,7 @@ void hls_local_laplacian_wrap(cv::Mat& src, cv::Mat& dst, float sigma, float fac
 	ptr[1] = ptr[0] + pyr_rows[1] * pyr_cols[1];
 	ptr[2] = ptr[1] + pyr_rows[2] * pyr_cols[2];
 	laplacian_pyramid(buf_src, &(output_laplace_pyr[0]), ptr[0], ptr[1], ptr[2], num_levels, pyr_rows, pyr_cols);
-#if 01
+#if 0
 	{
 		// Show pyramid image
 		int h_ = src.rows, w_ = src.cols;
@@ -124,7 +124,7 @@ void hls_local_laplacian_wrap(cv::Mat& src, cv::Mat& dst, float sigma, float fac
 	gaussian_pyramid(buf_src, 
 		ptr[0], ptr[1], ptr[2], 
 		num_levels, pyr_rows, pyr_cols);
-#if 01
+#if 0
 	{
 		// Show pyramid image
 		int h_ = src.rows, w_ = src.cols;
@@ -174,7 +174,10 @@ void hls_local_laplacian_wrap(cv::Mat& src, cv::Mat& dst, float sigma, float fac
 #endif
 
 	// Reconstruct
-	reconstruct(output_laplace_pyr, buf_dst, num_levels, pyr_rows, pyr_cols);
+	ptr[0] = &(output_laplace_pyr[0]) + pyr_rows[0] * pyr_cols[0];
+	ptr[1] = ptr[0] + pyr_rows[1] * pyr_cols[1];
+	ptr[2] = ptr[1] + pyr_rows[2] * pyr_cols[2];
+	reconstruct(ptr[2], ptr[1], ptr[0], output_laplace_pyr, buf_dst, num_levels, pyr_rows, pyr_cols);
 
 	// Copy back
 	dst.create(src.rows, src.cols, src.type());
@@ -940,9 +943,127 @@ void laplacian_pyramid(
 	}
 }
 
-void reconstruct(float* src, data_out_t* dst, int num_levels, int pyr_rows[_MAX_LEVELS_], int pyr_cols[_MAX_LEVELS_])
+void reconstruct(
+	float* src0, float* src1, float* src2, float* src3, data_out_t* dst, 
+	int num_levels, int pyr_rows_[_MAX_LEVELS_], int pyr_cols_[_MAX_LEVELS_])
 {
-#if 1
+	assert(num_levels <= _MAX_LEVELS_);
+
+	int pyr_rows[_MAX_LEVELS_];
+	int pyr_cols[_MAX_LEVELS_];
+#pragma HLS ARRAY_PARTITION variable=pyr_rows complete
+#pragma HLS ARRAY_PARTITION variable=pyr_cols complete
+	for (int l = 0; l < num_levels; l++) {
+#pragma HLS PIPELINE
+		pyr_rows[l] = pyr_rows_[l];
+		pyr_cols[l] = pyr_cols_[l];
+	}
+
+#pragma HLS DATAFLOW
+
+	// Input stream
+	hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE_> in0(pyr_rows[3], pyr_cols[3]);
+	hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE_> in1(pyr_rows[2], pyr_cols[2]);
+	hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE_> in2(pyr_rows[1], pyr_cols[1]);
+	hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE_> in3(pyr_rows[0], pyr_cols[0]);
+
+	// Up-sampled image
+	hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE_> up1(pyr_rows[2], pyr_cols[2]);
+	hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE_> up2(pyr_rows[1], pyr_cols[1]);
+	hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE_> up3(pyr_rows[0], pyr_cols[0]);
+
+	// SUm of updampled image + 1-layer up in the pyramid
+	hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE_> sum1(pyr_rows[2], pyr_cols[2]);
+	hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE_> sum2(pyr_rows[1], pyr_cols[1]);
+	hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE_> sum3(pyr_rows[0], pyr_cols[0]);
+
+	hls::Scalar<1, float> px1;
+	hls::Scalar<1, float> px2;
+
+	// Load image data
+	for (int r = 0; r < pyr_rows[3]; r++) {
+#pragma HLS LOOP_TRIPCOUNT max=1024
+		for (int c = 0; c < pyr_cols[3]; c++) {
+#pragma HLS LOOP_TRIPCOUNT max=1024
+#pragma HLS PIPELINE
+			px1.val[0] = src0[r*pyr_cols[3] + c];
+			in0 << px1;
+		}
+	}
+
+	for (int r = 0; r < pyr_rows[2]; r++) {
+#pragma HLS LOOP_TRIPCOUNT max=512
+		for (int c = 0; c < pyr_cols[2]; c++) {
+#pragma HLS LOOP_TRIPCOUNT max=512
+#pragma HLS PIPELINE
+			px1.val[0] = src1[r*pyr_cols[2] + c];
+			in1 << px1;
+		}
+	}
+
+	for (int r = 0; r < pyr_rows[1]; r++) {
+#pragma HLS LOOP_TRIPCOUNT max=256
+		for (int c = 0; c < pyr_cols[1]; c++) {
+#pragma HLS LOOP_TRIPCOUNT max=256
+#pragma HLS PIPELINE
+			px1.val[0] = src2[r*pyr_cols[1] + c];
+			in2 << px1;
+		}
+	}
+
+	for (int r = 0; r < pyr_rows[0]; r++) {
+#pragma HLS LOOP_TRIPCOUNT max=128
+		for (int c = 0; c < pyr_cols[0]; c++) {
+#pragma HLS LOOP_TRIPCOUNT max=128
+#pragma HLS PIPELINE
+			px1.val[0] = src3[r*pyr_cols[0] + c];
+			in3 << px1;
+		}
+	}
+
+	// 
+	upsample(in0, up1);
+
+	// Add
+	for (int r = 0; r < up1.rows; r++) {
+#pragma HLS LOOP_TRIPCOUNT max=1024
+		for (int c = 0; c < up1.cols; c++) {
+#pragma HLS LOOP_TRIPCOUNT max=1024
+#pragma HLS PIPELINE
+			up1 >> px1;
+			in1 >> px2;
+
+			sum1 << (px1 + px2);
+		}
+	}
+
+	upsample(sum1, up2);
+	for (int r = 0; r < up2.rows; r++) {
+#pragma HLS LOOP_TRIPCOUNT max=1024
+		for (int c = 0; c < up2.cols; c++) {
+#pragma HLS LOOP_TRIPCOUNT max=1024
+#pragma HLS PIPELINE
+			up2 >> px1;
+			in2 >> px2;
+
+			sum2 << (px1 + px2);
+		}
+	}
+
+	upsample(sum2, up3);
+	for (int r = 0; r < up3.rows; r++) {
+#pragma HLS LOOP_TRIPCOUNT max=1024
+		for (int c = 0; c < up3.cols; c++) {
+#pragma HLS LOOP_TRIPCOUNT max=1024
+#pragma HLS PIPELINE
+			up3 >> px1;
+			in3 >> px2;
+
+			dst[r*pyr_cols[0] + c] = (px1.val[0] + px2.val[0]);
+		}
+	}
+
+#if 0
 	hls::stream<float> buf_[_MAX_LEVELS_];
 	hls::stream<float> tmp_[_MAX_LEVELS_];
 
@@ -1006,7 +1127,7 @@ void reconstruct(float* src, data_out_t* dst, int num_levels, int pyr_rows[_MAX_
 			dst[r*pyr_cols[0] + c] = px;
 		}
 	}
-#else
+//#else
 	// Inter-loop buffer
 	//hls::Mat<_MAX_ROWS_, _MAX_COLS_, _MAT_TYPE_> buf_;	// Inter-loop buffer
 	//hls::Mat<_MAX_ROWS_, _MAX_COLS_, _MAT_TYPE_> in(pyr_rows[num_levels - 1], pyr_cols[num_levels - 1]);
