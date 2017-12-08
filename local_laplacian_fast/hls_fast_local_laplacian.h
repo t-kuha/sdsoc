@@ -25,9 +25,16 @@ void hls_local_laplacian_wrap(cv::Mat& src, cv::Mat& dst, float sigma, float fac
 void hls_local_laplacian(float* I, float* lap, float* dst, int pyr_rows[_MAX_LEVELS_], int pyr_cols[_MAX_LEVELS_],
 		int num_levels, float sigma, float fact, int N);
 
-void gaussian_pyramid(float* src, float* dst, int n_levels, int pyr_rows[_MAX_LEVELS_], int pyr_cols[_MAX_LEVELS_]);
+void gaussian_pyramid(float* src, float* dst1, float* dst2, float* dst4, int num_levels,
+	int pyr_rows_[_MAX_LEVELS_], int pyr_cols_[_MAX_LEVELS_]);
 
-void laplacian_pyramid(float* src, float* dst, int n_levels, int pyr_rows[_MAX_LEVELS_], int pyr_cols[_MAX_LEVELS_]);
+void laplacian_pyramid(
+	float* src,
+	float* dst0, float* dst1, float* dst2, float* dst3, int num_levels,
+	int pyr_rows_[_MAX_LEVELS_], int pyr_cols_[_MAX_LEVELS_]);
+
+//void gaussian_pyramid(float* src, float* dst, int n_levels, int pyr_rows[_MAX_LEVELS_], int pyr_cols[_MAX_LEVELS_]);
+//void laplacian_pyramid(float* src, float* dst, int n_levels, int pyr_rows[_MAX_LEVELS_], int pyr_cols[_MAX_LEVELS_]);
 
 void reconstruct(float* src, data_out_t* dst, int num_levels, int pyr_rows[_MAX_LEVELS_], int pyr_cols[_MAX_LEVELS_]);
 

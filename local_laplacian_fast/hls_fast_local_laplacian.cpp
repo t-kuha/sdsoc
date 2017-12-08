@@ -66,9 +66,9 @@ void hls_local_laplacian_wrap(cv::Mat& src, cv::Mat& dst, float sigma, float fac
 	int sz_laplacian_pyr = 0;
 
 	int width = src.cols, height = src.rows;
-	for (int i = 0; i < num_levels; i++) {
-		pyr_cols[i] = width;
-		pyr_rows[i] = height;
+	for (int l = 0; l < num_levels; l++) {
+		pyr_cols[l] = width;
+		pyr_rows[l] = height;
 
 		sz_gaussian_pyr += width*height;
 		sz_laplacian_pyr += width*height;
@@ -84,10 +84,14 @@ void hls_local_laplacian_wrap(cv::Mat& src, cv::Mat& dst, float sigma, float fac
 	input_gaussian_pyr = new float [sz_gaussian_pyr];
 	output_laplace_pyr = new float [sz_laplacian_pyr];
 
+	float* ptr[4];
 
 	// Construct Laplacian pyramid
-	laplacian_pyramid(buf_src, output_laplace_pyr, num_levels, pyr_rows, pyr_cols);
-#if 0
+	ptr[0] = &(output_laplace_pyr[0]) + pyr_rows[0] * pyr_cols[0];
+	ptr[1] = ptr[0] + pyr_rows[1] * pyr_cols[1];
+	ptr[2] = ptr[1] + pyr_rows[2] * pyr_cols[2];
+	laplacian_pyramid(buf_src, &(output_laplace_pyr[0]), ptr[0], ptr[1], ptr[2], num_levels, pyr_rows, pyr_cols);
+#if 01
 	{
 		// Show pyramid image
 		int h_ = src.rows, w_ = src.cols;
@@ -111,10 +115,16 @@ void hls_local_laplacian_wrap(cv::Mat& src, cv::Mat& dst, float sigma, float fac
 #endif
 
 	// Gaussian Pyramid
+	ptr[0] = &(input_gaussian_pyr[0]) + pyr_rows[0] * pyr_cols[0];
+	ptr[1] = ptr[0] + pyr_rows[1] * pyr_cols[1];
+	ptr[2] = ptr[1] + pyr_rows[2] * pyr_cols[2];
+
 	// Copy finest level
 	memcpy(input_gaussian_pyr, buf_src, src.rows*src.cols * sizeof(float));
-	gaussian_pyramid(buf_src, input_gaussian_pyr, num_levels, pyr_rows, pyr_cols);
-#if 0
+	gaussian_pyramid(buf_src, 
+		ptr[0], ptr[1], ptr[2], 
+		num_levels, pyr_rows, pyr_cols);
+#if 01
 	{
 		// Show pyramid image
 		int h_ = src.rows, w_ = src.cols;
@@ -198,12 +208,17 @@ void hls_local_laplacian(float* I, float* gau, float* dst,
 	float discretisation_step = 1.0f / (N - 1);
 
 	int sz_temp_pyr = 0;
-	for (int i = 0; i < num_levels; i++) {
-		sz_temp_pyr += pyr_rows[i] * pyr_cols[i];
+	for (int l = 0; l < num_levels; l++) {
+		sz_temp_pyr += pyr_rows[l] * pyr_cols[l];
 	}
 
 	float* temp_laplace_pyr = NULL;
 	temp_laplace_pyr = new float [sz_temp_pyr];
+
+	float* ptr[3];
+	ptr[0] = &(temp_laplace_pyr[0]) + pyr_rows[0] * pyr_cols[0];
+	ptr[1] = ptr[0] + pyr_rows[1] * pyr_cols[1];
+	ptr[2] = ptr[1] + pyr_rows[2] * pyr_cols[2];
 
 	// Copy
 	int offset2 = 0;
@@ -223,34 +238,34 @@ void hls_local_laplacian(float* I, float* gau, float* dst,
 
 	float* I_remap = NULL;
 	I_remap = new float [rows*cols];
-	for (int i = 0; i < N; i++) {
-		float ref = ((float)i) / ((float)(N - 1));
+	for (int n = 0; n < N; n++) {
+		float ref = ((float)n) / ((float)(N - 1));
 
 		// Remap original image
 		remap(I, I_remap, ref, fact, sigma, rows, cols);
 
 		// Create laplacian pyramid from remapped image
-		laplacian_pyramid(I_remap, temp_laplace_pyr, num_levels, pyr_rows, pyr_cols);
+		laplacian_pyramid(I_remap, temp_laplace_pyr, ptr[0], ptr[1], ptr[2], num_levels, pyr_rows, pyr_cols);
 
 		int offset = 0;
-		for (int level = 0; level < num_levels - 1; level++) {
+		for (int l = 0; l < num_levels - 1; l++) {
 			float x_ = 0;
-			for (int r = 0; r < pyr_rows[level]; r++) {
-				for (int c = 0; c < pyr_cols[level]; c++) {
-					if (std::abs(gau[offset + r*pyr_cols[level] + c] - ref) < discretisation_step) {
-						x_ = 1 - std::abs(gau[offset + r*pyr_cols[level] + c] - ref) / discretisation_step;
-						x_ = x_ * temp_laplace_pyr[offset + r*pyr_cols[level] + c];
+			for (int r = 0; r < pyr_rows[l]; r++) {
+				for (int c = 0; c < pyr_cols[l]; c++) {
+					if (std::abs(gau[offset + r*pyr_cols[l] + c] - ref) < discretisation_step) {
+						x_ = 1 - std::abs(gau[offset + r*pyr_cols[l] + c] - ref) / discretisation_step;
+						x_ = x_ * temp_laplace_pyr[offset + r*pyr_cols[l] + c];
 					}
 					else {
 						x_ = 0;
 					}
-					x_ = x_ + dst[offset + r*pyr_cols[level] + c];
+					x_ = x_ + dst[offset + r*pyr_cols[l] + c];
 
-					dst[offset + r*pyr_cols[level] + c] = x_;
+					dst[offset + r*pyr_cols[l] + c] = x_;
 				}
 			}
 
-			offset += pyr_rows[level] * pyr_cols[level];
+			offset += pyr_rows[l] * pyr_cols[l];
 		}
 	}
 
@@ -262,11 +277,19 @@ void hls_local_laplacian(float* I, float* gau, float* dst,
 	delete [] I_remap;
 }
 
+
 void downsample(
 	hls::Mat<_MAX_ROWS_, _MAX_COLS_, _MAT_TYPE_>& src,
-	hls::Mat<_MAX_ROWS_, _MAX_COLS_, _MAT_TYPE_>& dst)
+	hls::Mat<_MAX_ROWS_, _MAX_COLS_, _MAT_TYPE_>& dst,
+	int rows, int cols, int rows2, int cols2)
 {
-//#pragma HLS DATAFLOW
+	assert(rows <= _MAX_ROWS_);
+	assert(cols <= _MAX_COLS_);
+	assert(rows2 <= _MAX_ROWS_ / 2);
+	assert(cols2 <= _MAX_COLS_ / 2);
+
+	//#pragma HLS INLINE
+#pragma HLS DATAFLOW
 
 	// Convolution Kernel
 	// This sums to unity
@@ -279,29 +302,49 @@ void downsample(
 	hls::Window<5, 5, float> kernel;
 	for (int r = 0; r < 5; r++) {
 		for (int c = 0; c < 5; c++) {
-//#pragma HLS PIPELINE
+#pragma HLS PIPELINE
 			kernel.val[r][c] = x[r * 5 + c];
 		}
 	}
 
+	hls::Scalar<HLS_MAT_CN(_MAT_TYPE_), HLS_TNAME(_MAT_TYPE_)> px;
+
 	// Convolve
 	hls::Point p(-1, -1);
-	hls::Mat<_MAX_ROWS_, _MAX_COLS_, _MAT_TYPE_> tmp(src.rows, src.cols);
+	hls::Mat<_MAX_ROWS_, _MAX_COLS_, _MAT_TYPE_> tmp(/*src.*/rows, /*src.*/cols);
 	hls::Filter2D(src, tmp, kernel, p);
 
 	// Decimate
-	hls::Scalar<HLS_MAT_CN(_MAT_TYPE_), HLS_TNAME(_MAT_TYPE_)> px;
-	for (int r = 0; r < src.rows; r++) {
-//#pragma HLS PIPELINE
-		for (int c = 0; c < src.cols; c++) {
-//#pragma HLS PIPELINE
-//#pragma HLS LOOP_TRIPCOUNT max=1024
+#if 01
+	int cnt = 0;
+	for (int r = 0; r < /*src.*/rows; r++) {
+#pragma HLS PIPELINE
+		for (int c = 0; c < /*src.*/cols; c++) {
+#pragma HLS PIPELINE
+#pragma HLS LOOP_TRIPCOUNT max=1024
 			tmp >> px;
-			if ( (r % 2 == 0) && (c % 2 == 0) ) {
+			if ((r % 2 == 0) && (c % 2 == 0)) {
 				dst << px;
 			}
 		}
 	}
+#else
+	for (int r = 0; r < rows2; r++) {
+		for (int c = 0; c < cols2; c++) {
+			// No if() statements
+#pragma HLS PIPELINE
+			tmp >> px;
+			dst << px;
+
+			// Consume
+			tmp >> px;
+		}
+		for (int c = 0; c < cols2; c++) {
+#pragma HLS PIPELINE
+			tmp >> px;
+		}
+	}
+#endif
 }
 
 void upsample(
@@ -350,7 +393,238 @@ void upsample(
 	hls::Filter2D(tmp, dst, kernel, p);
 }
 
+void upsample(
+	hls::Mat<_MAX_ROWS_, _MAX_COLS_, _MAT_TYPE_>& src,
+	hls::Mat<_MAX_ROWS_, _MAX_COLS_, _MAT_TYPE_>& dst)
+{
+	// Convolution Kernel
+	// This sums to unity
+	static const float x[25] = {
+		0.0025, 0.0125, 0.0200, 0.0125, 0.0025,
+		0.0125, 0.0625, 0.1000, 0.0625, 0.0125,
+		0.0200, 0.1000, 0.1600, 0.1000, 0.0200,
+		0.0125, 0.0625, 0.1000, 0.0625, 0.0125,
+		0.0025, 0.0125, 0.0200, 0.0125, 0.0025 };
+	hls::Window<5, 5, float> kernel;
+	for (int r = 0; r < 5; r++) {
+		for (int c = 0; c < 5; c++) {
+#pragma HLS PIPELINE
+			kernel.val[r][c] = x[r * 5 + c];
+		}
+	}
+
+#pragma HLS DATAFLOW
+
+	// Up-scaling
+	hls::Mat<_MAX_ROWS_, _MAX_COLS_, _MAT_TYPE_> tmp(dst.rows, dst.cols);
+	hls::Scalar<HLS_MAT_CN(_MAT_TYPE_), HLS_TNAME(_MAT_TYPE_)> px;
+	hls::Window<1, _MAX_ROWS_, HLS_TNAME(_MAT_TYPE_)> buf;	// Line buffer
+	for (int r = 0; r < dst.rows; r++) {
+		for (int c = 0; c < dst.cols; c++) {
+#pragma HLS PIPELINE
+			if ((r % 2 == 0) && (c % 2 == 0)) {
+				src >> px;
+			}
+
+			if (r % 2 == 0) {
+				tmp << px;
+				buf.val[0][c] = px.val[0];
+			}
+			else {
+				tmp << buf.val[0][c];
+			}
+		}
+	}
+
+	// Convolve
+	hls::Point p(-1, -1);
+	hls::Filter2D(tmp, dst, kernel, p);
+}
+
+#if 01
+void upsample( hls::stream<float>& src, hls::stream<float>& dst, int rows, int cols)
+{
+	// Convolution Kernel
+	// This sums to unity
+	static const float x[25] = {
+		0.0025, 0.0125, 0.0200, 0.0125, 0.0025,
+		0.0125, 0.0625, 0.1000, 0.0625, 0.0125,
+		0.0200, 0.1000, 0.1600, 0.1000, 0.0200,
+		0.0125, 0.0625, 0.1000, 0.0625, 0.0125,
+		0.0025, 0.0125, 0.0200, 0.0125, 0.0025 };
+	hls::Window<5, 5, float> kernel;
+	for (int r = 0; r < 5; r++) {
+		for (int c = 0; c < 5; c++) {
+			//#pragma HLS PIPELINE
+			kernel.val[r][c] = x[r * 5 + c];
+		}
+	}
+
+	assert(rows <= _MAX_ROWS_);
+	assert(cols <= _MAX_COLS_);
+
+	hls::Mat<_MAX_ROWS_, _MAX_COLS_, _MAT_TYPE_> hls_src(rows, cols);
+	hls::Mat<_MAX_ROWS_, _MAX_COLS_, _MAT_TYPE_> hls_dst(rows, cols);
+
+	// Array to hls::Mat
+	hls::Scalar<HLS_MAT_CN(_MAT_TYPE_), HLS_TNAME(_MAT_TYPE_)> px;
+	float val;
+	//for (int r = 0; r < rows; r++) {
+	//	for (int c = 0; c < cols; c++) {
+	//		src >> px.val[0];
+	//		//px.val[0] = src[r*cols + c];
+	//		hls_src << px;
+	//	}
+	//}
+
+	// Up-scaling
+	hls::Mat<_MAX_ROWS_, _MAX_COLS_, _MAT_TYPE_> tmp(rows, cols);
+	//hls::Scalar<HLS_MAT_CN(_MAT_TYPE_), HLS_TNAME(_MAT_TYPE_)> px;
+	hls::Window<1, _MAX_ROWS_, HLS_TNAME(_MAT_TYPE_)> buf;	// Line buffer
+	for (int r = 0; r < rows; r++) {
+		for (int c = 0; c < cols; c++) {
+			if ((r % 2 == 0) && (c % 2 == 0)) {
+				//hls_src >> px;
+				src >> val;
+			}
+
+			if (r % 2 == 0) {
+				px.val[0] = val;
+				tmp << px;
+				buf.val[0][c] = px.val[0];
+			}
+			else {
+				tmp << buf.val[0][c];
+			}
+		}
+	}
+
+	// Convolve
+	hls::Point p(-1, -1);
+	hls::Filter2D(tmp, hls_dst, kernel, p);
+
+	// hls::Mat to array
+	//hls::Scalar<1, float> px;
+	for (int r = 0; r < rows; r++) {
+		for (int c = 0; c < cols; c++) {
+			hls_dst >> px;
+			dst << px.val[0];//[r*cols + c] = px.val[0];
+		}
+	}
+}
+#endif
+
+
 // Marked for HW acceleration
+void gaussian_pyramid(float* src, float* dst1, float* dst2, float* dst3, 
+	int num_levels,
+	int pyr_rows_[_MAX_LEVELS_], int pyr_cols_[_MAX_LEVELS_])
+{
+#pragma HLS INTERFACE ap_fifo port=dst1
+#pragma HLS INTERFACE ap_fifo port=dst2
+#pragma HLS INTERFACE ap_fifo port=dst3
+#pragma HLS INTERFACE ap_fifo port=dst4
+#pragma HLS INTERFACE ap_fifo port=src
+
+	// Check range of input for determining trip count
+	assert(num_levels <= _MAX_LEVELS_);
+
+	int pyr_rows[_MAX_LEVELS_];
+	int pyr_cols[_MAX_LEVELS_];
+#pragma HLS ARRAY_PARTITION variable=pyr_rows complete
+#pragma HLS ARRAY_PARTITION variable=pyr_cols complete
+	for (int l = 0; l < num_levels; l++) {
+#pragma HLS PIPELINE
+		pyr_rows[l] = pyr_rows_[l];
+		pyr_cols[l] = pyr_cols_[l];
+	}
+
+	// -------------------------------
+	hls::Scalar<1, float> px;
+
+	hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE_> in(pyr_rows[0], pyr_cols[0]);
+
+	hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE_> tmp1(pyr_rows[1], pyr_cols[1]);
+	hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE_> tmp12(pyr_rows[1], pyr_cols[1]);
+	hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE_> tmp2(pyr_rows[2], pyr_cols[2]);
+	hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE_> tmp22(pyr_rows[2], pyr_cols[2]);
+	hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE_> tmp3(pyr_rows[3], pyr_cols[3]);
+	hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE_> tmp32(pyr_rows[3], pyr_cols[3]);
+
+	hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE_> out1(pyr_rows[1], pyr_cols[1]);
+	hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE_> out2(pyr_rows[2], pyr_cols[2]);
+	hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE_> out3(pyr_rows[3], pyr_cols[3]);
+
+	//	hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE_> tmp(pyr_rows[1], pyr_cols[1]);
+	//	hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE_> tmp[2];
+
+#pragma HLS DATAFLOW
+	//
+	//	assert(pyr_rows[0] <= _MAX_ROWS_);
+	//	assert(pyr_cols[0] <= _MAX_COLS_);
+	for (int r = 0; r < pyr_rows[0]; r++) {
+#pragma HLS LOOP_TRIPCOUNT max=1024
+		for (int c = 0; c < pyr_cols[0]; c++) {
+#pragma HLS LOOP_TRIPCOUNT max=1024
+#pragma HLS PIPELINE
+			px.val[0] = src[r*pyr_cols[0] + c];
+			in << px;
+		}
+	}
+
+//#pragma HLS allocation instances=downsample limit=2 function
+	downsample(in, tmp1, in.rows, in.cols, tmp1.rows, tmp1.cols);
+	my_split(tmp1, out1, tmp12);
+	downsample(tmp12, tmp2, tmp12.rows, tmp12.cols, tmp2.rows, tmp2.cols);
+	my_split(tmp2, out2, tmp22);
+	downsample(tmp22, out3, tmp22.rows, tmp22.cols, out3.rows, out3.cols);
+	//my_split(tmp3, out3, tmp32);
+	//downsample(tmp32, out, tmp32.rows, tmp32.cols, out.rows, out.cols);
+
+
+	for (int r = 0; r < pyr_rows[1]; r++) {
+#pragma HLS LOOP_TRIPCOUNT max=512
+		for (int c = 0; c < pyr_cols[1]; c++) {
+#pragma HLS LOOP_TRIPCOUNT max=512
+#pragma HLS PIPELINE
+			out1 >> px;
+			dst1[r*pyr_cols[1] + c] = px.val[0];
+		}
+	}
+
+	for (int r = 0; r < pyr_rows[2]; r++) {
+#pragma HLS LOOP_TRIPCOUNT max=256
+		for (int c = 0; c < pyr_cols[2]; c++) {
+#pragma HLS LOOP_TRIPCOUNT max=256
+#pragma HLS PIPELINE
+			out2 >> px;
+			dst2[r*pyr_cols[2] + c] = px.val[0];
+		}
+	}
+
+	for (int r = 0; r < pyr_rows[3]; r++) {
+#pragma HLS LOOP_TRIPCOUNT max=128
+		for (int c = 0; c < pyr_cols[3]; c++) {
+#pragma HLS LOOP_TRIPCOUNT max=128
+#pragma HLS PIPELINE
+			out3 >> px;
+			dst3[r*pyr_cols[3] + c] = px.val[0];
+		}
+	}
+
+//	for (int r = 0; r < pyr_rows[4]; r++) {
+//#pragma HLS LOOP_TRIPCOUNT max=64
+//		for (int c = 0; c < pyr_cols[4]; c++) {
+//#pragma HLS LOOP_TRIPCOUNT max=64
+//#pragma HLS PIPELINE
+//			out >> px;
+//			dst4[r*pyr_cols[4] + c] = px.val[0];
+//		}
+//	}
+	//		}
+}
+
+#if 0
 void gaussian_pyramid(float* src, float* dst, int num_levels,
 		int pyr_rows[_MAX_LEVELS_], int pyr_cols[_MAX_LEVELS_])
 {
@@ -428,11 +702,11 @@ void gaussian_pyramid(float* src, float* dst, int num_levels,
 }
 
 void laplacian_pyramid(float* src, float* dst, int num_levels,
-		int pyr_rows[_MAX_LEVELS_], int pyr_cols[_MAX_LEVELS_])
+	int pyr_rows[_MAX_LEVELS_], int pyr_cols[_MAX_LEVELS_])
 {
 	// Check range of input for determining trip count
 	assert(num_levels <= _MAX_LEVELS_);
-	
+
 	// Inter-loop buffer
 	hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE_> buf_;
 	hls::Scalar<1, float> px;
@@ -473,8 +747,8 @@ void laplacian_pyramid(float* src, float* dst, int num_levels,
 
 		hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE_> out_down(rows2_, cols2_);	// For down-sampling
 		hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE_> out_down2(rows2_, cols2_);	// For up-sampling
-		downsample(in, out_down);
-		
+																				//		downsample(in, out_down);
+
 		buf_.init(rows2_, cols2_);
 
 		my_split(out_down, buf_, out_down2);
@@ -516,13 +790,230 @@ void laplacian_pyramid(float* src, float* dst, int num_levels,
 		}
 	}
 }
+#endif
+
+
+void lap_kernel(
+	hls::Mat<_MAX_ROWS_, _MAX_COLS_, _MAT_TYPE_>& src,
+	hls::Mat<_MAX_ROWS_, _MAX_COLS_, _MAT_TYPE_>& dst_down,
+	hls::Mat<_MAX_ROWS_, _MAX_COLS_, _MAT_TYPE_>& lap)
+{
+#pragma HLS DATAFLOW
+
+	// Source is split 1. for down-sampling, and 2. Difference
+	hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE_> src_down(src.rows, src.cols);
+	hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE_> src_diff(src.rows, src.cols);
+
+	// Down-sampled result
+	hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE_> tmp_down(dst_down.rows, dst_down.cols);
+	// Input to up-sample
+	hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE_> tmp_up_i(dst_down.rows, dst_down.cols);
+	// Output of up-sample
+	hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE_> tmp_up_o(src.rows, src.cols);
+
+	my_split(src, src_down, src_diff);
+
+	//
+	downsample(src_down, tmp_down, src_down.rows, src_down.cols, tmp_down.rows, tmp_down.cols);
+	my_split(tmp_down, dst_down, tmp_up_i);
+
+	// Up-sampling
+	upsample(tmp_up_i, tmp_up_o);
+
+	hls::Scalar<1, float> px1;
+	hls::Scalar<1, float> px2;
+	for (int r = 0; r < lap.rows; r++) {
+#pragma HLS LOOP_TRIPCOUNT max=1024
+		for (int c = 0; c < lap.cols; c++) {
+#pragma HLS LOOP_TRIPCOUNT max=1024
+#pragma HLS PIPELINE
+			src_diff >> px1;
+			tmp_up_o >> px2;
+
+			lap << (px1 - px2);
+		}
+	}
+}
+
+void laplacian_pyramid(
+	float* src,
+	float* dst0, float* dst1, float* dst2, float* dst3, int num_levels,
+	int pyr_rows_[_MAX_LEVELS_], int pyr_cols_[_MAX_LEVELS_])
+{
+#pragma HLS INTERFACE ap_fifo port=dst0
+#pragma HLS INTERFACE ap_fifo port=dst1
+#pragma HLS INTERFACE ap_fifo port=dst2
+#pragma HLS INTERFACE ap_fifo port=dst3
+#pragma HLS INTERFACE ap_fifo port=dst4
+#pragma HLS INTERFACE ap_fifo port=src
+
+
+	// Check range of input for determining trip count
+	assert(num_levels <= _MAX_LEVELS_);
+
+	int pyr_rows[_MAX_LEVELS_];
+	int pyr_cols[_MAX_LEVELS_];
+#pragma HLS ARRAY_PARTITION variable=pyr_rows complete
+#pragma HLS ARRAY_PARTITION variable=pyr_cols complete
+	for (int l = 0; l < num_levels; l++) {
+#pragma HLS PIPELINE
+		pyr_rows[l] = pyr_rows_[l];
+		pyr_cols[l] = pyr_cols_[l];
+	}
+
+	hls::Scalar<1, float> px;
+
+	// Down-sample
+	hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE_> in(pyr_rows[0], pyr_cols[0]);
+	//	hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE_> out(pyr_rows[4], pyr_cols[4]);
+
+	// Output laplacian
+	hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE_> lap0(pyr_rows[0], pyr_cols[0]);
+	hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE_> lap1(pyr_rows[1], pyr_cols[1]);
+	hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE_> lap2(pyr_rows[2], pyr_cols[2]);
+	//	hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE_> lap3(pyr_rows[0], pyr_cols[0]);
+	//	hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE_> lap4(pyr_rows[0], pyr_cols[0]);
+
+	hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE_> down0(pyr_rows[1], pyr_cols[1]);
+	hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE_> down1(pyr_rows[2], pyr_cols[2]);
+	hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE_> down2(pyr_rows[3], pyr_cols[3]);
+	//	hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE_> down3(pyr_rows[0], pyr_cols[0]);
+
+
+#pragma HLS DATAFLOW
+
+	for (int r = 0; r < pyr_rows[0]; r++) {
+#pragma HLS LOOP_TRIPCOUNT max=1024
+		for (int c = 0; c < pyr_cols[0]; c++) {
+#pragma HLS LOOP_TRIPCOUNT max=1024
+#pragma HLS PIPELINE
+			px.val[0] = src[r*pyr_cols[0] + c];
+			in << px;
+			//down0 << px;
+		}
+	}
+
+	lap_kernel(in, down0, lap0);
+	lap_kernel(down0, down1, lap1);
+	lap_kernel(down1, down2, lap2);
+	//	lap_kernel(down2, down3, lap3);
+
+	// Transfer data
+	for (int r = 0; r < pyr_rows[0]; r++) {
+#pragma HLS LOOP_TRIPCOUNT max=1024
+		for (int c = 0; c < pyr_cols[0]; c++) {
+#pragma HLS LOOP_TRIPCOUNT max=1024
+#pragma HLS PIPELINE
+			lap0 >> px;
+			dst0[r*pyr_cols[0] + c] = px.val[0];
+		}
+	}
+
+	for (int r = 0; r < pyr_rows[1]; r++) {
+#pragma HLS LOOP_TRIPCOUNT max=512
+		for (int c = 0; c < pyr_cols[1]; c++) {
+#pragma HLS LOOP_TRIPCOUNT max=512
+#pragma HLS PIPELINE
+			lap1 >> px;
+			dst1[r*pyr_cols[1] + c] = px.val[0];
+		}
+	}
+
+	for (int r = 0; r < pyr_rows[2]; r++) {
+#pragma HLS LOOP_TRIPCOUNT max=256
+		for (int c = 0; c < pyr_cols[2]; c++) {
+#pragma HLS LOOP_TRIPCOUNT max=256
+#pragma HLS PIPELINE
+			lap2 >> px;
+			dst2[r*pyr_cols[2] + c] = px.val[0];
+		}
+	}
+
+	for (int r = 0; r < pyr_rows[3]; r++) {
+#pragma HLS LOOP_TRIPCOUNT max=128
+		for (int c = 0; c < pyr_cols[3]; c++) {
+#pragma HLS LOOP_TRIPCOUNT max=128
+#pragma HLS PIPELINE
+			down2 >> px;
+			dst3[r*pyr_cols[3] + c] = px.val[0];
+		}
+	}
+}
 
 void reconstruct(float* src, data_out_t* dst, int num_levels, int pyr_rows[_MAX_LEVELS_], int pyr_cols[_MAX_LEVELS_])
 {
+#if 1
+	hls::stream<float> buf_[_MAX_LEVELS_];
+	hls::stream<float> tmp_[_MAX_LEVELS_];
+
+	//	hls::stream<float> in;
+	float px;
+
+	// Last layer in the pyramid
+	int offset = 0;
+	for (int l = 0; l < num_levels - 1; l++) {
+		offset += pyr_rows[l] * pyr_cols[l];
+	}
+
+	for (int r = 0; r < pyr_rows[num_levels - 1]; r++) {
+#pragma HLS LOOP_TRIPCOUNT max=1024
+		for (int c = 0; c < pyr_cols[num_levels - 1]; c++) {
+#pragma HLS LOOP_TRIPCOUNT max=1024
+			//px.val[0] = src[offset + r*pyr_cols[num_levels - 1] + c];
+			//in << px;
+			buf_[num_levels - 1] << src[offset + r*pyr_cols[num_levels - 1] + c];
+		}
+	}
+
+	//hls::Scalar<1, float> px2;
+	//	hls::stream<float> out;
+	for (int l = num_levels - 2; l >= 0; l--) {
+#pragma HLS UNROLL
+		//hls::Mat<_MAX_ROWS_, _MAX_COLS_, _MAT_TYPE_> out(pyr_rows[l], pyr_cols[l]);
+		//float out[pyr_rows[l]*pyr_cols[l]];
+
+		offset -= pyr_rows[l] * pyr_cols[l];
+
+		// Upsample
+		//		if (l == num_levels - 2) {
+		//			upsample(in, out, pyr_rows[l], pyr_cols[l]);
+		//		}
+		//		else {
+		upsample(buf_[l + 1], tmp_[l], pyr_rows[l], pyr_cols[l]);
+		//		}
+
+		//buf_.init(pyr_rows[l], pyr_cols[l]);
+
+		// Load data
+		for (int r = 0; r < pyr_rows[l]; r++) {
+#pragma HLS LOOP_TRIPCOUNT max=1024
+			for (int c = 0; c < pyr_cols[l]; c++) {
+#pragma HLS LOOP_TRIPCOUNT max=1024
+				tmp_[l] >> px;
+				//px.val[0] += src[offset + r*pyr_cols[l] + c];
+				px += src[offset + r*pyr_cols[l] + c];
+				buf_[l] << px;
+			}
+		}
+	}
+
+	// Output
+	for (int r = 0; r < pyr_rows[0]; r++) {
+#pragma HLS LOOP_TRIPCOUNT max=1024
+		for (int c = 0; c < pyr_cols[0]; c++) {
+#pragma HLS LOOP_TRIPCOUNT max=1024
+			buf_[0] >> px;
+			dst[r*pyr_cols[0] + c] = px;
+		}
+	}
+#else
 	// Inter-loop buffer
-	hls::Mat<_MAX_ROWS_, _MAX_COLS_, _MAT_TYPE_> buf_;	// Inter-loop buffer
-	hls::Mat<_MAX_ROWS_, _MAX_COLS_, _MAT_TYPE_> in(pyr_rows[num_levels - 1], pyr_cols[num_levels - 1]);
-	hls::Scalar<1, float> px;
+	//hls::Mat<_MAX_ROWS_, _MAX_COLS_, _MAT_TYPE_> buf_;	// Inter-loop buffer
+	//hls::Mat<_MAX_ROWS_, _MAX_COLS_, _MAT_TYPE_> in(pyr_rows[num_levels - 1], pyr_cols[num_levels - 1]);
+	//hls::Scalar<1, float> px;
+	hls::stream<float> buf_;
+	//hls::stream<float> in;
+	float px;
 
 	// Last layer in the pyramid
 	int offset = 0;
@@ -532,32 +1023,36 @@ void reconstruct(float* src, data_out_t* dst, int num_levels, int pyr_rows[_MAX_
 
 	for (int r = 0; r < pyr_rows[num_levels - 1]; r++) {
 		for (int c = 0; c < pyr_cols[num_levels - 1]; c++) {
-			px.val[0] = src[offset + r*pyr_cols[num_levels - 1] + c];
-			in << px;
+			//px.val[0] = src[offset + r*pyr_cols[num_levels - 1] + c];
+			//in << px;
+			/*in*/buf_ << src[offset + r*pyr_cols[num_levels - 1] + c];
 		}
 	}
 
-	hls::Scalar<1, float> px2;
-	for (int i = num_levels - 2; i >= 0; i--) {
-		hls::Mat<_MAX_ROWS_, _MAX_COLS_, _MAT_TYPE_> out(pyr_rows[i], pyr_cols[i]);
+	//hls::Scalar<1, float> px2;
+	for (int l = num_levels - 2; l >= 0; l--) {
+		hls::stream<float> out;
+		//hls::Mat<_MAX_ROWS_, _MAX_COLS_, _MAT_TYPE_> out(pyr_rows[l], pyr_cols[l]);
+		//float out[pyr_rows[l]*pyr_cols[l]];
 
-		offset -= pyr_rows[i] * pyr_cols[i];
+		offset -= pyr_rows[l] * pyr_cols[l];
 
 		// Upsample
-		if (i == num_levels - 2) {
-			upsample(in, out, pyr_rows[i], pyr_cols[i]);
-		}
-		else {
-			upsample(buf_, out, pyr_rows[i], pyr_cols[i]);
-		}
+		//if (l == num_levels - 2) {
+		//	upsample(in, out, pyr_rows[l], pyr_cols[l]);
+		//}
+		//else {
+			upsample(buf_, out, pyr_rows[l], pyr_cols[l]);
+		//}
 
-		buf_.init(pyr_rows[i], pyr_cols[i]);
+		//buf_.init(pyr_rows[l], pyr_cols[l]);
 		
 		// Load data
-		for (int r = 0; r < pyr_rows[i]; r++) {
-			for (int c = 0; c < pyr_cols[i]; c++) {
+		for (int r = 0; r < pyr_rows[l]; r++) {
+			for (int c = 0; c < pyr_cols[l]; c++) {
 				out >> px;
-				px.val[0] += src[offset + r*pyr_cols[i] + c];
+				//px.val[0] += src[offset + r*pyr_cols[l] + c];
+				px += src[offset + r*pyr_cols[l] + c];
 				buf_ << px;
 			}
 		}
@@ -567,16 +1062,19 @@ void reconstruct(float* src, data_out_t* dst, int num_levels, int pyr_rows[_MAX_
 	for (int r = 0; r < pyr_rows[0]; r++) {
 		for (int c = 0; c < pyr_cols[0]; c++) {
 			buf_ >> px;
-			dst[r*pyr_cols[0] + c] = px.val[0];
+			dst[r*pyr_cols[0] + c] = px;
 		}
 	}
+#endif
 }
 
 void remap(float* src, float* dst, float ref, float fact, float sigma, int rows, int cols)
 {
+#pragma HLS INLINE
 	float I;
 	for (int r = 0; r < rows; r++) {
 		for (int c = 0; c < cols; c++) {
+#pragma HLS PIPELINE
 			I = src[r*cols + c];
 #ifdef _WIN32
 			dst[r*cols + c] =
