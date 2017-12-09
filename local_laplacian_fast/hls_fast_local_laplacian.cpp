@@ -33,6 +33,9 @@
 
 #include "hls_util.h"
 
+#ifdef __SDSCC__
+#include "sds_lib.h"
+#endif
 
 void hls_local_laplacian_wrap(cv::Mat& src, cv::Mat& dst, float sigma, float fact)
 {
@@ -40,29 +43,37 @@ void hls_local_laplacian_wrap(cv::Mat& src, cv::Mat& dst, float sigma, float fac
 
 	// Settings
 	// num_levels: Max. 9 (for 1024 x 1024 image)
-	int num_levels = 4;// std::ceil(std::log(std::min(src.rows, src.cols)) - log(2)) + 2;
+//	int num_levels = 4;// std::ceil(std::log(std::min(src.rows, src.cols)) - log(2)) + 2;
 //	float discretisation_step = 1.0f / (N - 1);
 
 	// Original image
 	data_in_t*  buf_src;
 	data_out_t* buf_dst;
-	buf_src = new data_in_t[src.rows*src.cols];
-	buf_dst = new data_out_t[src.rows*src.cols];
-
-	memcpy(buf_src, src.data, src.rows*src.cols*sizeof(data_in_t));
 
 	// Pyramids
 	float* input_gaussian_pyr[_MAX_LEVELS_] = {NULL};
 	float* output_laplace_pyr[_MAX_LEVELS_] = {NULL};
 	float* temp_laplace_pyr[_MAX_LEVELS_] = {NULL};
 
+	// Remapped image
+	float* I_remap = NULL;
+
+	// Allocation
+#ifdef __SDSCC__
+	buf_src = (data_in_t*) sds_alloc(src.rows*src.cols*sizeof(data_in_t));
+	buf_dst = (data_out_t*) sds_alloc(src.rows*src.cols*sizeof(data_out_t));
+
+	I_remap = (float*) sds_alloc(src.rows*src.cols*sizeof(float));
+#else
+	buf_src = new data_in_t[src.rows*src.cols];
+	buf_dst = new data_out_t[src.rows*src.cols];
+
+	I_remap = new float [src.rows*src.cols];
+#endif
+
 	// List for pyramid's widths & heights
 	int pyr_rows[_MAX_LEVELS_] = { 0 };
 	int pyr_cols[_MAX_LEVELS_] = { 0 };
-
-	// Remapped image
-	float* I_remap = NULL;
-	I_remap = new float [src.rows*src.cols];
 
 	int rows = src.rows;
 	int cols = src.cols;
@@ -70,19 +81,26 @@ void hls_local_laplacian_wrap(cv::Mat& src, cv::Mat& dst, float sigma, float fac
 		pyr_cols[l] = cols;
 		pyr_rows[l] = rows;
 
+#ifdef __SDSCC__
+		input_gaussian_pyr[l] = (float*) sds_alloc(rows*cols*sizeof(float));
+		output_laplace_pyr[l] = (float*) sds_alloc(rows*cols*sizeof(float));
+		temp_laplace_pyr[l] = (float*) sds_alloc(rows*cols*sizeof(float));
+#else
 		input_gaussian_pyr[l] = new float [rows*cols];
 		output_laplace_pyr[l] = new float [rows*cols];
 		temp_laplace_pyr[l] = new float [rows*cols];
-
+#endif
 		rows = std::ceil(rows / 2.0);
 		cols = std::ceil(cols / 2.0);
 	}
 
+	// Copy input image data
+	memcpy(buf_src, src.data, src.rows*src.cols*sizeof(data_in_t));
 
 	// Construct Laplacian pyramid
 	laplacian_pyramid(buf_src,
 			output_laplace_pyr[0], output_laplace_pyr[1], output_laplace_pyr[2], output_laplace_pyr[3],
-			num_levels, pyr_rows, pyr_cols);
+			pyr_rows, pyr_cols);
 #if 0
 	{
 		// Show pyramid image
@@ -111,7 +129,7 @@ void hls_local_laplacian_wrap(cv::Mat& src, cv::Mat& dst, float sigma, float fac
 	memcpy(input_gaussian_pyr[0], buf_src, src.rows*src.cols * sizeof(float));
 	gaussian_pyramid(buf_src, 
 			input_gaussian_pyr[1], input_gaussian_pyr[2], input_gaussian_pyr[3],
-		num_levels, pyr_rows, pyr_cols);
+			pyr_rows, pyr_cols);
 #if 0
 	{
 		// Show pyramid image
@@ -144,13 +162,13 @@ void hls_local_laplacian_wrap(cv::Mat& src, cv::Mat& dst, float sigma, float fac
 		// Create laplacian pyramid from remapped image
 		laplacian_pyramid(I_remap,
 				temp_laplace_pyr[0], temp_laplace_pyr[1], temp_laplace_pyr[2], temp_laplace_pyr[3],
-				num_levels, pyr_rows, pyr_cols);
+				pyr_rows, pyr_cols);
 
 		hls_local_laplacian(
 				input_gaussian_pyr[0], input_gaussian_pyr[1], input_gaussian_pyr[2], input_gaussian_pyr[3],
 				temp_laplace_pyr[0], temp_laplace_pyr[1], temp_laplace_pyr[2], temp_laplace_pyr[3],
 				output_laplace_pyr[0], output_laplace_pyr[1], output_laplace_pyr[2], output_laplace_pyr[3],
-				pyr_rows, pyr_cols, num_levels, ref);
+				pyr_rows, pyr_cols, ref);
 	}
 
 #if 0
@@ -178,13 +196,31 @@ void hls_local_laplacian_wrap(cv::Mat& src, cv::Mat& dst, float sigma, float fac
 
 	// Reconstruct
 	reconstruct(output_laplace_pyr[3], output_laplace_pyr[2], output_laplace_pyr[1], output_laplace_pyr[0],
-			buf_dst, num_levels, pyr_rows, pyr_cols);
+			buf_dst, pyr_rows, pyr_cols);
 
 	// Copy back
 	dst.create(src.rows, src.cols, src.type());
 	memcpy(dst.data, buf_dst, dst.rows*dst.cols * sizeof(data_out_t));
 
 	// Release memory
+#ifdef __SDSCC__
+	for (int l = 0; l < _MAX_LEVELS_; l++){
+		sds_free(input_gaussian_pyr[l]);
+		sds_free(output_laplace_pyr[l]);
+		sds_free(temp_laplace_pyr[l]);
+	}
+
+	if(I_remap){
+		sds_free(I_remap);
+	}
+
+	if (buf_src) {
+		sds_free(buf_src);
+	}
+	if (buf_dst) {
+		sds_free(buf_dst);
+	}
+#else
 	for (int l = 0; l < _MAX_LEVELS_; l++){
 		delete [] input_gaussian_pyr[l];
 		delete [] output_laplace_pyr[l];
@@ -201,6 +237,7 @@ void hls_local_laplacian_wrap(cv::Mat& src, cv::Mat& dst, float sigma, float fac
 	if (buf_dst) {
 		delete [] buf_dst;
 	}
+#endif
 }
 
 void kernel(float* gau, float* temp_laplace_pyr, float* dst, int rows, int cols, float ref, float discretisation_step)
@@ -238,7 +275,7 @@ void hls_local_laplacian(
 		float* lap0, float* lap1, float* lap2, float* lap3,
 		float* dst0, float* dst1, float* dst2, float* dst3,
 		int pyr_rows_[_MAX_LEVELS_], int pyr_cols_[_MAX_LEVELS_],
-		int num_levels, float ref)
+		float ref)
 {
 	float discretisation_step = 1.0f / (_NUM_STEP_ - 1);
 
@@ -247,7 +284,7 @@ void hls_local_laplacian(
 #pragma HLS ARRAY_PARTITION variable=pyr_rows complete
 #pragma HLS ARRAY_PARTITION variable=pyr_cols complete
 
-	for (int l = 0; l < num_levels; l++) {
+	for (int l = 0; l < _MAX_LEVELS_; l++) {
 #pragma HLS PIPELINE
 		pyr_rows[l] = pyr_rows_[l];
 		pyr_cols[l] = pyr_cols_[l];
@@ -266,18 +303,17 @@ void hls_local_laplacian(
 
 
 // Marked for HW acceleration
-void gaussian_pyramid(float* src, float* dst1, float* dst2, float* dst3, 
-	int num_levels,
-	int pyr_rows_[_MAX_LEVELS_], int pyr_cols_[_MAX_LEVELS_])
+void gaussian_pyramid(
+		float* src,
+		float* dst1, float* dst2, float* dst3,
+		int pyr_rows_[_MAX_LEVELS_], int pyr_cols_[_MAX_LEVELS_])
 {
-	// Check range of input for determining trip count
-	assert(num_levels <= _MAX_LEVELS_);
-
 	int pyr_rows[_MAX_LEVELS_];
 	int pyr_cols[_MAX_LEVELS_];
 #pragma HLS ARRAY_PARTITION variable=pyr_rows complete
 #pragma HLS ARRAY_PARTITION variable=pyr_cols complete
-	for (int l = 0; l < num_levels; l++) {
+
+	for (int l = 0; l < _MAX_LEVELS_; l++) {
 #pragma HLS PIPELINE
 		pyr_rows[l] = pyr_rows_[l];
 		pyr_cols[l] = pyr_cols_[l];
@@ -362,17 +398,14 @@ void lap_kernel(
 
 void laplacian_pyramid(
 	float* src,
-	float* dst0, float* dst1, float* dst2, float* dst3, int num_levels,
+	float* dst0, float* dst1, float* dst2, float* dst3,
 	int pyr_rows_[_MAX_LEVELS_], int pyr_cols_[_MAX_LEVELS_])
 {
-	// Check range of input for determining trip count
-	assert(num_levels <= _MAX_LEVELS_);
-
 	int pyr_rows[_MAX_LEVELS_];
 	int pyr_cols[_MAX_LEVELS_];
 #pragma HLS ARRAY_PARTITION variable=pyr_rows complete
 #pragma HLS ARRAY_PARTITION variable=pyr_cols complete
-	for (int l = 0; l < num_levels; l++) {
+	for (int l = 0; l < _MAX_LEVELS_; l++) {
 #pragma HLS PIPELINE
 		pyr_rows[l] = pyr_rows_[l];
 		pyr_cols[l] = pyr_cols_[l];
@@ -411,15 +444,14 @@ void laplacian_pyramid(
 
 void reconstruct(
 	float* src0, float* src1, float* src2, float* src3, data_out_t* dst, 
-	int num_levels, int pyr_rows_[_MAX_LEVELS_], int pyr_cols_[_MAX_LEVELS_])
+	int pyr_rows_[_MAX_LEVELS_], int pyr_cols_[_MAX_LEVELS_])
 {
-	assert(num_levels <= _MAX_LEVELS_);
-
 	int pyr_rows[_MAX_LEVELS_];
 	int pyr_cols[_MAX_LEVELS_];
 #pragma HLS ARRAY_PARTITION variable=pyr_rows complete
 #pragma HLS ARRAY_PARTITION variable=pyr_cols complete
-	for (int l = 0; l < num_levels; l++) {
+
+	for (int l = 0; l < _MAX_LEVELS_; l++) {
 #pragma HLS PIPELINE
 		pyr_rows[l] = pyr_rows_[l];
 		pyr_cols[l] = pyr_cols_[l];
