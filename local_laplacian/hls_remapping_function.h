@@ -10,8 +10,11 @@
 
 #include <assert.h>
 
-#include "hls_video.h"
-
+//#include "hls_video.h"
+#include "ap_int.h"
+#include "hls_stream.h"
+#include "hls/hls_video_types.h"
+#include "hls/hls_video_core.h"
 
 class hlsRemappingFunction {
 public:

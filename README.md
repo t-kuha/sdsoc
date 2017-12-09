@@ -1,9 +1,10 @@
 ## SDSoC Projects
 
 #### binarynet
-  - Binary CNN code
+  - Binary CNN
+    - __optimized__: Optimized code (Fits in Zybo (Zynq-7010))
+    - __templated__: Templated version (Does not fit in Zybo)
   - Original source: http://www.cqpub.co.jp/interface/download/2016/9/IF1609F.zip
-  - Project in progress
 
 ***
 #### embed\_build\_date
@@ -26,14 +27,8 @@
 ***
 #### reVISION
   - Xilinx reVISION test code
-  
-    - simple\_copy
-    
-      Test code for simple copying of data
-      
-    - histogram
-      
-      Example of performance improvement by not using xf::calcHist()
+    - __simple\_copy__: Test code for simple copying of data      
+    - __histogram__: Example of performance improvement by not using xf::calcHist()
       
 
     
