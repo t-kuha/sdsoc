@@ -458,7 +458,7 @@ void upsample( hls::stream<float>& src, hls::stream<float>& dst, int rows, int c
 	hls::Window<5, 5, float> kernel;
 	for (int r = 0; r < 5; r++) {
 		for (int c = 0; c < 5; c++) {
-			//#pragma HLS PIPELINE
+//#pragma HLS PIPELINE
 			kernel.val[r][c] = x[r * 5 + c];
 		}
 	}
@@ -472,17 +472,9 @@ void upsample( hls::stream<float>& src, hls::stream<float>& dst, int rows, int c
 	// Array to hls::Mat
 	hls::Scalar<HLS_MAT_CN(_MAT_TYPE_), HLS_TNAME(_MAT_TYPE_)> px;
 	float val;
-	//for (int r = 0; r < rows; r++) {
-	//	for (int c = 0; c < cols; c++) {
-	//		src >> px.val[0];
-	//		//px.val[0] = src[r*cols + c];
-	//		hls_src << px;
-	//	}
-	//}
 
 	// Up-scaling
 	hls::Mat<_MAX_ROWS_, _MAX_COLS_, _MAT_TYPE_> tmp(rows, cols);
-	//hls::Scalar<HLS_MAT_CN(_MAT_TYPE_), HLS_TNAME(_MAT_TYPE_)> px;
 	hls::Window<1, _MAX_ROWS_, HLS_TNAME(_MAT_TYPE_)> buf;	// Line buffer
 	for (int r = 0; r < rows; r++) {
 		for (int c = 0; c < cols; c++) {
@@ -507,11 +499,10 @@ void upsample( hls::stream<float>& src, hls::stream<float>& dst, int rows, int c
 	hls::Filter2D(tmp, hls_dst, kernel, p);
 
 	// hls::Mat to array
-	//hls::Scalar<1, float> px;
 	for (int r = 0; r < rows; r++) {
 		for (int c = 0; c < cols; c++) {
 			hls_dst >> px;
-			dst << px.val[0];//[r*cols + c] = px.val[0];
+			dst << px.val[0];
 		}
 	}
 }
@@ -558,9 +549,6 @@ void gaussian_pyramid(float* src, float* dst1, float* dst2, float* dst3,
 	hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE_> out2(pyr_rows[2], pyr_cols[2]);
 	hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE_> out3(pyr_rows[3], pyr_cols[3]);
 
-	//	hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE_> tmp(pyr_rows[1], pyr_cols[1]);
-	//	hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE_> tmp[2];
-
 #pragma HLS DATAFLOW
 	//
 	//	assert(pyr_rows[0] <= _MAX_ROWS_);
@@ -581,9 +569,6 @@ void gaussian_pyramid(float* src, float* dst1, float* dst2, float* dst3,
 	downsample(tmp12, tmp2, tmp12.rows, tmp12.cols, tmp2.rows, tmp2.cols);
 	my_split(tmp2, out2, tmp22);
 	downsample(tmp22, out3, tmp22.rows, tmp22.cols, out3.rows, out3.cols);
-	//my_split(tmp3, out3, tmp32);
-	//downsample(tmp32, out, tmp32.rows, tmp32.cols, out.rows, out.cols);
-
 
 	for (int r = 0; r < pyr_rows[1]; r++) {
 #pragma HLS LOOP_TRIPCOUNT max=512
@@ -614,17 +599,6 @@ void gaussian_pyramid(float* src, float* dst1, float* dst2, float* dst3,
 			dst3[r*pyr_cols[3] + c] = px.val[0];
 		}
 	}
-
-//	for (int r = 0; r < pyr_rows[4]; r++) {
-//#pragma HLS LOOP_TRIPCOUNT max=64
-//		for (int c = 0; c < pyr_cols[4]; c++) {
-//#pragma HLS LOOP_TRIPCOUNT max=64
-//#pragma HLS PIPELINE
-//			out >> px;
-//			dst4[r*pyr_cols[4] + c] = px.val[0];
-//		}
-//	}
-	//		}
 }
 
 #if 0
@@ -866,21 +840,18 @@ void laplacian_pyramid(
 
 	hls::Scalar<1, float> px;
 
-	// Down-sample
+	// Input
 	hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE_> in(pyr_rows[0], pyr_cols[0]);
-	//	hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE_> out(pyr_rows[4], pyr_cols[4]);
 
 	// Output laplacian
 	hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE_> lap0(pyr_rows[0], pyr_cols[0]);
 	hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE_> lap1(pyr_rows[1], pyr_cols[1]);
 	hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE_> lap2(pyr_rows[2], pyr_cols[2]);
-	//	hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE_> lap3(pyr_rows[0], pyr_cols[0]);
-	//	hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE_> lap4(pyr_rows[0], pyr_cols[0]);
 
+	// Down-sampled image
 	hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE_> down0(pyr_rows[1], pyr_cols[1]);
 	hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE_> down1(pyr_rows[2], pyr_cols[2]);
 	hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE_> down2(pyr_rows[3], pyr_cols[3]);
-	//	hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE_> down3(pyr_rows[0], pyr_cols[0]);
 
 
 #pragma HLS DATAFLOW
@@ -892,7 +863,6 @@ void laplacian_pyramid(
 #pragma HLS PIPELINE
 			px.val[0] = src[r*pyr_cols[0] + c];
 			in << px;
-			//down0 << px;
 		}
 	}
 
