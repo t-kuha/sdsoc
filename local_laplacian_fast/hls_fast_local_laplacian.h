@@ -6,11 +6,6 @@
 
 #include "hls_def.h"
 
-typedef		float			data_in_t;		// Input data type
-typedef		float			data_out_t;		// output data type
-
-typedef		float			pipe_t;
-
 
 void hls_local_laplacian_wrap(cv::Mat& src, cv::Mat& dst, float sigma, float fact);
 
