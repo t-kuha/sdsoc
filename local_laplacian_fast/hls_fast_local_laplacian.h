@@ -4,17 +4,7 @@
 
 #include "opencv2/core/core.hpp"		// cv::Mat
 
-// Max. image size
-#define		_MAX_ROWS_		1024
-#define		_MAX_COLS_		1024
-
-// Max. number of pyramid levels
-#define		_MAX_LEVELS_		4
-
-// Data types
-#define		_MAT_TYPE_			HLS_32FC1
-
-//#define		N				10
+#include "hls_def.h"
 
 typedef		float			data_in_t;		// Input data type
 typedef		float			data_out_t;		// output data type
