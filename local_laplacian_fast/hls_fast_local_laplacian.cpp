@@ -1,6 +1,7 @@
 #include "hls_fast_local_laplacian.h"
 
 //#include "hls_opencv.h"		// cvMat2hlsMat() etc.
+#include "opencv2/highgui/highgui.hpp"
 
 #ifdef _WIN32
 
@@ -50,48 +51,38 @@ void hls_local_laplacian_wrap(cv::Mat& src, cv::Mat& dst, float sigma, float fac
 
 	memcpy(buf_src, src.data, src.rows*src.cols*sizeof(data_in_t));
 
+	// Pyramids
+	float* input_gaussian_pyr[_MAX_LEVELS_] = {NULL};
+	float* output_laplace_pyr[_MAX_LEVELS_] = {NULL};
+	float* temp_laplace_pyr[_MAX_LEVELS_] = {NULL};
 
 	// List for pyramid's widths & heights
 	int pyr_rows[_MAX_LEVELS_] = { 0 };
 	int pyr_cols[_MAX_LEVELS_] = { 0 };
 
-	// Total memory size for pyramids (measured in num. of elements)
-	int sz_gaussian_pyr = 0;
-	int sz_laplacian_pyr = 0;
-	int sz_temp_pyr = 0;
+	// Remapped image
+	float* I_remap = NULL;
+	I_remap = new float [src.rows*src.cols];
 
-	int width = src.cols, height = src.rows;
-	for (int l = 0; l < num_levels; l++) {
-		pyr_cols[l] = width;
-		pyr_rows[l] = height;
+	int rows = src.rows;
+	int cols = src.cols;
+	for (int l = 0; l < _MAX_LEVELS_; l++) {
+		pyr_cols[l] = cols;
+		pyr_rows[l] = rows;
 
-		sz_gaussian_pyr += width*height;
-		sz_laplacian_pyr += width*height;
-		sz_temp_pyr += width*height;
+		input_gaussian_pyr[l] = new float [rows*cols];
+		output_laplace_pyr[l] = new float [rows*cols];
+		temp_laplace_pyr[l] = new float [rows*cols];
 
-		height = std::ceil(height / 2.0);
-		width = std::ceil(width / 2.0);
+		rows = std::ceil(rows / 2.0);
+		cols = std::ceil(cols / 2.0);
 	}
 
 
-	// Pyramids
-	float* input_gaussian_pyr = NULL;
-	float* output_laplace_pyr = NULL;
-	float* temp_laplace_pyr = NULL;
-	float* I_remap = NULL;
-
-	input_gaussian_pyr = new float [sz_gaussian_pyr];
-	output_laplace_pyr = new float [sz_laplacian_pyr];
-	temp_laplace_pyr = new float [sz_temp_pyr];
-	I_remap = new float [pyr_rows[0]*pyr_cols[0]];
-
-	float* ptr[4];
-
 	// Construct Laplacian pyramid
-	ptr[0] = &(output_laplace_pyr[0]) + pyr_rows[0] * pyr_cols[0];
-	ptr[1] = ptr[0] + pyr_rows[1] * pyr_cols[1];
-	ptr[2] = ptr[1] + pyr_rows[2] * pyr_cols[2];
-	laplacian_pyramid(buf_src, &(output_laplace_pyr[0]), ptr[0], ptr[1], ptr[2], num_levels, pyr_rows, pyr_cols);
+	laplacian_pyramid(buf_src,
+			output_laplace_pyr[0], output_laplace_pyr[1], output_laplace_pyr[2], output_laplace_pyr[3],
+			num_levels, pyr_rows, pyr_cols);
 #if 0
 	{
 		// Show pyramid image
@@ -102,7 +93,7 @@ void hls_local_laplacian_wrap(cv::Mat& src, cv::Mat& dst, float sigma, float fac
 			name += std::to_string(l);
 
 			cv::Mat tmp(h_, w_, CV_32FC1);
-			tmp.data = (unsigned char*)(&output_laplace_pyr[offset]);
+			tmp.data = (unsigned char*)(output_laplace_pyr[l]);
 			cv::imshow(name, tmp + 0.5);
 			cv::waitKey(1.0 * 1000);
 			cv::destroyWindow(name);
@@ -116,26 +107,22 @@ void hls_local_laplacian_wrap(cv::Mat& src, cv::Mat& dst, float sigma, float fac
 #endif
 
 	// Gaussian Pyramid
-	ptr[0] = &(input_gaussian_pyr[0]) + pyr_rows[0] * pyr_cols[0];
-	ptr[1] = ptr[0] + pyr_rows[1] * pyr_cols[1];
-	ptr[2] = ptr[1] + pyr_rows[2] * pyr_cols[2];
-
 	// Copy finest level
-	memcpy(input_gaussian_pyr, buf_src, src.rows*src.cols * sizeof(float));
+	memcpy(input_gaussian_pyr[0], buf_src, src.rows*src.cols * sizeof(float));
 	gaussian_pyramid(buf_src, 
-		ptr[0], ptr[1], ptr[2], 
+			input_gaussian_pyr[1], input_gaussian_pyr[2], input_gaussian_pyr[3],
 		num_levels, pyr_rows, pyr_cols);
 #if 0
 	{
 		// Show pyramid image
 		int h_ = src.rows, w_ = src.cols;
 		int offset = 0;
-		for (int l = 0; l < num_levels; l++) {
+		for (int l = 0; l < _MAX_LEVELS_; l++) {
 			std::string name = "G - ";
 			name += std::to_string(l);
 
 			cv::Mat tmp(h_, w_, CV_32FC1);
-			tmp.data = (unsigned char*)(&input_gaussian_pyr[offset]);
+			tmp.data = (unsigned char*)(input_gaussian_pyr[l]);
 			cv::imshow(name, tmp);
 			cv::waitKey(1.0 * 1000);
 			cv::destroyWindow(name);
@@ -148,25 +135,6 @@ void hls_local_laplacian_wrap(cv::Mat& src, cv::Mat& dst, float sigma, float fac
 	}
 #endif
 
-	//
-	float* tmp[4];
-	tmp[0] = &(temp_laplace_pyr[0]);
-	tmp[1] = tmp[0] + pyr_rows[0] * pyr_cols[0];
-	tmp[2] = tmp[0] + pyr_rows[1] * pyr_cols[1];
-	tmp[3] = tmp[1] + pyr_rows[2] * pyr_cols[2];
-
-	float* lap[4];
-	lap[0] = &(input_gaussian_pyr[0]);
-	lap[1] = lap[0] + pyr_rows[0] * pyr_cols[0];
-	lap[2] = lap[0] + pyr_rows[1] * pyr_cols[1];
-	lap[3] = lap[1] + pyr_rows[2] * pyr_cols[2];
-
-	float* out[4];
-	out[0] = &(output_laplace_pyr[0]);
-	out[1] = out[0] + pyr_rows[0] * pyr_cols[0];
-	out[2] = out[1] + pyr_rows[1] * pyr_cols[1];
-	out[3] = out[2] + pyr_rows[2] * pyr_cols[2];
-
 	for (int n = 0; n < _NUM_STEP_; n++) {
 		float ref = ((float)n) / ((float)(_NUM_STEP_ - 1));
 
@@ -174,27 +142,28 @@ void hls_local_laplacian_wrap(cv::Mat& src, cv::Mat& dst, float sigma, float fac
 		remap(buf_src, I_remap, ref, fact, sigma, pyr_rows[0], pyr_cols[0]);
 
 		// Create laplacian pyramid from remapped image
-		laplacian_pyramid(I_remap, temp_laplace_pyr, ptr[0], ptr[1], ptr[2], num_levels, pyr_rows, pyr_cols);
+		laplacian_pyramid(I_remap,
+				temp_laplace_pyr[0], temp_laplace_pyr[1], temp_laplace_pyr[2], temp_laplace_pyr[3],
+				num_levels, pyr_rows, pyr_cols);
 
 		hls_local_laplacian(
-			lap[0], lap[1], lap[2], lap[3],
-			tmp[0], tmp[1], tmp[2], tmp[3],
-			out[0], out[1], out[2], out[3],
-			pyr_rows, pyr_cols, num_levels, ref);
+				input_gaussian_pyr[0], input_gaussian_pyr[1], input_gaussian_pyr[2], input_gaussian_pyr[3],
+				temp_laplace_pyr[0], temp_laplace_pyr[1], temp_laplace_pyr[2], temp_laplace_pyr[3],
+				output_laplace_pyr[0], output_laplace_pyr[1], output_laplace_pyr[2], output_laplace_pyr[3],
+				pyr_rows, pyr_cols, num_levels, ref);
 	}
-
 
 #if 0
 	{
 		// Show pyramid image
 		int h_ = src.rows, w_ = src.cols;
 		int offset = 0;
-		for (int l = 0; l < num_levels; l++) {
+		for (int l = 0; l < _MAX_LEVELS_; l++) {
 			std::string name = "L - ";
 			name += std::to_string(l);
 
 			cv::Mat tmp(h_, w_, CV_32FC1);
-			tmp.data = (unsigned char*)(&output_laplace_pyr[offset]);
+			tmp.data = (unsigned char*)(output_laplace_pyr[l]);
 			cv::imshow(name, tmp + 0.5);
 			cv::waitKey(1.0 * 1000);
 			cv::destroyWindow(name);
@@ -208,22 +177,20 @@ void hls_local_laplacian_wrap(cv::Mat& src, cv::Mat& dst, float sigma, float fac
 #endif
 
 	// Reconstruct
-	reconstruct(out[3], out[2], out[1], out[0], buf_dst, num_levels, pyr_rows, pyr_cols);
+	reconstruct(output_laplace_pyr[3], output_laplace_pyr[2], output_laplace_pyr[1], output_laplace_pyr[0],
+			buf_dst, num_levels, pyr_rows, pyr_cols);
 
 	// Copy back
 	dst.create(src.rows, src.cols, src.type());
 	memcpy(dst.data, buf_dst, dst.rows*dst.cols * sizeof(data_out_t));
 
 	// Release memory
-	if (input_gaussian_pyr) {
-		delete [] input_gaussian_pyr;
+	for (int l = 0; l < _MAX_LEVELS_; l++){
+		delete [] input_gaussian_pyr[l];
+		delete [] output_laplace_pyr[l];
+		delete [] temp_laplace_pyr[l];
 	}
-	if (output_laplace_pyr) {
-		delete [] output_laplace_pyr;
-	}
-	if(temp_laplace_pyr){
-		delete [] temp_laplace_pyr;
-	}
+
 	if(I_remap){
 		delete [] I_remap;
 	}
