@@ -19,10 +19,10 @@ void my_split(
 	assert(rows <= _MAX_ROWS_);
 	assert(cols <= _MAX_COLS_);
 
+	hls::Scalar<HLS_MAT_CN(_MAT_TYPE_), HLS_TNAME(_MAT_TYPE_)> px;
 	for (int r = 0; r < rows; r++) {
 		for (int c = 0; c < cols; c++) {
 #pragma HLS PIPELINE
-			hls::Scalar<HLS_MAT_CN(_MAT_TYPE_), HLS_TNAME(_MAT_TYPE_)> px;
 			src >> px;
 
 			dst1 << px;
@@ -38,19 +38,14 @@ void downsample(
 {
 	int rows = src.rows;
 	int cols = src.cols;
-//	int rows2 = dst.rows;
-//	int cols2 = dst.cols;
 
 	assert(rows <= _MAX_ROWS_);
 	assert(cols <= _MAX_COLS_);
-//	assert(rows2 <= _MAX_ROWS_ / 2);
-//	assert(cols2 <= _MAX_COLS_ / 2);
 
 	//#pragma HLS INLINE
 #pragma HLS DATAFLOW
 
-	// Convolution Kernel
-	// This sums to unity
+	// Convolution Kernel - This sums to unity
 	static const float x[25] = {
 		0.0025, 0.0125, 0.0200, 0.0125, 0.0025,
 		0.0125, 0.0625, 0.1000, 0.0625, 0.0125,
@@ -72,8 +67,8 @@ void downsample(
 
 	// Decimate
 	hls::Scalar<HLS_MAT_CN(_MAT_TYPE_), HLS_TNAME(_MAT_TYPE_)> px;
+
 #if 01
-	int cnt = 0;
 	for (int r = 0; r < rows; r++) {
 #pragma HLS LOOP_TRIPCOUNT max=1024
 		for (int c = 0; c < cols; c++) {
@@ -109,8 +104,13 @@ void upsample(
 	hls::Mat<_MAX_ROWS_, _MAX_COLS_, _MAT_TYPE_>& src,
 	hls::Mat<_MAX_ROWS_, _MAX_COLS_, _MAT_TYPE_>& dst)
 {
-	// Convolution Kernel
-	// This sums to unity
+	int rows = dst.rows;
+	int cols = dst.cols;
+
+	assert(rows <= _MAX_ROWS_);
+	assert(cols <= _MAX_COLS_);
+
+	// Convolution Kernel - This sums to unity
 	static const float x[25] = {
 		0.0025, 0.0125, 0.0200, 0.0125, 0.0025,
 		0.0125, 0.0625, 0.1000, 0.0625, 0.0125,
@@ -124,12 +124,6 @@ void upsample(
 			kernel.val[r][c] = x[r * 5 + c];
 		}
 	}
-
-	int rows = dst.rows;
-	int cols = dst.cols;
-
-	assert(rows <= _MAX_ROWS_);
-	assert(cols <= _MAX_COLS_);
 
 #pragma HLS DATAFLOW
 
@@ -200,9 +194,7 @@ void load(float* src, hls::Mat<_MAX_ROWS_, _MAX_COLS_, _MAT_TYPE_>& dst)
 	hls::Scalar<1, float> px;
 
 	for (int r = 0; r < rows; r++) {
-//#pragma HLS LOOP_TRIPCOUNT max=1024
 		for (int c = 0; c < cols; c++) {
-//#pragma HLS LOOP_TRIPCOUNT max=1024
 #pragma HLS PIPELINE
 			px.val[0] = src[r*cols + c];
 			dst << px;
