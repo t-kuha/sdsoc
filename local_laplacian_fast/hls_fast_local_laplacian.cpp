@@ -1,6 +1,6 @@
 #include "hls_fast_local_laplacian.h"
 
-#include "hls_opencv.h"		// cvMat2hlsMat() etc.
+//#include "hls_opencv.h"		// cvMat2hlsMat() etc.
 
 #ifdef _WIN32
 
@@ -303,11 +303,6 @@ void gaussian_pyramid(float* src, float* dst1, float* dst2, float* dst3,
 	int num_levels,
 	int pyr_rows_[_MAX_LEVELS_], int pyr_cols_[_MAX_LEVELS_])
 {
-#pragma HLS INTERFACE ap_fifo port=src
-#pragma HLS INTERFACE ap_fifo port=dst1
-#pragma HLS INTERFACE ap_fifo port=dst2
-#pragma HLS INTERFACE ap_fifo port=dst3
-
 	// Check range of input for determining trip count
 	assert(num_levels <= _MAX_LEVELS_);
 
@@ -403,13 +398,6 @@ void laplacian_pyramid(
 	float* dst0, float* dst1, float* dst2, float* dst3, int num_levels,
 	int pyr_rows_[_MAX_LEVELS_], int pyr_cols_[_MAX_LEVELS_])
 {
-#pragma HLS INTERFACE ap_fifo port=src
-#pragma HLS INTERFACE ap_fifo port=dst0
-#pragma HLS INTERFACE ap_fifo port=dst1
-#pragma HLS INTERFACE ap_fifo port=dst2
-#pragma HLS INTERFACE ap_fifo port=dst3
-
-
 	// Check range of input for determining trip count
 	assert(num_levels <= _MAX_LEVELS_);
 
