@@ -9,10 +9,12 @@
 #define		_MAX_COLS_		1024
 
 // Max. number of pyramid levels
-#define		_MAX_LEVELS_		9
+#define		_MAX_LEVELS_		4
 
 // Data types
 #define		_MAT_TYPE_			HLS_32FC1
+
+//#define		N				10
 
 typedef		float			data_in_t;		// Input data type
 typedef		float			data_out_t;		// output data type
@@ -22,8 +24,12 @@ typedef		float			pipe_t;
 
 void hls_local_laplacian_wrap(cv::Mat& src, cv::Mat& dst, float sigma, float fact, int N);
 
-void hls_local_laplacian(float* I, float* lap, float* dst, int pyr_rows[_MAX_LEVELS_], int pyr_cols[_MAX_LEVELS_],
-		int num_levels, float sigma, float fact, int N);
+void hls_local_laplacian(
+		float* gau0, float* gau1, float* gau2, float* gau3,
+		float* lap0, float* lap1, float* lap2, float* lap3,
+		float* dst0, float* dst1, float* dst2, float* dst3,
+		int pyr_rows_[_MAX_LEVELS_], int pyr_cols_[_MAX_LEVELS_],
+		int num_levels, int N, float ref);
 
 void gaussian_pyramid(float* src, float* dst1, float* dst2, float* dst4, int num_levels,
 	int pyr_rows_[_MAX_LEVELS_], int pyr_cols_[_MAX_LEVELS_]);
@@ -32,9 +38,6 @@ void laplacian_pyramid(
 	float* src,
 	float* dst0, float* dst1, float* dst2, float* dst3, int num_levels,
 	int pyr_rows_[_MAX_LEVELS_], int pyr_cols_[_MAX_LEVELS_]);
-
-//void gaussian_pyramid(float* src, float* dst, int n_levels, int pyr_rows[_MAX_LEVELS_], int pyr_cols[_MAX_LEVELS_]);
-//void laplacian_pyramid(float* src, float* dst, int n_levels, int pyr_rows[_MAX_LEVELS_], int pyr_cols[_MAX_LEVELS_]);
 
 void reconstruct(float* src0, float* src1, float* src2, float* src3, 
 	data_out_t* dst, int num_levels, int pyr_rows_[_MAX_LEVELS_], int pyr_cols_[_MAX_LEVELS_]);
