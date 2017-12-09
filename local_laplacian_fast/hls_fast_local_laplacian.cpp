@@ -33,12 +33,9 @@
 #include "hls_util.h"
 
 
-void hls_local_laplacian_wrap(cv::Mat& src, cv::Mat& dst, float sigma, float fact, int N)
+void hls_local_laplacian_wrap(cv::Mat& src, cv::Mat& dst, float sigma, float fact)
 {
 	// Check input
-	if (N <= 0) {
-		return;
-	}
 
 	// Settings
 	// num_levels: Max. 9 (for 1024 x 1024 image)
@@ -80,8 +77,13 @@ void hls_local_laplacian_wrap(cv::Mat& src, cv::Mat& dst, float sigma, float fac
 	// Pyramids
 	float* input_gaussian_pyr = NULL;
 	float* output_laplace_pyr = NULL;
+	float* temp_laplace_pyr = NULL;
+	float* I_remap = NULL;
+
 	input_gaussian_pyr = new float [sz_gaussian_pyr];
 	output_laplace_pyr = new float [sz_laplacian_pyr];
+	temp_laplace_pyr = new float [sz_temp_pyr];
+	I_remap = new float [pyr_rows[0]*pyr_cols[0]];
 
 	float* ptr[4];
 
@@ -147,12 +149,6 @@ void hls_local_laplacian_wrap(cv::Mat& src, cv::Mat& dst, float sigma, float fac
 #endif
 
 	//
-	float* temp_laplace_pyr = NULL;
-	temp_laplace_pyr = new float [sz_temp_pyr];
-
-	float* I_remap = NULL;
-	I_remap = new float [pyr_rows[0]*pyr_cols[0]];
-
 	float* tmp[4];
 	tmp[0] = &(temp_laplace_pyr[0]);
 	tmp[1] = tmp[0] + pyr_rows[0] * pyr_cols[0];
@@ -171,8 +167,8 @@ void hls_local_laplacian_wrap(cv::Mat& src, cv::Mat& dst, float sigma, float fac
 	out[2] = out[1] + pyr_rows[1] * pyr_cols[1];
 	out[3] = out[2] + pyr_rows[2] * pyr_cols[2];
 
-	for (int n = 0; n < N; n++) {
-		float ref = ((float)n) / ((float)(N - 1));
+	for (int n = 0; n < _NUM_STEP_; n++) {
+		float ref = ((float)n) / ((float)(_NUM_STEP_ - 1));
 
 		// Remap original image
 		remap(buf_src, I_remap, ref, fact, sigma, pyr_rows[0], pyr_cols[0]);
@@ -184,16 +180,9 @@ void hls_local_laplacian_wrap(cv::Mat& src, cv::Mat& dst, float sigma, float fac
 			lap[0], lap[1], lap[2], lap[3],
 			tmp[0], tmp[1], tmp[2], tmp[3],
 			out[0], out[1], out[2], out[3],
-			pyr_rows, pyr_cols, num_levels, N, ref);
+			pyr_rows, pyr_cols, num_levels, ref);
 	}
 
-	if(temp_laplace_pyr){
-		delete [] temp_laplace_pyr;
-	}
-
-	if(I_remap){
-		delete [] I_remap;
-	}
 
 #if 0
 	{
@@ -231,6 +220,12 @@ void hls_local_laplacian_wrap(cv::Mat& src, cv::Mat& dst, float sigma, float fac
 	}
 	if (output_laplace_pyr) {
 		delete [] output_laplace_pyr;
+	}
+	if(temp_laplace_pyr){
+		delete [] temp_laplace_pyr;
+	}
+	if(I_remap){
+		delete [] I_remap;
 	}
 
 	if (buf_src) {
@@ -276,9 +271,9 @@ void hls_local_laplacian(
 		float* lap0, float* lap1, float* lap2, float* lap3,
 		float* dst0, float* dst1, float* dst2, float* dst3,
 		int pyr_rows_[_MAX_LEVELS_], int pyr_cols_[_MAX_LEVELS_],
-		int num_levels, int N, float ref)
+		int num_levels, float ref)
 {
-	float discretisation_step = 1.0f / (N - 1);
+	float discretisation_step = 1.0f / (_NUM_STEP_ - 1);
 
 	int pyr_rows[_MAX_LEVELS_];
 	int pyr_cols[_MAX_LEVELS_];

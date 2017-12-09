@@ -19,7 +19,8 @@
 // Data types
 #define		_MAT_TYPE_			HLS_32FC1
 
-//#define		N				10
+// Num. of descretization step
+#define		_NUM_STEP_				10
 
 
 #endif /* SRC_HLS_DEF_H_ */
