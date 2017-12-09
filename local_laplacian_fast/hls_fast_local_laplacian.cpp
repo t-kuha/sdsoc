@@ -92,7 +92,7 @@ void hls_local_laplacian_wrap(cv::Mat& src, cv::Mat& dst, float sigma, float fac
 	ptr[1] = ptr[0] + pyr_rows[1] * pyr_cols[1];
 	ptr[2] = ptr[1] + pyr_rows[2] * pyr_cols[2];
 	laplacian_pyramid(buf_src, &(output_laplace_pyr[0]), ptr[0], ptr[1], ptr[2], num_levels, pyr_rows, pyr_cols);
-#if 01
+#if 0
 	{
 		// Show pyramid image
 		int h_ = src.rows, w_ = src.cols;
