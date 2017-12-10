@@ -52,7 +52,6 @@ int main(int argc, char* argv[])
 
 	// Parameters
 	const float sigma = 0.1;
-	const int N = 10;		// Num. of descretization step
 	const float fact = 5;
 
 	cv::Mat cv_in;
@@ -61,7 +60,7 @@ int main(int argc, char* argv[])
 	planes.at(0).copyTo(cv_in);
 	planes.at(0).copyTo(hls_in);
 
-
+#if 0
 	// OpenCV implementation
 	cv::Mat cv_out;
 	cv::Mat rgb;			// RGB image for output
@@ -85,13 +84,13 @@ int main(int argc, char* argv[])
 
 	// Save output image
 	cv::imwrite("cv.tif", rgb);
-
+#endif
 
 	// HLS implementation
 	cv::Mat hls_out;		// Enhanced grayscale image
 	cv::Mat rgb2;		// RGB image for output
 
-	hls_local_laplacian_wrap(hls_in, hls_out, sigma, fact, N);
+	hls_local_laplacian_wrap(hls_in, hls_out, sigma, fact);
 
 	planes.at(0) = hls_out;
 	cv::merge(planes, rgb2);
