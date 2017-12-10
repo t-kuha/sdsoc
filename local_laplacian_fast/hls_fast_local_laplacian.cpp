@@ -106,7 +106,7 @@ void hls_local_laplacian_wrap(cv::Mat& src, cv::Mat& dst, float sigma, float fac
 		// Show pyramid image
 		int h_ = src.rows, w_ = src.cols;
 		int offset = 0;
-		for (int l = 0; l < num_levels; l++) {
+		for (int l = 0; l < _MAX_LEVELS_; l++) {
 			std::string name = "L - ";
 			name += std::to_string(l);
 
@@ -195,7 +195,8 @@ void hls_local_laplacian_wrap(cv::Mat& src, cv::Mat& dst, float sigma, float fac
 #endif
 
 	// Reconstruct
-	hls_reconstruct(out[3], out[2], out[1], out[0], buf_dst, num_levels, pyr_rows, pyr_cols);
+	hls_reconstruct(output_laplace_pyr[3], output_laplace_pyr[2], output_laplace_pyr[1], output_laplace_pyr[0],
+			buf_dst, pyr_rows, pyr_cols);
 
 	// Copy back
 	dst.create(src.rows, src.cols, src.type());
