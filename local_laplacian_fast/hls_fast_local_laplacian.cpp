@@ -208,7 +208,7 @@ void hls_local_laplacian_wrap(cv::Mat& src, cv::Mat& dst, float sigma, float fac
 #endif
 
 	// Reconstruct
-	reconstruct(out[3], out[2], out[1], out[0], buf_dst, num_levels, pyr_rows, pyr_cols);
+	hls_reconstruct(out[3], out[2], out[1], out[0], buf_dst, num_levels, pyr_rows, pyr_cols);
 
 	// Copy back
 	dst.create(src.rows, src.cols, src.type());
@@ -442,7 +442,7 @@ void laplacian_pyramid(
 	save(down2, dst3);
 }
 
-void reconstruct(
+void hls_reconstruct(
 	float* src0, float* src1, float* src2, float* src3, data_out_t* dst, 
 	int num_levels, int pyr_rows_[_MAX_LEVELS_], int pyr_cols_[_MAX_LEVELS_])
 {

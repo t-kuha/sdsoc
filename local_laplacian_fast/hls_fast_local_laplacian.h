@@ -29,7 +29,7 @@ void laplacian_pyramid(
 	float* dst0, float* dst1, float* dst2, float* dst3, int num_levels,
 	int pyr_rows_[_MAX_LEVELS_], int pyr_cols_[_MAX_LEVELS_]);
 
-void reconstruct(float* src0, float* src1, float* src2, float* src3, 
+void hls_reconstruct(float* src0, float* src1, float* src2, float* src3, 
 	data_out_t* dst, int num_levels, int pyr_rows_[_MAX_LEVELS_], int pyr_cols_[_MAX_LEVELS_]);
 
 void remap(float* src, float* dst, float ref, float fact, float sigma, int rows, int cols);
