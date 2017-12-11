@@ -16,18 +16,17 @@
 // Max. number of pyramid levels
 #define		_MAX_LEVELS_		4
 
-// Data types
-#define		_MAT_TYPE_			HLS_32FC1
+// hls::Mat type
+#define		_MAT_TYPE2_		HLS_12SC1
 
 // Num. of descretization step
-#define		_NUM_STEP_				10
-
+#define		_NUM_STEP_		10
 
 // Data types
-typedef		float			data_in_t;		// Input data type
-typedef		float			data_out_t;		// output data type
+typedef		signed short		data_in_t;		// Input data type
+typedef		signed short		data_out_t;		// output data type
+typedef		signed short		data_pyr_t;		// Data type for intermediate pyramid
 
-typedef		float			pipe_t;
 
 typedef		unsigned short	pyr_sz_t;		// Data type for pyramid size 
 

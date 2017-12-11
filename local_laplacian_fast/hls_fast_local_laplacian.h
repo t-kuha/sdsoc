@@ -62,9 +62,9 @@ void hls_local_laplacian_wrap(cv::Mat& src, cv::Mat& dst, float sigma, float fac
 #pragma SDS data zero_copy(dst2[0:"pyr_rows_[2]*pyr_cols_[2]"])
 #pragma SDS data zero_copy(dst3[0:"pyr_rows_[3]*pyr_cols_[3]"])
 void hls_local_laplacian(
-		float* gau0, float* gau1, float* gau2, float* gau3,
-		float* lap0, float* lap1, float* lap2, float* lap3,
-		float* dst0, float* dst1, float* dst2, float* dst3,
+		data_pyr_t* gau0, data_pyr_t* gau1, data_pyr_t* gau2, data_pyr_t* gau3,
+		data_pyr_t* lap0, data_pyr_t* lap1, data_pyr_t* lap2, data_pyr_t* lap3,
+		data_pyr_t* dst0, data_pyr_t* dst1, data_pyr_t* dst2, data_pyr_t* dst3,
 		pyr_sz_t pyr_rows_[_MAX_LEVELS_], pyr_sz_t pyr_cols_[_MAX_LEVELS_],
 		float ref);
 
@@ -76,10 +76,14 @@ void hls_local_laplacian(
 #pragma SDS data copy(dst1[0:"pyr_rows_[1]*pyr_cols_[1]"])
 #pragma SDS data copy(dst2[0:"pyr_rows_[2]*pyr_cols_[2]"])
 #pragma SDS data copy(dst3[0:"pyr_rows_[3]*pyr_cols_[3]"])
+#pragma SDS data mem_attribute(src:PHYSICAL_CONTIGUOUS)
+#pragma SDS data mem_attribute(dst1:PHYSICAL_CONTIGUOUS)
+#pragma SDS data mem_attribute(dst2:PHYSICAL_CONTIGUOUS)
+#pragma SDS data mem_attribute(dst3:PHYSICAL_CONTIGUOUS)
 void hls_gaussian_pyramid(
-		float* src,
-		float* dst1, float* dst2, float* dst3,
-		pyr_sz_t pyr_rows_[_MAX_LEVELS_], pyr_sz_t pyr_cols_[_MAX_LEVELS_]);
+	data_in_t* src,
+	data_pyr_t* dst1, data_pyr_t* dst2, data_pyr_t* dst3,
+	pyr_sz_t pyr_rows_[_MAX_LEVELS_], pyr_sz_t pyr_cols_[_MAX_LEVELS_]);
 
 #pragma SDS data access_pattern(src:SEQUENTIAL)
 #pragma SDS data access_pattern(dst0:SEQUENTIAL)
@@ -92,10 +96,9 @@ void hls_gaussian_pyramid(
 #pragma SDS data copy(dst2[0:"pyr_rows_[2]*pyr_cols_[2]"])
 #pragma SDS data copy(dst3[0:"pyr_rows_[3]*pyr_cols_[3]"])
 void hls_laplacian_pyramid(
-	float* src,
-	float* dst0, float* dst1, float* dst2, float* dst3,
+	data_in_t* src,
+	data_pyr_t* dst0, data_pyr_t* dst1, data_pyr_t* dst2, data_pyr_t* dst3,
 	pyr_sz_t pyr_rows_[_MAX_LEVELS_], pyr_sz_t pyr_cols_[_MAX_LEVELS_]);
-
 
 #pragma SDS data access_pattern(src0:SEQUENTIAL)
 #pragma SDS data access_pattern(src1:SEQUENTIAL)
@@ -107,32 +110,9 @@ void hls_laplacian_pyramid(
 #pragma SDS data copy(src2[0:"pyr_rows_[1]*pyr_cols_[1]"])
 #pragma SDS data copy(src3[0:"pyr_rows_[0]*pyr_cols_[0]"])
 #pragma SDS data copy(dst[0:"pyr_rows_[0]*pyr_cols_[0]"])
-void hls_reconstruct(float* src0, float* src1, float* src2, float* src3, 
-	data_out_t* dst, pyr_sz_t pyr_rows_[_MAX_LEVELS_], pyr_sz_t pyr_cols_[_MAX_LEVELS_]);
+void hls_reconstruct(data_pyr_t* src0, data_pyr_t* src1, data_pyr_t* src2, data_pyr_t* src3,
+	signed short* dst, pyr_sz_t pyr_rows_[_MAX_LEVELS_], pyr_sz_t pyr_cols_[_MAX_LEVELS_]);
 
-void remap(float* src, float* dst, float ref, float fact, float sigma, int rows, int cols);
-
-
-void my_split(
-	hls::Mat<_MAX_ROWS_, _MAX_COLS_, _MAT_TYPE_>& src,
-	hls::Mat<_MAX_ROWS_, _MAX_COLS_, _MAT_TYPE_>& dst1,
-	hls::Mat<_MAX_ROWS_, _MAX_COLS_, _MAT_TYPE_>& dst2);
-
-void downsample(
-	hls::Mat<_MAX_ROWS_, _MAX_COLS_, _MAT_TYPE_>& src,
-	hls::Mat<_MAX_ROWS_, _MAX_COLS_, _MAT_TYPE_>& dst);
-
-void upsample(
-	hls::Mat<_MAX_ROWS_, _MAX_COLS_, _MAT_TYPE_>& src,
-	hls::Mat<_MAX_ROWS_, _MAX_COLS_, _MAT_TYPE_>& dst);
-
-void add(
-		hls::Mat<_MAX_ROWS_, _MAX_COLS_, _MAT_TYPE_>& src1,
-		hls::Mat<_MAX_ROWS_, _MAX_COLS_, _MAT_TYPE_>& src2,
-		hls::Mat<_MAX_ROWS_, _MAX_COLS_, _MAT_TYPE_>& dst);
-
-void load(float* src, hls::Mat<_MAX_ROWS_, _MAX_COLS_, _MAT_TYPE_>& dst);
-
-void save(hls::Mat<_MAX_ROWS_, _MAX_COLS_, _MAT_TYPE_>& src, float* dst);
+void remap(data_in_t* src, float* dst, float ref, float fact, float sigma, int rows, int cols);
 
 #endif
