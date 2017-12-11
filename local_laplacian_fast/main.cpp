@@ -1,6 +1,3 @@
-// fast.cpp : �R���\�[�� �A�v���P�[�V�����̃G���g�� �|�C���g���`���܂��B
-//
-
 #ifdef _WIN32
 #include "stdafx.h"
 #endif
