@@ -69,8 +69,8 @@ void hls_local_laplacian_wrap(cv::Mat& src, cv::Mat& dst, float sigma, float fac
 		output_laplace_pyr[l] = new float [rows*cols];
 		temp_laplace_pyr[l] = new float [rows*cols];
 #endif
-		rows = std::ceil(rows / 2.0);
-		cols = std::ceil(cols / 2.0);
+		rows = (pyr_sz_t) std::ceil(rows / 2.0);
+		cols = (pyr_sz_t) std::ceil(cols / 2.0);
 	}
 
 	// Copy input image data
@@ -545,11 +545,11 @@ void downsample(
 
 	// Convolution Kernel - This sums to unity
 	static const float x[25] = {
-		0.0025, 0.0125, 0.0200, 0.0125, 0.0025,
-		0.0125, 0.0625, 0.1000, 0.0625, 0.0125,
-		0.0200, 0.1000, 0.1600, 0.1000, 0.0200,
-		0.0125, 0.0625, 0.1000, 0.0625, 0.0125,
-		0.0025, 0.0125, 0.0200, 0.0125, 0.0025 };
+		0.0025f, 0.0125f, 0.0200f, 0.0125f, 0.0025f,
+		0.0125f, 0.0625f, 0.1000f, 0.0625f, 0.0125f,
+		0.0200f, 0.1000f, 0.1600f, 0.1000f, 0.0200f,
+		0.0125f, 0.0625f, 0.1000f, 0.0625f, 0.0125f,
+		0.0025f, 0.0125f, 0.0200f, 0.0125f, 0.0025f };
 	hls::Window<5, 5, float> kernel;
 	for (int r = 0; r < 5; r++) {
 		for (int c = 0; c < 5; c++) {
@@ -610,11 +610,11 @@ void upsample(
 
 	// Convolution Kernel - This sums to unity
 	static const float x[25] = {
-		0.0025, 0.0125, 0.0200, 0.0125, 0.0025,
-		0.0125, 0.0625, 0.1000, 0.0625, 0.0125,
-		0.0200, 0.1000, 0.1600, 0.1000, 0.0200,
-		0.0125, 0.0625, 0.1000, 0.0625, 0.0125,
-		0.0025, 0.0125, 0.0200, 0.0125, 0.0025 };
+		0.0025f, 0.0125f, 0.0200f, 0.0125f, 0.0025f,
+		0.0125f, 0.0625f, 0.1000f, 0.0625f, 0.0125f,
+		0.0200f, 0.1000f, 0.1600f, 0.1000f, 0.0200f,
+		0.0125f, 0.0625f, 0.1000f, 0.0625f, 0.0125f,
+		0.0025f, 0.0125f, 0.0200f, 0.0125f, 0.0025f };
 	hls::Window<5, 5, float> kernel;
 	for (int r = 0; r < 5; r++) {
 		for (int c = 0; c < 5; c++) {

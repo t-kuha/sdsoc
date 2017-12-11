@@ -33,7 +33,7 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 
-	// Scaling
+	// Scaling: [0, 255] -> [0, 1]
 	img_input.convertTo(img_input, CV_32FC3, 1.0f/255.0f);
 
 	// Convert to grayscale
@@ -51,8 +51,8 @@ int main(int argc, char* argv[])
 #endif
 
 	// Parameters
-	const float sigma = 0.1;
-	const float fact = 5;
+	const float sigma = 0.1f;
+	const float fact = 5.0f;
 
 	cv::Mat cv_in;
 	cv::Mat hls_in;
