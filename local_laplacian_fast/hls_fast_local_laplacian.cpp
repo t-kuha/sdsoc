@@ -10,6 +10,15 @@
 void hls_local_laplacian_wrap(cv::Mat& src, cv::Mat& dst, float sigma, float fact)
 {
 	// Check input
+	if (src.data == NULL) {
+		std::cout << "Input image is empty..." << std::endl;
+		return;
+	}
+
+	if (src.channels() != 1) {
+		std::cout << "Input must be a single-channel image..." << std::endl;
+		return;
+	}
 
 	// Settings
 	// num_levels: Max. 9 (for 1024 x 1024 image)
