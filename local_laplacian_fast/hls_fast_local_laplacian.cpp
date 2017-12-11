@@ -51,14 +51,14 @@ void hls_local_laplacian_wrap(cv::Mat& src, cv::Mat& dst, float sigma, float fac
 #endif
 
 	// List for pyramid's widths & heights
-	int pyr_rows[_MAX_LEVELS_] = { 0 };
-	int pyr_cols[_MAX_LEVELS_] = { 0 };
+	pyr_sz_t pyr_rows[_MAX_LEVELS_] = { 0 };
+	pyr_sz_t pyr_cols[_MAX_LEVELS_] = { 0 };
 
 	int rows = src.rows;
 	int cols = src.cols;
 	for (int l = 0; l < _MAX_LEVELS_; l++) {
-		pyr_cols[l] = cols;
-		pyr_rows[l] = rows;
+		pyr_cols[l] = (pyr_sz_t) cols;
+		pyr_rows[l] = (pyr_sz_t) rows;
 
 #ifdef __SDSCC__
 		input_gaussian_pyr[l] = (float*) sds_alloc(rows*cols*sizeof(float));
@@ -255,13 +255,13 @@ void hls_local_laplacian(
 		float* gau0, float* gau1, float* gau2, float* gau3,
 		float* lap0, float* lap1, float* lap2, float* lap3,
 		float* dst0, float* dst1, float* dst2, float* dst3,
-		int pyr_rows_[_MAX_LEVELS_], int pyr_cols_[_MAX_LEVELS_],
+		pyr_sz_t pyr_rows_[_MAX_LEVELS_], pyr_sz_t pyr_cols_[_MAX_LEVELS_],
 		float ref)
 {
 	float discretisation_step = 1.0f / (_NUM_STEP_ - 1);
 
-	int pyr_rows[_MAX_LEVELS_];
-	int pyr_cols[_MAX_LEVELS_];
+	pyr_sz_t pyr_rows[_MAX_LEVELS_];
+	pyr_sz_t pyr_cols[_MAX_LEVELS_];
 #pragma HLS ARRAY_PARTITION variable=pyr_rows complete
 #pragma HLS ARRAY_PARTITION variable=pyr_cols complete
 
@@ -287,10 +287,10 @@ void hls_local_laplacian(
 void hls_gaussian_pyramid(
 		float* src,
 		float* dst1, float* dst2, float* dst3,
-		int pyr_rows_[_MAX_LEVELS_], int pyr_cols_[_MAX_LEVELS_])
+		pyr_sz_t pyr_rows_[_MAX_LEVELS_], pyr_sz_t pyr_cols_[_MAX_LEVELS_])
 {
-	int pyr_rows[_MAX_LEVELS_];
-	int pyr_cols[_MAX_LEVELS_];
+	pyr_sz_t pyr_rows[_MAX_LEVELS_];
+	pyr_sz_t pyr_cols[_MAX_LEVELS_];
 #pragma HLS ARRAY_PARTITION variable=pyr_rows complete
 #pragma HLS ARRAY_PARTITION variable=pyr_cols complete
 
@@ -380,10 +380,10 @@ void lap_kernel(
 void hls_laplacian_pyramid(
 	float* src,
 	float* dst0, float* dst1, float* dst2, float* dst3,
-	int pyr_rows_[_MAX_LEVELS_], int pyr_cols_[_MAX_LEVELS_])
+	pyr_sz_t pyr_rows_[_MAX_LEVELS_], pyr_sz_t pyr_cols_[_MAX_LEVELS_])
 {
-	int pyr_rows[_MAX_LEVELS_];
-	int pyr_cols[_MAX_LEVELS_];
+	pyr_sz_t pyr_rows[_MAX_LEVELS_];
+	pyr_sz_t pyr_cols[_MAX_LEVELS_];
 #pragma HLS ARRAY_PARTITION variable=pyr_rows complete
 #pragma HLS ARRAY_PARTITION variable=pyr_cols complete
 	for (int l = 0; l < _MAX_LEVELS_; l++) {
@@ -425,10 +425,10 @@ void hls_laplacian_pyramid(
 
 void hls_reconstruct(
 	float* src0, float* src1, float* src2, float* src3, data_out_t* dst, 
-	int pyr_rows_[_MAX_LEVELS_], int pyr_cols_[_MAX_LEVELS_])
+	pyr_sz_t pyr_rows_[_MAX_LEVELS_], pyr_sz_t pyr_cols_[_MAX_LEVELS_])
 {
-	int pyr_rows[_MAX_LEVELS_];
-	int pyr_cols[_MAX_LEVELS_];
+	pyr_sz_t pyr_rows[_MAX_LEVELS_];
+	pyr_sz_t pyr_cols[_MAX_LEVELS_];
 #pragma HLS ARRAY_PARTITION variable=pyr_rows complete
 #pragma HLS ARRAY_PARTITION variable=pyr_cols complete
 

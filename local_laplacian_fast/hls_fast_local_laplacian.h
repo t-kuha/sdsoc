@@ -65,7 +65,7 @@ void hls_local_laplacian(
 		float* gau0, float* gau1, float* gau2, float* gau3,
 		float* lap0, float* lap1, float* lap2, float* lap3,
 		float* dst0, float* dst1, float* dst2, float* dst3,
-		int pyr_rows_[_MAX_LEVELS_], int pyr_cols_[_MAX_LEVELS_],
+		pyr_sz_t pyr_rows_[_MAX_LEVELS_], pyr_sz_t pyr_cols_[_MAX_LEVELS_],
 		float ref);
 
 #pragma SDS data access_pattern(src:SEQUENTIAL)
@@ -79,7 +79,7 @@ void hls_local_laplacian(
 void hls_gaussian_pyramid(
 		float* src,
 		float* dst1, float* dst2, float* dst3,
-		int pyr_rows_[_MAX_LEVELS_], int pyr_cols_[_MAX_LEVELS_]);
+		pyr_sz_t pyr_rows_[_MAX_LEVELS_], pyr_sz_t pyr_cols_[_MAX_LEVELS_]);
 
 #pragma SDS data access_pattern(src:SEQUENTIAL)
 #pragma SDS data access_pattern(dst0:SEQUENTIAL)
@@ -94,7 +94,7 @@ void hls_gaussian_pyramid(
 void hls_laplacian_pyramid(
 	float* src,
 	float* dst0, float* dst1, float* dst2, float* dst3,
-	int pyr_rows_[_MAX_LEVELS_], int pyr_cols_[_MAX_LEVELS_]);
+	pyr_sz_t pyr_rows_[_MAX_LEVELS_], pyr_sz_t pyr_cols_[_MAX_LEVELS_]);
 
 
 #pragma SDS data access_pattern(src0:SEQUENTIAL)
@@ -108,7 +108,7 @@ void hls_laplacian_pyramid(
 #pragma SDS data copy(src3[0:"pyr_rows_[0]*pyr_cols_[0]"])
 #pragma SDS data copy(dst[0:"pyr_rows_[0]*pyr_cols_[0]"])
 void hls_reconstruct(float* src0, float* src1, float* src2, float* src3, 
-	data_out_t* dst, int pyr_rows_[_MAX_LEVELS_], int pyr_cols_[_MAX_LEVELS_]);
+	data_out_t* dst, pyr_sz_t pyr_rows_[_MAX_LEVELS_], pyr_sz_t pyr_cols_[_MAX_LEVELS_]);
 
 void remap(float* src, float* dst, float ref, float fact, float sigma, int rows, int cols);
 

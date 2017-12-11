@@ -29,5 +29,7 @@ typedef		float			data_out_t;		// output data type
 
 typedef		float			pipe_t;
 
+typedef		unsigned short	pyr_sz_t;		// Data type for pyramid size 
+
 
 #endif /* SRC_HLS_DEF_H_ */
