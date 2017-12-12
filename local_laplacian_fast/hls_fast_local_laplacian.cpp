@@ -1,6 +1,5 @@
 #include "hls_fast_local_laplacian.h"
 
-//#include "hls_opencv.h"		// cvMat2hlsMat() etc.
 #include "opencv2/highgui/highgui.hpp"
 
 #ifdef __SDSCC__
@@ -49,7 +48,7 @@ void hls_local_laplacian_wrap(cv::Mat& src, cv::Mat& dst, float sigma, float fac
 	buf_src = (data_in_t*) sds_alloc(src.rows*src.cols*sizeof(data_in_t));
 	buf_dst = (data_out_t*) sds_alloc(src.rows*src.cols*sizeof(data_out_t));
 
-	I_remap = (float*) sds_alloc(src.rows*src.cols*sizeof(float));
+	I_remap = (data_in_t*) sds_alloc(src.rows*src.cols*sizeof(data_in_t));
 #else
 	buf_src = new data_in_t[src.rows*src.cols];
 	buf_dst = new data_out_t[src.rows*src.cols];
@@ -114,7 +113,7 @@ void hls_local_laplacian_wrap(cv::Mat& src, cv::Mat& dst, float sigma, float fac
 			input_gaussian_pyr[1], input_gaussian_pyr[2], input_gaussian_pyr[3],
 			pyr_rows, pyr_cols);
 
-#if 01
+#if 0
 	{
 		// Show pyramid image
 		for (int l = 0; l < _MAX_LEVELS_; l++) {
@@ -163,7 +162,7 @@ void hls_local_laplacian_wrap(cv::Mat& src, cv::Mat& dst, float sigma, float fac
 	// Release
 	delete[] I_remap2;
 
-#if 01
+#if 0
 	{
 		// Show pyramid image
 		for (int l = 0; l < _MAX_LEVELS_; l++) {
