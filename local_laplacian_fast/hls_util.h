@@ -136,6 +136,98 @@ namespace hls
 
 
 	template<int ROWS, int COLS, int TYPE>
+	void downsample2(
+		hls::Mat<ROWS, COLS, TYPE>& src,
+		hls::Mat<ROWS, COLS, TYPE>& dst)
+	{
+		// Separable convolution
+		// This weights sum to 20
+		static const ap_uint<4> x[5] = { 1, 5, 8, 5, 1 };
+
+		int rows = src.rows;
+		int cols = src.cols;
+
+		assert(rows <= ROWS);
+		assert(cols <= COLS);
+
+		int cols2 = cols >> 1;
+
+#pragma HLS DATAFLOW
+		hls::Scalar<HLS_MAT_CN(TYPE), HLS_TNAME(TYPE)>	px_in;
+		hls::Scalar<HLS_MAT_CN(TYPE), HLS_TNAME(TYPE)>	px_out;
+
+		hls::Mat<ROWS, COLS, TYPE>			tmp0(rows, cols2);
+		hls::Window<1, 5, HLS_TNAME(TYPE)>	buf1;	// Line buffer
+
+		// Horizontal
+		for (int r = 0; r < rows; r++) {
+			for (int c = 0; c < cols + 2; c++) {
+#pragma HLS PIPELINE
+				if (c < cols) {
+					// Load pixel from source
+					src >> px_in;
+
+					// Add to window buffer
+					buf1.val[0][4] = px_in.val[0];
+				}
+				if (c > 0 && c < 2) {
+					buf1.val[0][4 - c*2] = buf1.val[0][4];
+				}
+
+				// Convolution
+				if (c % 2 == 0) {
+					if (c >= 2) {
+						px_out.val[0] = 
+							(x[0] * buf1.val[0][0] +
+							x[1] * buf1.val[0][1] +
+							x[2] * buf1.val[0][2] +
+							x[3] * buf1.val[0][3] +
+							x[4] * buf1.val[0][4])/20;
+
+						tmp0 << px_out;
+					}
+
+					// Shift to left
+				}
+					buf1.shift_pixels_left();
+			}
+		}
+
+		// Vertical & sub sampling
+		hls::LineBuffer<5, COLS/2, HLS_TNAME(TYPE)>	buf2;	// Line buffer
+		for (int r = 0; r < rows + 2; r++) {
+			for (int c = 0; c < cols2; c++) {
+#pragma HLS PIPELINE
+				if (r < rows) {
+					// Load pixel
+					tmp0 >> px_in;
+
+					buf2.insert_bottom_row(px_in.val[0], c);
+				}
+
+				if (r > 0 && r < 2) {
+					buf2.val[4 - r*2][c] = px_in.val[0];
+				}
+
+				if (r % 2 == 0 ) {
+					if (r >= 2) {
+						px_out.val[0] =
+							(x[0] * buf2.val[0][c] +
+							x[1] * buf2.val[1][c] +
+							x[2] * buf2.val[2][c] +
+							x[3] * buf2.val[3][c] +
+							x[4] * buf2.val[4][c]) / 20;
+
+						dst << px_out;
+					}
+				}
+				
+				buf2.shift_pixels_up(c);
+			}
+		}
+	}
+
+	template<int ROWS, int COLS, int TYPE>
 	void downsample(
 		hls::Mat<ROWS, COLS, TYPE>& src,
 		hls::Mat<ROWS, COLS, TYPE>& dst)
@@ -148,7 +240,6 @@ namespace hls
 
 		//#pragma HLS INLINE
 #pragma HLS DATAFLOW
-
 		// Convolution Kernel - This sums to unity
 		static const float x[25] = {
 			0.0025f, 0.0125f, 0.0200f, 0.0125f, 0.0025f,

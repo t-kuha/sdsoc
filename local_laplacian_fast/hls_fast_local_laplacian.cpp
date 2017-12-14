@@ -330,11 +330,11 @@ void hls_gaussian_pyramid(
 	load(src, in);
 
 //#pragma HLS allocation instances=downsample limit=2 function
-	downsample(in, tmp1);
+	downsample2(in, tmp1);
 	my_split(tmp1, out1, tmp12);
-	downsample(tmp12, tmp2);
+	downsample2(tmp12, tmp2);
 	my_split(tmp2, out2, tmp22);
-	downsample(tmp22, out3);
+	downsample2(tmp22, out3);
 
 	save(out1, dst1);
 	save(out2, dst2);
