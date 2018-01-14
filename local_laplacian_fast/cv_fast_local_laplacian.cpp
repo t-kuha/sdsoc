@@ -31,7 +31,7 @@ void local_laplacian(cv::Mat& src, cv::Mat& dst, float sigma, float fact, int N)
 #endif
 	output_laplace_pyr.at(num_levels - 1) = input_gaussian_pyr.at(num_levels - 1);
 
-#if 01
+#if 0
 	// Show pyramid images
 	for(int i = 0; i < num_levels; i++){
         cv::Mat s;
@@ -55,6 +55,7 @@ void local_laplacian(cv::Mat& src, cv::Mat& dst, float sigma, float fact, int N)
 	}
 #endif
 
+#if 01
 	cv::Mat I_remap;
 	cv::Mat one_1 = cv::Mat::ones(src.rows, src.cols, src.type());
 	for (int i = 0; i < N; i++) {
@@ -76,17 +77,14 @@ void local_laplacian(cv::Mat& src, cv::Mat& dst, float sigma, float fact, int N)
 			tmp = tmp.mul(temp_laplace_pyr.at(level));
 
 			cv::Mat tmp2;
-
 			// cv::compare() returns CV_8UC1 [0, 255]:
 			cv::compare(cv::abs(input_gaussian_pyr.at(level) - ref*one_2), discretisation_step/**ref*/, tmp2, cv::CMP_LT);
 			tmp2.convertTo(tmp2, CV_32FC1, 1.0f / 255.0f);
 
-			tmp = tmp.mul(tmp2);
-			tmp = tmp + output_laplace_pyr.at(level);
-
-			output_laplace_pyr.at(level) = tmp;
+			output_laplace_pyr.at(level) += tmp.mul(tmp2);
 		}
 	}
+#endif
 
 #if 0
 	for(int i = 0; i < num_levels; i++){
@@ -162,8 +160,22 @@ cv::Mat upsample(cv::Mat& src, int rows, int cols)
 	cv::Size sz;
 	sz.width = cols;
 	sz.height = rows;
-	cv::resize(src, R, sz, 0.0, 0.0, cv::INTER_NEAREST);
 
+#if 0
+	cv::resize(src, R, sz, 0.0, 0.0, cv::INTER_NEAREST);
+#else
+    R.create(sz, src.type());
+    
+    for(int r = 0; r < R.rows; r++){
+        float* ptr = src.ptr<float>(r/2);
+        float* ptr2 = R.ptr<float>(r);
+        
+        for(int c = 0; c < R.cols; c++){
+            ptr2[c] = ptr[c/2];
+        }
+    }
+#endif
+    
 	cv::filter2D(R, R, -1, kernel);
 
 	return R;
