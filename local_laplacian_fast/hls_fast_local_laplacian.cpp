@@ -28,7 +28,7 @@ void hls_local_laplacian_wrap(cv::Mat& src, cv::Mat& dst, float sigma, float fac
 
 	// Convert input image to 16-bit (signed)
 	// 2047: 11 bit range
-	src.convertTo(src, CV_16UC1, 2047.0);
+	src.convertTo(src, CV_16UC1, ( ( 1 << (HLS_TBITDEPTH(_MAT_TYPE2_) - 1)) - 1 ) /* = 2047.0*/);
 
 
 	// Original image
@@ -89,18 +89,22 @@ void hls_local_laplacian_wrap(cv::Mat& src, cv::Mat& dst, float sigma, float fac
 		output_laplace_pyr[0], output_laplace_pyr[1], output_laplace_pyr[2], output_laplace_pyr[3],
 		pyr_rows, pyr_cols);
 
-#if 0
+#if 01
 	{
 		// Show pyramid image
 		for (int l = 0; l < _MAX_LEVELS_; l++) {
-			std::string name = "L - ";
-			name += std::to_string(l);
-
 			cv::Mat tmp(pyr_rows[l], pyr_cols[l], CV_16SC1);
 			tmp.data = (unsigned char*)(output_laplace_pyr[l]);
-			cv::imshow(name, 16*tmp + (1 << 14));
-			cv::waitKey(1.0 * 1000);
-			cv::destroyWindow(name);
+			
+            tmp = (tmp/2047)*255;
+            tmp.convertTo(tmp, CV_8UC1);
+
+//            cv::imwrite("hls_laplace_" + std::to_string(l) + ".tif", tmp);
+//            std::string name = "L - ";
+//            name += std::to_string(l);
+//          cv::imshow(name, 16*tmp + (1 << 14));
+//			cv::waitKey(1.0 * 1000);
+//			cv::destroyWindow(name);
 		}
 	}
 #endif
@@ -117,14 +121,18 @@ void hls_local_laplacian_wrap(cv::Mat& src, cv::Mat& dst, float sigma, float fac
 	{
 		// Show pyramid image
 		for (int l = 0; l < _MAX_LEVELS_; l++) {
-			std::string name = "G - ";
-			name += std::to_string(l);
-
 			cv::Mat tmp(pyr_rows[l], pyr_cols[l], CV_16SC1);
 			tmp.data = (unsigned char*)(input_gaussian_pyr[l]);
-			cv::imshow(name, tmp*16);
-			cv::waitKey(1.0 * 1000);
-			cv::destroyWindow(name);
+            
+            tmp = (tmp/2047)*255;
+            tmp.convertTo(tmp, CV_8UC1);
+            cv::imwrite("hls_gauss_" + std::to_string(l) + ".tif", tmp);
+            
+//            std::string name = "G - ";
+//            name += std::to_string(l);
+//			cv::imshow(name, tmp*16);
+//			cv::waitKey(1.0 * 1000);
+//			cv::destroyWindow(name);
 		}
 	}
 #endif
