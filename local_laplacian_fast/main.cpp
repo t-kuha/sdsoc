@@ -9,6 +9,7 @@
 #include "opencv2/imgproc/imgproc.hpp"
 //#include "opencv2/imgcodecs/imgcodecs.hpp"
 
+#include "hls_def.h"
 #include "cv_fast_local_laplacian.h"
 #include "hls_fast_local_laplacian.h"
 
@@ -57,12 +58,12 @@ int main(int argc, char* argv[])
 	planes.at(0).copyTo(cv_in);
 	planes.at(0).copyTo(hls_in);
 
-#if 0
+#if 01
 	// OpenCV implementation
 	cv::Mat cv_out;
 	cv::Mat rgb;			// RGB image for output
 
-	local_laplacian(cv_in, cv_out, sigma, fact, N);
+	local_laplacian(cv_in, cv_out, sigma, fact, _NUM_STEP_);
 
 	planes.at(0) = cv_out;
 	cv::merge(planes, rgb);
@@ -73,11 +74,9 @@ int main(int argc, char* argv[])
 	rgb.convertTo(rgb, CV_8UC3);
 
 	// Show output image
-//	cv::imshow("CV - Local Laplacian Pyramid", cv_out);
-	cv::imshow("Output - OpenCV", rgb);
-	cv::waitKey();
-//	cv::destroyWindow("CV - Local Laplacian Pyramid");
-	cv::destroyWindow("Output - OpenCV");
+//	cv::imshow("Output - OpenCV", rgb);
+//	cv::waitKey();
+//	cv::destroyWindow("Output - OpenCV");
 
 	// Save output image
 	cv::imwrite("cv.tif", rgb);
@@ -97,12 +96,19 @@ int main(int argc, char* argv[])
 	rgb2 = rgb2*255.0f;
 	rgb2.convertTo(rgb2, CV_8UC3);
 
-	cv::imshow("Output - HLS", rgb2);
-	cv::waitKey();
-	cv::destroyWindow("Output - HLS");
+//	cv::imshow("Output - HLS", rgb2);
+//	cv::waitKey();
+//	cv::destroyWindow("Output - HLS");
 
 	cv::imwrite("hls.tif", rgb2);
 
+#if 01
+    cv::Mat diff = cv::abs(rgb - rgb2)*8;
+    
+    cv::imshow("Difference", diff);
+    cv::waitKey();
+    cv::destroyWindow("Difference");
+#endif
 
 	std::cout << "----- Done -----" << std::endl;
 
