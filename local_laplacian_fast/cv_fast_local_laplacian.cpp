@@ -83,14 +83,29 @@ void local_laplacian(cv::Mat& src, cv::Mat& dst, float sigma, float fact, int N)
 
 			output_laplace_pyr.at(level) += tmp.mul(tmp2);
 		}
+        
+        {
+            int l = 3;
+            cv::Mat tmp;
+            temp_laplace_pyr.at(l).copyTo(tmp);
+            tmp = cv::abs(tmp)*255;
+            tmp.convertTo(tmp, CV_8UC1);
+            imwrite("cv_temp_lap_" + std::to_string(i) + ".tif", tmp);
+        }
 	}
 #endif
 
-#if 0
-	for(int i = 0; i < num_levels; i++){
-		cv::imshow(std::to_string(i), output_laplace_pyr.at(i) + 0.5);
-		cv::waitKey(0.3 * 1000);
-		cv::destroyWindow(std::to_string(i));
+#if 01
+	for(int l = 0; l < num_levels; l++){
+        cv::Mat tmp;
+        output_laplace_pyr.at(l).copyTo(tmp);
+        tmp = cv::abs(tmp)*255;
+        tmp.convertTo(tmp, CV_8UC1);
+        imwrite("cv_outp_lap_" + std::to_string(l) + ".tif", tmp);
+        
+//		cv::imshow(std::to_string(l), output_laplace_pyr.at(l) + 0.5);
+//		cv::waitKey(0.3 * 1000);
+//		cv::destroyWindow(std::to_string(l));
 	}
 #endif
 

@@ -157,21 +157,49 @@ void hls_local_laplacian_wrap(cv::Mat& src, cv::Mat& dst, float sigma, float fac
 			temp_laplace_pyr[0], temp_laplace_pyr[1], temp_laplace_pyr[2], temp_laplace_pyr[3],
 			output_laplace_pyr[0], output_laplace_pyr[1], output_laplace_pyr[2], output_laplace_pyr[3],
 			pyr_rows, pyr_cols, ref);
+        
+        {
+            int l = 3;
+            
+            cv::Mat tmp(pyr_rows[l], pyr_cols[l], CV_16SC1);
+            short* buf = new short [pyr_rows[l]*pyr_cols[l]];
+            memcpy(buf, temp_laplace_pyr[l], pyr_rows[l]*pyr_cols[l]*sizeof(short));
+            
+            tmp.data = (unsigned char*)buf;//(temp_laplace_pyr[l]);
+            
+            tmp = cv::abs(tmp);
+            tmp = (tmp/2047)*255;
+            tmp.convertTo(tmp, CV_8UC1);
+            cv::imwrite("hls_temp_lap_" + std::to_string(n) + ".tif", tmp);
+            
+            delete [] buf;
+        }
 	}
 #endif
 
-#if 0
+#if 01
 	{
 		// Show pyramid image
 		for (int l = 0; l < _MAX_LEVELS_; l++) {
-			std::string name = "L - ";
-			name += std::to_string(l);
-
 			cv::Mat tmp(pyr_rows[l], pyr_cols[l], CV_16SC1);
-			tmp.data = (unsigned char*)(output_laplace_pyr[l]);
-			cv::imshow(name, 16*tmp + (1 << 14));
-			cv::waitKey(1.0 * 1000);
-			cv::destroyWindow(name);
+            
+            short* buf = new short [pyr_rows[l]*pyr_cols[l]];
+            memcpy(buf, output_laplace_pyr[l], pyr_rows[l]*pyr_cols[l]*sizeof(short));
+            
+            tmp.data = (unsigned char*)buf;//(output_laplace_pyr[l]);
+            
+            tmp = cv::abs(tmp);
+            tmp = (tmp/2047)*255;
+            tmp.convertTo(tmp, CV_8UC1);
+            cv::imwrite("hls_out_lap_" + std::to_string(l) + ".tif", tmp);
+            
+            delete [] buf;
+            
+//            std::string name = "L - ";
+//            name += std::to_string(l);
+//			cv::imshow(name, 16*tmp + (1 << 14));
+//			cv::waitKey(1.0 * 1000);
+//			cv::destroyWindow(name);
 		}
 	}
 #endif
