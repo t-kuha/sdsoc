@@ -28,7 +28,7 @@ void hls_local_laplacian_wrap(cv::Mat& src, cv::Mat& dst, float sigma, float fac
 
 	// Convert input image to 16-bit (signed)
 	// 2047: 11 bit range
-	src.convertTo(src, CV_16UC1, 2047.0);
+	src.convertTo(src, CV_16UC1, ( ( 1 << (HLS_TBITDEPTH(_MAT_TYPE2_) - 1)) - 1 ) /* = 2047.0*/);
 
 
 	// Original image
@@ -93,14 +93,19 @@ void hls_local_laplacian_wrap(cv::Mat& src, cv::Mat& dst, float sigma, float fac
 	{
 		// Show pyramid image
 		for (int l = 0; l < _MAX_LEVELS_; l++) {
-			std::string name = "L - ";
-			name += std::to_string(l);
-
 			cv::Mat tmp(pyr_rows[l], pyr_cols[l], CV_16SC1);
 			tmp.data = (unsigned char*)(output_laplace_pyr[l]);
-			cv::imshow(name, 16*tmp + (1 << 14));
-			cv::waitKey(1.0 * 1000);
-			cv::destroyWindow(name);
+			
+            tmp = cv::abs(tmp);
+            tmp = (tmp/2047)*255;
+            tmp.convertTo(tmp, CV_8UC1);
+
+            cv::imwrite("hls_laplacian_" + std::to_string(l) + ".tif", tmp);
+            std::string name = "L - ";
+//            name += std::to_string(l);
+//          cv::imshow(name, 16*tmp + (1 << 14));
+//			cv::waitKey(1.0 * 1000);
+//			cv::destroyWindow(name);
 		}
 	}
 #endif
@@ -117,34 +122,29 @@ void hls_local_laplacian_wrap(cv::Mat& src, cv::Mat& dst, float sigma, float fac
 	{
 		// Show pyramid image
 		for (int l = 0; l < _MAX_LEVELS_; l++) {
-			std::string name = "G - ";
-			name += std::to_string(l);
-
 			cv::Mat tmp(pyr_rows[l], pyr_cols[l], CV_16SC1);
 			tmp.data = (unsigned char*)(input_gaussian_pyr[l]);
-			cv::imshow(name, tmp*16);
-			cv::waitKey(1.0 * 1000);
-			cv::destroyWindow(name);
+            
+            tmp = cv::abs(tmp);
+            tmp = (tmp/2047)*255;
+            tmp.convertTo(tmp, CV_8UC1);
+            cv::imwrite("hls_gauss_" + std::to_string(l) + ".tif", tmp);
+            
+//            std::string name = "G - ";
+//            name += std::to_string(l);
+//			cv::imshow(name, tmp*16);
+//			cv::waitKey(1.0 * 1000);
+//			cv::destroyWindow(name);
 		}
 	}
 #endif
 
-	// Data buffers
-	float* I_remap2 = NULL;
-	I_remap2 = new float[src.rows*src.cols];
-
+#if 01
 	for (int n = 0; n < _NUM_STEP_; n++) {
 		float ref = ((float)n) / ((float)(_NUM_STEP_ - 1));
 
 		// Remap original image
-		remap(buf_src, I_remap2, ref, fact, sigma, pyr_rows[0], pyr_cols[0]);
-
-		// Copy 
-		for (int r = 0; r < pyr_rows[0]; r++) {
-			for (int c = 0; c < pyr_cols[0]; c++) {
-				I_remap[r*pyr_cols[0] + c] = (unsigned short)(I_remap2[r*pyr_cols[0] + c] * 2047.0f);
-			}
-		}
+		remap(buf_src, I_remap, ref, fact, sigma, pyr_rows[0], pyr_cols[0]);
 
 		// Create laplacian pyramid from remapped image
 #pragma SDS resource(1)
@@ -157,23 +157,49 @@ void hls_local_laplacian_wrap(cv::Mat& src, cv::Mat& dst, float sigma, float fac
 			temp_laplace_pyr[0], temp_laplace_pyr[1], temp_laplace_pyr[2], temp_laplace_pyr[3],
 			output_laplace_pyr[0], output_laplace_pyr[1], output_laplace_pyr[2], output_laplace_pyr[3],
 			pyr_rows, pyr_cols, ref);
+        
+        {
+            int l = 3;
+            
+            cv::Mat tmp(pyr_rows[l], pyr_cols[l], CV_16SC1);
+            short* buf = new short [pyr_rows[l]*pyr_cols[l]];
+            memcpy(buf, temp_laplace_pyr[l], pyr_rows[l]*pyr_cols[l]*sizeof(short));
+            
+            tmp.data = (unsigned char*)buf;//(temp_laplace_pyr[l]);
+            
+            tmp = cv::abs(tmp);
+            tmp = (tmp/2047)*255;
+            tmp.convertTo(tmp, CV_8UC1);
+            cv::imwrite("hls_temp_lap_" + std::to_string(n) + ".tif", tmp);
+            
+            delete [] buf;
+        }
 	}
+#endif
 
-	// Release
-	delete[] I_remap2;
-
-#if 0
+#if 01
 	{
 		// Show pyramid image
 		for (int l = 0; l < _MAX_LEVELS_; l++) {
-			std::string name = "L - ";
-			name += std::to_string(l);
-
 			cv::Mat tmp(pyr_rows[l], pyr_cols[l], CV_16SC1);
-			tmp.data = (unsigned char*)(output_laplace_pyr[l]);
-			cv::imshow(name, 16*tmp + (1 << 14));
-			cv::waitKey(1.0 * 1000);
-			cv::destroyWindow(name);
+            
+            short* buf = new short [pyr_rows[l]*pyr_cols[l]];
+            memcpy(buf, output_laplace_pyr[l], pyr_rows[l]*pyr_cols[l]*sizeof(short));
+            
+            tmp.data = (unsigned char*)buf;//(output_laplace_pyr[l]);
+            
+            tmp = cv::abs(tmp);
+            tmp = (tmp/2047)*255;
+            tmp.convertTo(tmp, CV_8UC1);
+            cv::imwrite("hls_out_lap_" + std::to_string(l) + ".tif", tmp);
+            
+            delete [] buf;
+            
+//            std::string name = "L - ";
+//            name += std::to_string(l);
+//			cv::imshow(name, 16*tmp + (1 << 14));
+//			cv::waitKey(1.0 * 1000);
+//			cv::destroyWindow(name);
 		}
 	}
 #endif
@@ -242,15 +268,12 @@ void kernel(data_pyr_t* gau, data_pyr_t* temp_laplace_pyr, data_pyr_t* dst, int 
 			g = gau[offset] / 2047.0f;
 			if (std::abs(g - ref) < discretisation_step) {
 				x_ = 1 - std::abs(g - ref) / (discretisation_step );
-				//x_ *= 2047;
 				x_ = x_ * temp_laplace_pyr[offset];
 			}
 			else {
 				x_ = 0;
 			}
-			x_ = x_ + dst[offset];
-
-			dst[offset] = x_;
+			dst[offset] = x_ + dst[offset];
 			offset++;
 		}
 	}
@@ -465,7 +488,7 @@ void remap(data_in_t* src, float* dst, float ref, float fact, float sigma, int r
 	for (int r = 0; r < rows; r++) {
 		for (int c = 0; c < cols; c++) {
 #pragma HLS PIPELINE
-			I = src[r*cols + c]/2047.0;
+			I = src[r*cols + c]/2047.0; // [0, 1]
 #ifdef _WIN32
 			dst[r*cols + c] =
 				fact*(I - ref)*std::exp(-(I - ref)*(I - ref) / (2 * sigma*sigma));
@@ -475,4 +498,23 @@ void remap(data_in_t* src, float* dst, float ref, float fact, float sigma, int r
 #endif
 		}
 	}
+}
+
+void remap(data_in_t* src, data_in_t* dst, float ref, float fact, float sigma, int rows, int cols)
+{
+#pragma HLS INLINE
+    float tmp;
+    for (int r = 0; r < rows; r++) {
+        for (int c = 0; c < cols; c++) {
+#pragma HLS PIPELINE
+            float I = src[r*cols + c]/2047.0; // [0, 1]
+//            I = src[r*cols + c] / (float) ( ( 1 << (HLS_TBITDEPTH(_MAT_TYPE2_) - 1)) - 1 );
+#ifdef _WIN32
+            tmp = fact*(I - ref)*std::exp(-(I - ref)*(I - ref) / (2 * sigma*sigma));
+#else
+            tmp = fact*(I - ref)*hls::expf(-(I - ref)*(I - ref) / (2 * sigma*sigma));
+#endif
+            dst[r*cols + c] = (unsigned short)(tmp* 2047.0f);
+        }
+    }
 }

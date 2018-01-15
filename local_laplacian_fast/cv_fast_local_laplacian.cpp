@@ -1,4 +1,5 @@
 #include "cv_fast_local_laplacian.h"
+#include "hls_def.h"    // for _MAX_LEVELS_
 
 #include <cmath>		// ceil() / exp()
 
@@ -15,7 +16,7 @@ void local_laplacian(cv::Mat& src, cv::Mat& dst, float sigma, float fact, int N)
 	}
 
 	// Settings
-	int num_levels = std::ceil(std::log(std::min(src.rows, src.cols)) - log(2)) + 2;
+    int num_levels = _MAX_LEVELS_;//std::ceil(std::log(std::min(src.rows, src.cols)) - log(2)) + 2;
 	float discretisation_step = 1.0f / (N - 1);
 
 	// Pyramids
@@ -33,17 +34,28 @@ void local_laplacian(cv::Mat& src, cv::Mat& dst, float sigma, float fact, int N)
 #if 0
 	// Show pyramid images
 	for(int i = 0; i < num_levels; i++){
-		cv::imshow(std::to_string(i), input_gaussian_pyr.at(i));
-		cv::waitKey(0.3 * 1000);
-		cv::destroyWindow(std::to_string(i));
+        cv::Mat s;
+        input_gaussian_pyr.at(i).copyTo(s);
+        s = s*255;
+        s.convertTo(s, CV_8UC1);
+        cv::imwrite("cv_gauss_" + std::to_string(i) + ".tif", s);
+//		cv::imshow(std::to_string(i), input_gaussian_pyr.at(i));
+//		cv::waitKey(0.3 * 1000);
+//		cv::destroyWindow(std::to_string(i));
 	}
 	for (int i = 0; i < num_levels; i++) {
-		cv::imshow(std::to_string(i), output_laplace_pyr.at(i) + 0.5);
-		cv::waitKey();
-		cv::destroyWindow(std::to_string(i));
+        cv::Mat s;
+        output_laplace_pyr.at(i).copyTo(s);
+        s = cv::abs(s)*255;
+        s.convertTo(s, CV_8UC1);
+        cv::imwrite("cv_laplacian_" + std::to_string(i) + ".tif", s);
+//		cv::imshow(std::to_string(i), output_laplace_pyr.at(i) + 0.5);
+//		cv::waitKey();
+//		cv::destroyWindow(std::to_string(i));
 	}
 #endif
 
+#if 01
 	cv::Mat I_remap;
 	cv::Mat one_1 = cv::Mat::ones(src.rows, src.cols, src.type());
 	for (int i = 0; i < N; i++) {
@@ -65,23 +77,35 @@ void local_laplacian(cv::Mat& src, cv::Mat& dst, float sigma, float fact, int N)
 			tmp = tmp.mul(temp_laplace_pyr.at(level));
 
 			cv::Mat tmp2;
-
 			// cv::compare() returns CV_8UC1 [0, 255]:
 			cv::compare(cv::abs(input_gaussian_pyr.at(level) - ref*one_2), discretisation_step/**ref*/, tmp2, cv::CMP_LT);
 			tmp2.convertTo(tmp2, CV_32FC1, 1.0f / 255.0f);
 
-			tmp = tmp.mul(tmp2);
-			tmp = tmp + output_laplace_pyr.at(level);
-
-			output_laplace_pyr.at(level) = tmp;
+			output_laplace_pyr.at(level) += tmp.mul(tmp2);
 		}
+        
+        {
+            int l = 3;
+            cv::Mat tmp;
+            temp_laplace_pyr.at(l).copyTo(tmp);
+            tmp = cv::abs(tmp)*255;
+            tmp.convertTo(tmp, CV_8UC1);
+            imwrite("cv_temp_lap_" + std::to_string(i) + ".tif", tmp);
+        }
 	}
+#endif
 
-#if 0
-	for(int i = 0; i < num_levels; i++){
-		cv::imshow(std::to_string(i), output_laplace_pyr.at(i) + 0.5);
-		cv::waitKey(0.3 * 1000);
-		cv::destroyWindow(std::to_string(i));
+#if 01
+	for(int l = 0; l < num_levels; l++){
+        cv::Mat tmp;
+        output_laplace_pyr.at(l).copyTo(tmp);
+        tmp = cv::abs(tmp)*255;
+        tmp.convertTo(tmp, CV_8UC1);
+        imwrite("cv_outp_lap_" + std::to_string(l) + ".tif", tmp);
+        
+//		cv::imshow(std::to_string(l), output_laplace_pyr.at(l) + 0.5);
+//		cv::waitKey(0.3 * 1000);
+//		cv::destroyWindow(std::to_string(l));
 	}
 #endif
 
@@ -108,16 +132,31 @@ cv::Mat downsample(cv::Mat& src)
 	// Convolve
 	cv::Mat dst;
 	cv::filter2D(src, dst, -1, kernel);
-
+    
 	// Decimate
 	cv::Size sz;
-	sz.width = src.cols;
-	sz.height = src.rows;
-	sz.height = std::ceil(sz.height / 2.0);
-	sz.width = std::ceil(sz.width / 2.0);
-	cv::resize(dst, dst, sz, 0.0, 0.0, cv::INTER_NEAREST);
-
+	sz.height = std::ceil(dst.rows / 2.0);
+	sz.width = std::ceil(dst.cols / 2.0);
+    
+#if 0
+    cv::resize(dst, dst, sz, 0.0, 0.0, cv::INTER_NEAREST);
 	return dst;
+#else
+    // Create output matrix
+    cv::Mat dst2;
+    dst2.create(sz, dst.type());
+    
+    for(int r = 0; r < dst2.rows; r++){
+        float* ptr = dst.ptr<float>(2*r);
+        float* ptr2 = dst2.ptr<float>(r);
+        
+        for(int c = 0; c < dst2.cols; c++){
+            ptr2[c] = ptr[2*c];
+        }
+    }
+    
+    return dst2;
+#endif
 }
 
 cv::Mat upsample(cv::Mat& src, int rows, int cols)
@@ -136,8 +175,22 @@ cv::Mat upsample(cv::Mat& src, int rows, int cols)
 	cv::Size sz;
 	sz.width = cols;
 	sz.height = rows;
-	cv::resize(src, R, sz, 0.0, 0.0, cv::INTER_NEAREST);
 
+#if 0
+	cv::resize(src, R, sz, 0.0, 0.0, cv::INTER_NEAREST);
+#else
+    R.create(sz, src.type());
+    
+    for(int r = 0; r < R.rows; r++){
+        float* ptr = src.ptr<float>(r/2);
+        float* ptr2 = R.ptr<float>(r);
+        
+        for(int c = 0; c < R.cols; c++){
+            ptr2[c] = ptr[c/2];
+        }
+    }
+#endif
+    
 	cv::filter2D(R, R, -1, kernel);
 
 	return R;

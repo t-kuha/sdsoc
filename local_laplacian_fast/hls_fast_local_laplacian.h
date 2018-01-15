@@ -114,5 +114,6 @@ void hls_reconstruct(data_pyr_t* src0, data_pyr_t* src1, data_pyr_t* src2, data_
 	signed short* dst, pyr_sz_t pyr_rows_[_MAX_LEVELS_], pyr_sz_t pyr_cols_[_MAX_LEVELS_]);
 
 void remap(data_in_t* src, float* dst, float ref, float fact, float sigma, int rows, int cols);
+void remap(data_in_t* src, data_in_t* dst, float ref, float fact, float sigma, int rows, int cols);
 
 #endif
