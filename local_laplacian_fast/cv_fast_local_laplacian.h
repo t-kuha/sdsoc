@@ -14,4 +14,8 @@ void gaussian_pyramid(const cv::Mat& src, std::vector< cv::Mat >& dst, int num_l
 void laplacian_pyramid(const cv::Mat& src, std::vector< cv::Mat >& dst, int num_levels);
 void construct_pyramid(const cv::Mat& src, std::vector< cv::Mat >& gau, std::vector< cv::Mat >& lap, int num_levels);
 
+// For debugging
+bool save_img(std::string name, cv::Mat& img);
+void show_img(cv::Mat& img, int delay = 0, std::string winname = "img");
+
 #endif

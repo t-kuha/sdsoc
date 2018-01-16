@@ -1,17 +1,18 @@
-#ifdef _WIN32
 #include "stdafx.h"
-#endif
 
 #include <iostream>
 
 #include "opencv2/core/core.hpp"
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
-//#include "opencv2/imgcodecs/imgcodecs.hpp"
 
 #include "hls_def.h"
 #include "cv_fast_local_laplacian.h"
 #include "hls_fast_local_laplacian.h"
+
+
+void rgb2gray(cv::Mat& rgb, cv::Mat& gray, std::vector<cv::Mat>& color);
+void gray2rgb(cv::Mat& gray, std::vector<cv::Mat>& color, cv::Mat& rgb);
 
 
 int main(int argc, char* argv[])
@@ -22,6 +23,10 @@ int main(int argc, char* argv[])
 		std::cerr << "Usage: " << argv[0] << " <input image>" << std::endl;
 		return -1;
 	}
+
+	// Parameters
+	const float sigma = 0.1f;
+	const float fact = 5.0f;
 
 	// Load image
 	cv::Mat img_input;
@@ -35,75 +40,55 @@ int main(int argc, char* argv[])
 	img_input.convertTo(img_input, CV_32FC3, 1.0f/255.0f);
 
 	// Convert to grayscale
-	cv::Mat yuv;
-	cv::cvtColor(img_input, yuv, CV_BGR2YUV);
-	
-	std::vector<cv::Mat> planes;
-	cv::split(yuv, planes);
+	cv::Mat gray;
+	std::vector<cv::Mat> color;
+	rgb2gray(img_input, gray, color);
 
-#if 0
-	// Show image
-	cv::imshow("Original Grayscale Image", planes.at(0));
-	cv::waitKey();
-	cv::destroyWindow("Original Grayscale Image");
-#endif
-
-	// Parameters
-	const float sigma = 0.1f;
-	const float fact = 5.0f;
-
+	// Input for processing
 	cv::Mat cv_in;
 	cv::Mat hls_in;
 
-	planes.at(0).copyTo(cv_in);
-	planes.at(0).copyTo(hls_in);
+	cv_in = gray.clone();
+	hls_in = gray.clone();
 
 #if 01
 	// OpenCV implementation
 	cv::Mat cv_out;
-	cv::Mat rgb;			// RGB image for output
+	cv::Mat cv_rgb;		// RGB image for output
 
 	local_laplacian(cv_in, cv_out, sigma, fact, _NUM_STEP_);
 
-	planes.at(0) = cv_out;
-	cv::merge(planes, rgb);
-
-	// YUV -> RGB -> 8 bit image
-	cv::cvtColor(rgb, rgb, CV_YUV2BGR);
-	rgb = rgb*255.0f;
-	rgb.convertTo(rgb, CV_8UC3);
+	gray2rgb(cv_out, color, cv_rgb);
 
 	// Show output image
-//	cv::imshow("Output - OpenCV", rgb);
-//	cv::waitKey();
-//	cv::destroyWindow("Output - OpenCV");
+	cv::imshow("Output - OpenCV", cv_rgb);
+	cv::waitKey();
+	cv::destroyWindow("Output - OpenCV");
 
 	// Save output image
-	cv::imwrite("cv.tif", rgb);
+	cv_rgb.convertTo(cv_rgb, CV_8UC3, 255.0);
+	cv::imwrite("cv.tif", cv_rgb);
 #endif
 
 	// HLS implementation
 	cv::Mat hls_out;		// Enhanced grayscale image
-	cv::Mat rgb2;		// RGB image for output
+	cv::Mat hls_rgb;		// RGB image for output
 
 	hls_local_laplacian_wrap(hls_in, hls_out, sigma, fact);
+	// At this point, 'hls_in' have been converted to CV_16SC,
+	// becoming incompatible with 'color'
 
-	planes.at(0) = hls_out;
-	cv::merge(planes, rgb2);
+	gray2rgb(hls_out, color, hls_rgb);
 
-	// YUV -> 32-bit floating point RGB -> 8-bit RGB image
-	cv::cvtColor(rgb2, rgb2, CV_YUV2BGR);
-	rgb2 = rgb2*255.0f;
-	rgb2.convertTo(rgb2, CV_8UC3);
+	cv::imshow("Output - HLS", hls_rgb);
+	cv::waitKey();
+	cv::destroyWindow("Output - HLS");
 
-//	cv::imshow("Output - HLS", rgb2);
-//	cv::waitKey();
-//	cv::destroyWindow("Output - HLS");
-
-	cv::imwrite("hls.tif", rgb2);
+	hls_rgb.convertTo(hls_rgb, CV_8UC3, 255.0);
+	cv::imwrite("hls.tif", hls_rgb);
 
 #if 01
-    cv::Mat diff = cv::abs(rgb - rgb2)*8;
+    cv::Mat diff = cv::abs(cv_rgb - hls_rgb)*8;
     
     cv::imshow("Difference", diff);
     cv::waitKey();
@@ -115,3 +100,52 @@ int main(int argc, char* argv[])
     return 0;
 }
 
+
+#define _MATLAB
+void rgb2gray(cv::Mat& rgb, cv::Mat& gray, std::vector<cv::Mat>& color)
+{
+#ifdef _MATLAB
+	// Original MATLAB implementation
+	cv::split(rgb, color);
+
+	gray = 0.2989*color.at(2) + 0.5870*color.at(1) + 0.1140*color.at(0);
+
+	for (int c = 0; c < color.size(); c++) {
+		cv::divide(color.at(c), gray, color.at(c));
+	}
+
+#else
+	// Standard RGB -> YUV conversion
+	cv::Mat yuv;
+	cv::cvtColor(rgb, yuv, CV_BGR2YUV);
+
+	cv::split(yuv, color);
+
+	gray = color.at(0).clone();
+#endif
+}
+
+void gray2rgb(cv::Mat& gray, std::vector<cv::Mat>& color, cv::Mat& rgb)
+{
+#ifdef _MATLAB
+	// Original MATLAB implementation
+	std::vector<cv::Mat> color2;
+
+	for (int c = 0; c < color.size(); c++) {
+		cv::Mat tmp;
+		cv::multiply(color.at(c), gray, tmp);
+		color2.push_back(tmp);
+	}
+
+	cv::merge(color2, rgb);
+
+#else
+	// Standard YUV -> RGB conversion
+	cv::Mat tmp;
+	color.at(0) = gray;
+	cv::merge(color, tmp);
+
+	// YUV -> RGB
+	cv::cvtColor(tmp, rgb, CV_YUV2BGR);
+#endif
+}

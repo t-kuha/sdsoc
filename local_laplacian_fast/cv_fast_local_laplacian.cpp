@@ -1,3 +1,5 @@
+#include "stdafx.h"
+
 #include "cv_fast_local_laplacian.h"
 #include "hls_def.h"    // for _MAX_LEVELS_
 
@@ -16,7 +18,7 @@ void local_laplacian(cv::Mat& src, cv::Mat& dst, float sigma, float fact, int N)
 	}
 
 	// Settings
-    int num_levels = _MAX_LEVELS_;//std::ceil(std::log(std::min(src.rows, src.cols)) - log(2)) + 2;
+	int num_levels = _MAX_LEVELS_;
 	float discretisation_step = 1.0f / (N - 1);
 
 	// Pyramids
@@ -31,27 +33,16 @@ void local_laplacian(cv::Mat& src, cv::Mat& dst, float sigma, float fact, int N)
 #endif
 	output_laplace_pyr.at(num_levels - 1) = input_gaussian_pyr.at(num_levels - 1);
 
+
 #if 0
 	// Show pyramid images
-	for(int i = 0; i < num_levels; i++){
-        cv::Mat s;
-        input_gaussian_pyr.at(i).copyTo(s);
-        s = s*255;
-        s.convertTo(s, CV_8UC1);
-        cv::imwrite("cv_gauss_" + std::to_string(i) + ".tif", s);
-//		cv::imshow(std::to_string(i), input_gaussian_pyr.at(i));
-//		cv::waitKey(0.3 * 1000);
-//		cv::destroyWindow(std::to_string(i));
+	for(int l = 0; l < num_levels; l++){
+		save_img("cv_gauss_" + std::to_string(l), input_gaussian_pyr.at(l));
+		//show_img(input_gaussian_pyr.at(l), 0.3 * 1000, "cv_gauss_" + std::to_string(l));
 	}
-	for (int i = 0; i < num_levels; i++) {
-        cv::Mat s;
-        output_laplace_pyr.at(i).copyTo(s);
-        s = cv::abs(s)*255;
-        s.convertTo(s, CV_8UC1);
-        cv::imwrite("cv_laplacian_" + std::to_string(i) + ".tif", s);
-//		cv::imshow(std::to_string(i), output_laplace_pyr.at(i) + 0.5);
-//		cv::waitKey();
-//		cv::destroyWindow(std::to_string(i));
+	for (int l = 0; l < num_levels; l++) {
+		save_img("cv_laplacian_" + std::to_string(l), output_laplace_pyr.at(l));
+		//show_img(output_laplace_pyr.at(l), 0.3 * 1000, "cv_laplacian_" + std::to_string(l));
 	}
 #endif
 
@@ -70,6 +61,12 @@ void local_laplacian(cv::Mat& src, cv::Mat& dst, float sigma, float fact, int N)
 		std::vector< cv::Mat > temp_laplace_pyr;
 		laplacian_pyramid(I_remap, temp_laplace_pyr, num_levels);
 
+		//save_img("cv_remap_" + std::to_string(i), I_remap);
+		//save_img("cv_temp_0_" + std::to_string(i), temp_laplace_pyr.at(0));
+		//save_img("cv_temp_1_" + std::to_string(i), temp_laplace_pyr.at(1));
+		//save_img("cv_temp_2_" + std::to_string(i), temp_laplace_pyr.at(2));
+		//save_img("cv_temp_3_" + std::to_string(i), temp_laplace_pyr.at(3));
+		
 		for (int level = 0; level < num_levels - 1; level++) {
 			cv::Mat one_2 = cv::Mat::ones(input_gaussian_pyr.at(level).rows, input_gaussian_pyr.at(level).cols, input_gaussian_pyr.at(level).type());
 
@@ -84,28 +81,13 @@ void local_laplacian(cv::Mat& src, cv::Mat& dst, float sigma, float fact, int N)
 			output_laplace_pyr.at(level) += tmp.mul(tmp2);
 		}
         
-        {
-            int l = 3;
-            cv::Mat tmp;
-            temp_laplace_pyr.at(l).copyTo(tmp);
-            tmp = cv::abs(tmp)*255;
-            tmp.convertTo(tmp, CV_8UC1);
-            imwrite("cv_temp_lap_" + std::to_string(i) + ".tif", tmp);
-        }
-	}
+		//save_img("cv_out_lap_" + std::to_string(i), output_laplace_pyr.at(3));
+ 	}
 #endif
 
-#if 01
+#if 0
 	for(int l = 0; l < num_levels; l++){
-        cv::Mat tmp;
-        output_laplace_pyr.at(l).copyTo(tmp);
-        tmp = cv::abs(tmp)*255;
-        tmp.convertTo(tmp, CV_8UC1);
-        imwrite("cv_outp_lap_" + std::to_string(l) + ".tif", tmp);
-        
-//		cv::imshow(std::to_string(l), output_laplace_pyr.at(l) + 0.5);
-//		cv::waitKey(0.3 * 1000);
-//		cv::destroyWindow(std::to_string(l));
+		save_img("cv_out_lap_" + std::to_string(l), output_laplace_pyr.at(l));
 	}
 #endif
 
@@ -131,7 +113,7 @@ cv::Mat downsample(cv::Mat& src)
 
 	// Convolve
 	cv::Mat dst;
-	cv::filter2D(src, dst, -1, kernel);
+	cv::filter2D(src, dst, -1, kernel, cv::Point(-1, -1), 0, cv::BORDER_REFLECT);
     
 	// Decimate
 	cv::Size sz;
@@ -145,20 +127,21 @@ cv::Mat downsample(cv::Mat& src)
     // Create output matrix
     cv::Mat dst2;
     dst2.create(sz, dst.type());
-    
-    for(int r = 0; r < dst2.rows; r++){
-        float* ptr = dst.ptr<float>(2*r);
-        float* ptr2 = dst2.ptr<float>(r);
-        
-        for(int c = 0; c < dst2.cols; c++){
-            ptr2[c] = ptr[2*c];
-        }
-    }
+
+	for (int r = 0; r < src.rows; r += 2) {
+		float* ptr = dst.ptr<float>(r);
+		float* ptr2 = dst2.ptr<float>(r/2);
+
+		for (int c = 0; c < src.cols; c+=2) {
+			ptr2[c/2] = ptr[c];
+		}
+	}
     
     return dst2;
 #endif
 }
 
+// rows, cols: size after upsampling
 cv::Mat upsample(cv::Mat& src, int rows, int cols)
 {
 	// FIXME: Dupliacted code
@@ -173,25 +156,38 @@ cv::Mat upsample(cv::Mat& src, int rows, int cols)
 	// Resize - Increase resolution
 	cv::Mat R;
 	cv::Size sz;
-	sz.width = cols;
-	sz.height = rows;
 
 #if 0
+	sz.width = cols;
+	sz.height = rows;
 	cv::resize(src, R, sz, 0.0, 0.0, cv::INTER_NEAREST);
 #else
-    R.create(sz, src.type());
-    
-    for(int r = 0; r < R.rows; r++){
-        float* ptr = src.ptr<float>(r/2);
+	// Original MATLAB implementation
+	cv::Mat tmp;
+	cv::copyMakeBorder(src, tmp, 1, 1, 1, 1, cv::BORDER_REPLICATE);
+
+	sz.width = cols + 4;
+	sz.height = rows + 4;
+	
+	R = cv::Mat::zeros(sz, src.type());
+
+    for(int r = 0; r < R.rows; r+=2){
+        float* ptr = tmp.ptr<float>(r/2);
         float* ptr2 = R.ptr<float>(r);
         
-        for(int c = 0; c < R.cols; c++){
-            ptr2[c] = ptr[c/2];
+        for(int c = 0; c < R.cols; c+=2){
+            ptr2[c] = ptr[c/2]*4;
         }
     }
-#endif
     
-	cv::filter2D(R, R, -1, kernel);
+	cv::filter2D(R, R, -1, kernel, cv::Point(-1, -1), 0, cv::BORDER_REFLECT);
+
+	// Crop
+	cv::Rect roi = cv::Rect(2, 2, R.cols - 4, R.rows - 4);
+
+	R = R(roi);
+
+#endif
 
 	return R;
 }
@@ -202,7 +198,8 @@ void gaussian_pyramid(const cv::Mat& src, std::vector< cv::Mat >& dst, int num_l
 	dst.push_back(src);
 
 	// Down sample
-	cv::Mat R = src;
+	cv::Mat R;
+	R = src.clone();
 	for (int i = 1; i < num_levels; i++) {
 		// Add to pyramid
 		R = downsample(R);
@@ -212,14 +209,15 @@ void gaussian_pyramid(const cv::Mat& src, std::vector< cv::Mat >& dst, int num_l
 
 void laplacian_pyramid(const cv::Mat& src, std::vector< cv::Mat >& dst, int num_levels)
 {
-	cv::Mat J = src;
-	cv::Mat I = src;
+	cv::Mat J = src.clone();
+	cv::Mat I = src.clone();
 	for (int l = 0; l < num_levels - 1; l++) {
 		// apply low pass filter, and downsample
 		I = downsample(J);
 
 		// in each level, store difference between image and upsampled low pass version
-		dst.push_back(J - upsample(I, J.rows, J.cols));
+		cv::Mat tmp = upsample(I, J.rows, J.cols);
+		dst.push_back(J - tmp);
 
 		J = I; // continue with low pass image
 	}
@@ -249,4 +247,22 @@ void construct_pyramid(const cv::Mat& src, std::vector< cv::Mat >& gau, std::vec
 	}
 
 	lap.push_back(J);	// the coarsest level contains the residual low pass image
+}
+
+bool save_img(std::string name, cv::Mat& img)
+{
+	cv::Mat tmp;
+	img.copyTo(tmp);
+	
+	tmp = cv::abs(tmp) * 255;
+	tmp.convertTo(tmp, CV_8UC1);
+	
+	return imwrite(name + ".tif", tmp);
+}
+
+void show_img(cv::Mat& img, int delay, std::string winname)
+{
+	cv::imshow(winname, img);
+	cv::waitKey(delay);
+	cv::destroyWindow(winname);
 }
