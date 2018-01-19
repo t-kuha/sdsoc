@@ -38,6 +38,38 @@
 
 namespace hls
 {
+	// Show part of hls::Mat values
+	template<int ROWS, int COLS, int TYPE>
+	void print_value(hls::Mat<ROWS, COLS, TYPE>& mat, std::string name = "mat")
+	{
+		hls::Mat<ROWS, COLS, TYPE> tmp;
+		hls::Scalar<HLS_MAT_CN(TYPE), HLS_TNAME(TYPE)> px;
+
+		std::cout << "----------- " << name << " ------------------" << std::endl;
+		for (int r = 0; r < mat.rows; r++) {
+			for (int c = 0; c < mat.cols; c++) {
+				mat >> px;
+				if ((r < 10) && (c < 10)) {
+					std::cout << px.val[0] << " ";
+				}
+
+				tmp << px;
+			}
+			if (r < 10) {
+				std::cout << std::endl;
+			}
+		}
+		std::cout << std::endl;
+
+		for (int r = 0; r < mat.rows; r++) {
+			for (int c = 0; c < mat.cols; c++) {
+				tmp >> px;
+				mat << px;
+			}
+		}
+	}
+
+
 	// Split a stream into two
 	template<int ROWS, int COLS, int TYPE>
 	void my_split(
@@ -134,98 +166,170 @@ namespace hls
 		}
 	}
 
-
 	template<int ROWS, int COLS, int TYPE>
 	void downsample2(
 		hls::Mat<ROWS, COLS, TYPE>& src,
 		hls::Mat<ROWS, COLS, TYPE>& dst)
 	{
 		// Separable convolution
-		// This weights sum to 20
-		static const ap_uint<4> x[5] = { 1, 5, 8, 5, 1 };
-
+		// This weights sum to 1
+		static const float x[5] = { .05, .25, .4, .25, .05 };
+		
 		int rows = src.rows;
 		int cols = src.cols;
-
+		
 		assert(rows <= ROWS);
 		assert(cols <= COLS);
 
+		// Width after horizontal convolution
 		int cols2 = cols >> 1;
 
-#pragma HLS DATAFLOW
 		hls::Scalar<HLS_MAT_CN(TYPE), HLS_TNAME(TYPE)>	px_in;
 		hls::Scalar<HLS_MAT_CN(TYPE), HLS_TNAME(TYPE)>	px_out;
 
-		hls::Mat<ROWS, COLS, TYPE>			tmp0(rows, cols2);
-		hls::Window<1, 5, HLS_TNAME(TYPE)>	buf1;	// Line buffer
+		// Intermediate buffer
+		hls::Mat<ROWS, COLS, TYPE>			tmp(rows, cols2);
 
 		// Horizontal
+		hls::Window<1, 5 - 1, HLS_TNAME(TYPE)>	buf_h;	// Line buffer (for horizoltal convolution)
+		hls::Window<1, 5, HLS_TNAME(TYPE)>		cal_h;	// Calculation
+
+#if 1
+		for (int j = 0; j < 4; j++) {
+			buf_h.val[0][j] = 0;
+		}
+		for (int j = 0; j < 5; j++) {
+			cal_h.val[0][j] = 0;
+		}
+#endif
+
 		for (int r = 0; r < rows; r++) {
 			for (int c = 0; c < cols + 2; c++) {
-#pragma HLS PIPELINE
+//#pragma HLS PIPELINE
 				if (c < cols) {
 					// Load pixel from source
 					src >> px_in;
-
 					// Add to window buffer
-					buf1.val[0][4] = px_in.val[0];
+					cal_h.val[0][4] = px_in.val[0];
 				}
-				if (c > 0 && c < 2) {
-					buf1.val[0][4 - c*2] = buf1.val[0][4];
+
+				// Copy data to calculation buffer
+				for (int j = 0; j < 4; j++) {
+					cal_h.val[0][j] = buf_h.val[0][j];
 				}
+
+#if 0	// REEFLECT 101
+				// Left edge
+				if (c > 0 && c <= 2) {
+					cal_h.val[0][4 - c * 2] = px_in.val[0];
+				}
+				// Right edge
+				if (c >= cols) {
+					cal_h.val[0][4] = cal_h.val[0][2 - (c - cols)*2];
+				}
+#else	// REFLECT
+				// Left edge
+				if (c >= 0 && c < 2) {
+					cal_h.val[0][3 - c * 2] = px_in.val[0];
+				}
+				// Right edge
+				if (c >= cols) {
+					cal_h.val[0][4] = cal_h.val[0][3 - (c - cols) * 2];
+				}
+#endif
 
 				// Convolution
 				if (c % 2 == 0) {
 					if (c >= 2) {
-						px_out.val[0] = 
-							(x[0] * buf1.val[0][0] +
-							x[1] * buf1.val[0][1] +
-							x[2] * buf1.val[0][2] +
-							x[3] * buf1.val[0][3] +
-							x[4] * buf1.val[0][4])/20;
-
-						tmp0 << px_out;
+						px_out.val[0] =
+							(x[0] * cal_h.val[0][0] +
+								x[1] * cal_h.val[0][1] +
+								x[2] * cal_h.val[0][2] +
+								x[3] * cal_h.val[0][3] +
+								x[4] * cal_h.val[0][4]/*px_in.val[0]*//*buf1.val[0][4]*/);
+						tmp << px_out;
 					}
-
-					// Shift to left
 				}
-					buf1.shift_pixels_left();
+
+				// Shift to left
+				// Copy back from calculation buffer
+				for (int j = 0; j < 4; j++) {
+					buf_h.val[0][j] = cal_h.val[0][j + 1];
+				}
 			}
 		}
 
-		// Vertical & sub sampling
-		hls::LineBuffer<5, COLS/2, HLS_TNAME(TYPE)>	buf2;	// Line buffer
+		// Vertical
+		hls::LineBuffer<5 - 1, COLS / 2, HLS_TNAME(TYPE)>	buf_v;	// Line buffer
+		hls::Window<5, 1, HLS_TNAME(TYPE)>				cal_v;	// Calculation
+
+#if 01
+		for (int j = 0; j < 4; j++) {
+			for (int i = 0; i < cols2; i++) {
+				buf_v.val[j][i] = 0;
+			}
+		}
+		for (int j = 0; j < 5; j++) {
+			cal_v.val[j][0] = 0;
+		}
+#endif
+
 		for (int r = 0; r < rows + 2; r++) {
 			for (int c = 0; c < cols2; c++) {
 #pragma HLS PIPELINE
 				if (r < rows) {
 					// Load pixel
-					tmp0 >> px_in;
-
-					buf2.insert_bottom_row(px_in.val[0], c);
+					tmp >> px_in;
+					cal_v.val[4][0] = px_in.val[0];
 				}
 
-				if (r > 0 && r < 2) {
-					buf2.val[4 - r*2][c] = px_in.val[0];
+				// Copy from buffer
+				for (int i = 0; i < 5 - 1; i++) {
+					 cal_v.val[i][0] = buf_v.val[i][c];
 				}
 
-				if (r % 2 == 0 ) {
+#if 0	// REFLECT101
+				// Top edge
+				if (r > 0 && r <= 2) {
+					cal_v.val[4 - r * 2][0] = px_in.val[0];
+				}
+
+				// Bottom edge
+				if (r >= rows) {
+					cal_v.val[4][0] = cal_v.val[2 - (r - rows) * 2][0];
+				}
+#else	// REFLECT
+				// Top edge
+				if (r >= 0 && r < 2) {
+					cal_v.val[3 - r * 2][0] = px_in.val[0];
+				}
+
+				// Bottom edge
+				if (r >= rows) {
+					cal_v.val[4][0] = cal_v.val[3 - (r - rows) * 2][0];
+				}
+#endif
+
+				if (r % 2 == 0) {
 					if (r >= 2) {
 						px_out.val[0] =
-							(x[0] * buf2.val[0][c] +
-							x[1] * buf2.val[1][c] +
-							x[2] * buf2.val[2][c] +
-							x[3] * buf2.val[3][c] +
-							x[4] * buf2.val[4][c]) / 20;
-
+							(x[0] * cal_v.val[0][0] +
+								x[1] * cal_v.val[1][0] +
+								x[2] * cal_v.val[2][0] +
+								x[3] * cal_v.val[3][0] +
+								x[4] * cal_v.val[4][0]);
 						dst << px_out;
 					}
 				}
-				
-				buf2.shift_pixels_up(c);
+		
+				// Shift-up
+				for (int i = 0; i < 5 - 1; i++) {
+					buf_v.val[i][c] = cal_v.val[i + 1][0];
+				}
 			}
 		}
 	}
+
 
 	template<int ROWS, int COLS, int TYPE>
 	void downsample(
@@ -258,12 +362,12 @@ namespace hls
 		// Convolve
 		hls::Point p(-1, -1);
 		hls::Mat<ROWS, COLS, TYPE> tmp(rows, cols);
-		hls::Filter2D(src, tmp, kernel, p);
+		hls::Filter2D<hls::BORDER_REFLECT>(src, tmp, kernel, p);
 
 		// Decimate
 		hls::Scalar<HLS_MAT_CN(TYPE), HLS_TNAME(TYPE)> px;
 
-#if 01
+#if 1
 		for (int r = 0; r < rows; r++) {
 //#pragma HLS LOOP_TRIPCOUNT max=1024
 			for (int c = 0; c < cols; c++) {
@@ -300,6 +404,7 @@ namespace hls
 		hls::Mat<ROWS, COLS, TYPE>& src,
 		hls::Mat<ROWS, COLS, TYPE>& dst)
 	{
+		// Size of up-sampled image
 		int rows = dst.rows;
 		int cols = dst.cols;
 
@@ -307,47 +412,143 @@ namespace hls
 		assert(cols <= COLS);
 
 		// Convolution Kernel - This sums to unity
-		static const float x[25] = {
-			0.0025f, 0.0125f, 0.0200f, 0.0125f, 0.0025f,
-			0.0125f, 0.0625f, 0.1000f, 0.0625f, 0.0125f,
-			0.0200f, 0.1000f, 0.1600f, 0.1000f, 0.0200f,
-			0.0125f, 0.0625f, 0.1000f, 0.0625f, 0.0125f,
-			0.0025f, 0.0125f, 0.0200f, 0.0125f, 0.0025f };
-		hls::Window<5, 5, float> kernel;
-		for (int r = 0; r < 5; r++) {
-			for (int c = 0; c < 5; c++) {
-#pragma HLS PIPELINE
-				kernel.val[r][c] = x[r * 5 + c];
+		static const float x[5] = { .05, .25, .4, .25, .05 };
+
+		// Width of input image
+		int cols2 = src.cols;
+
+		hls::Scalar<HLS_MAT_CN(TYPE), HLS_TNAME(TYPE)>	px_in;
+		hls::Scalar<HLS_MAT_CN(TYPE), HLS_TNAME(TYPE)>	px_out;
+
+		// Intermediate buffer
+		hls::Mat<ROWS, COLS, TYPE>			tmp(rows, cols2);
+
+
+		// Veritcal up-sampling
+		hls::Window<5, 1, HLS_TNAME(TYPE)>				cal_v;	// Calculation
+		hls::LineBuffer<5 - 1, COLS / 2, HLS_TNAME(TYPE)>	buf_v;	// Line buffer
+
+#if 0
+		for (int j = 0; j < 4; j++) {
+			for (int i = 0; i < cols2; i++) {
+				buf_v.val[j][i] = -8;
+			}
+		}
+		for (int j = 0; j < 5; j++) {
+			cal_v.val[j][0] = -8;
+		}
+#endif
+
+		for (int r = 0; r < rows + 2; r++) {
+			for (int c = 0; c < cols2; c++) {
+				if (r < rows) {
+					if (r % 2 == 0) {
+						// Load pixel
+						src >> px_in;
+						cal_v.val[4][0] = px_in.val[0];
+					}
+					else {
+						// Fill 0 otherwise
+						cal_v.val[4][0] = 0;
+						px_in.val[0] = 0;
+					}
+				}
+
+				// Copy from buffer
+				for (int i = 0; i < 5 - 1; i++) {
+					cal_v.val[i][0] = buf_v.val[i][c];
+				}
+
+				// Top edge
+				if (r < 2) {
+					cal_v.val[2][0] = px_in.val[0];
+				}
+
+				// Bottom edge
+				if (r >= rows) {
+					cal_v.val[4][0] = cal_v.val[2][0];
+				}
+
+				if (r >= 2) {
+					px_out.val[0] =
+						(x[0] * cal_v.val[0][0] +
+							x[1] * cal_v.val[1][0] +
+							x[2] * cal_v.val[2][0] +
+							x[3] * cal_v.val[3][0] +
+							x[4] * cal_v.val[4][0]);
+
+					tmp << px_out;
+				}
+
+				// Shift-up
+				for (int i = 0; i < 5 - 1; i++) {
+					buf_v.val[i][c] = cal_v.val[i + 1][0];
+				}
 			}
 		}
 
-#pragma HLS DATAFLOW
+		// Horizontal
+		hls::Window<1, 5 - 1, HLS_TNAME(TYPE)>	buf_h;	// Line buffer (for horizoltal convolution)
+		hls::Window<1, 5, HLS_TNAME(TYPE)>		cal_h;	// Calculation
 
-		// Up-scaling
-		hls::Mat<ROWS, COLS, TYPE>						tmp(rows, cols);
-		hls::Scalar<HLS_MAT_CN(TYPE), HLS_TNAME(TYPE)>	px;
-		hls::Window<1, ROWS, HLS_TNAME(TYPE)>			buf;	// Line buffer
+#if 0
+		for (int j = 0; j < 4; j++) {
+				buf_h.val[0][j] = -7;
+		}
+		for (int j = 0; j < 5; j++) {
+			cal_h.val[0][j] = -7;
+		}
+#endif
 
 		for (int r = 0; r < rows; r++) {
-			for (int c = 0; c < cols; c++) {
-#pragma HLS PIPELINE
-				if ((r % 2 == 0) && (c % 2 == 0)) {
-					src >> px;
+			for (int c = 0; c < cols + 2; c++) {
+				if (c < cols) {
+					if (c % 2 == 0) {
+						// Load pixel from source
+						tmp >> px_in;
+						// Add to window buffer
+						cal_h.val[0][4] = px_in.val[0];
+					}
+					else {
+						cal_h.val[0][4] = 0;
+						px_in.val[0] = 0;
+					}
 				}
 
-				if (r % 2 == 0) {
-					tmp << px;
-					buf.val[0][c] = px.val[0];
+				// Copy data to calculation buffer
+				for (int j = 0; j < 4; j++) {
+					cal_h.val[0][j] = buf_h.val[0][j];
 				}
-				else {
-					tmp << buf.val[0][c];
+
+				// Left edge
+				if (c < 2) {
+					cal_h.val[0][2] = px_in.val[0];
+				}
+
+				// Right edge
+				if (c >= cols) {
+					cal_h.val[0][4] = cal_h.val[0][2];
+				}
+
+				// Convolution
+				if (c >= 2) {
+					px_out.val[0] =
+						(x[0] * cal_h.val[0][0] +
+							x[1] * cal_h.val[0][1] +
+							x[2] * cal_h.val[0][2] +
+							x[3] * cal_h.val[0][3] +
+							x[4] * cal_h.val[0][4]) * 4;
+					dst << px_out;
+				}
+
+				// Shift to left
+				// Copy back from calculation buffer
+				for (int j = 0; j < 4; j++) {
+					buf_h.val[0][j] = cal_h.val[0][j + 1];
 				}
 			}
 		}
 
-		// Convolve
-		hls::Point p(-1, -1);
-		hls::Filter2D(tmp, dst, kernel, p);
 	}
 
 
@@ -372,7 +573,6 @@ namespace hls
 
 		my_split(src, src_down, src_diff);
 
-		//
 		downsample(src_down, tmp_down);
 		my_split(tmp_down, dst_down, tmp_up_i);
 
