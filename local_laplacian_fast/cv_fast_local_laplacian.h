@@ -17,5 +17,6 @@ void construct_pyramid(const cv::Mat& src, std::vector< cv::Mat >& gau, std::vec
 // For debugging
 bool save_img(std::string name, cv::Mat& img);
 void show_img(cv::Mat& img, int delay = 0, std::string winname = "img");
+void print_value(cv::Mat& img, std::string name = "img");
 
 #endif
