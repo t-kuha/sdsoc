@@ -62,9 +62,9 @@ void hls_local_laplacian_wrap(cv::Mat& src, cv::Mat& dst, float sigma, float fac
 #pragma SDS data zero_copy(dst2[0:"pyr_rows_[2]*pyr_cols_[2]"])
 #pragma SDS data zero_copy(dst3[0:"pyr_rows_[3]*pyr_cols_[3]"])
 void hls_local_laplacian(
-		data_pyr_t* gau0, data_pyr_t* gau1, data_pyr_t* gau2, data_pyr_t* gau3,
-		data_pyr_t* lap0, data_pyr_t* lap1, data_pyr_t* lap2, data_pyr_t* lap3,
-		data_pyr_t* dst0, data_pyr_t* dst1, data_pyr_t* dst2, data_pyr_t* dst3,
+		data_pyr_t* gau0, data_pyr_t* gau1, data_pyr_t* gau2,
+		data_pyr_t* lap0, data_pyr_t* lap1, data_pyr_t* lap2,
+		data_pyr_t* dst0, data_pyr_t* dst1, data_pyr_t* dst2,
 		pyr_sz_t pyr_rows_[_MAX_LEVELS_], pyr_sz_t pyr_cols_[_MAX_LEVELS_],
 		float ref);
 
@@ -111,9 +111,13 @@ void hls_laplacian_pyramid(
 #pragma SDS data copy(src3[0:"pyr_rows_[0]*pyr_cols_[0]"])
 #pragma SDS data copy(dst[0:"pyr_rows_[0]*pyr_cols_[0]"])
 void hls_reconstruct(data_pyr_t* src0, data_pyr_t* src1, data_pyr_t* src2, data_pyr_t* src3,
-	signed short* dst, pyr_sz_t pyr_rows_[_MAX_LEVELS_], pyr_sz_t pyr_cols_[_MAX_LEVELS_]);
+	data_out_t* dst, pyr_sz_t pyr_rows_[_MAX_LEVELS_], pyr_sz_t pyr_cols_[_MAX_LEVELS_]);
 
-void remap(data_in_t* src, float* dst, float ref, float fact, float sigma, int rows, int cols);
 void remap(data_in_t* src, data_in_t* dst, float ref, float fact, float sigma, int rows, int cols);
+
+// For debugging
+bool hls_save_img(std::string name, data_pyr_t* img, int rows, int cols);
+void hls_show_img(data_pyr_t* img, int rows, int cols, int delay = 0, std::string winname = "img");
+void hls_print_value(data_pyr_t* img, int rows, int cols, std::string name = "");
 
 #endif
