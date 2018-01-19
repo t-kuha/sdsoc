@@ -60,13 +60,14 @@ int main(int argc, char* argv[])
 
 	gray2rgb(cv_out, color, cv_rgb);
 
+	cv_rgb.convertTo(cv_rgb, CV_8UC3, 255.0);
+
 	// Show output image
 	cv::imshow("Output - OpenCV", cv_rgb);
 	cv::waitKey();
 	cv::destroyWindow("Output - OpenCV");
 
 	// Save output image
-	cv_rgb.convertTo(cv_rgb, CV_8UC3, 255.0);
 	cv::imwrite("cv.tif", cv_rgb);
 #endif
 
@@ -75,20 +76,19 @@ int main(int argc, char* argv[])
 	cv::Mat hls_rgb;		// RGB image for output
 
 	hls_local_laplacian_wrap(hls_in, hls_out, sigma, fact);
-	// At this point, 'hls_in' have been converted to CV_16SC,
-	// becoming incompatible with 'color'
 
 	gray2rgb(hls_out, color, hls_rgb);
+
+	hls_rgb.convertTo(hls_rgb, CV_8UC3, 255.0);
 
 	cv::imshow("Output - HLS", hls_rgb);
 	cv::waitKey();
 	cv::destroyWindow("Output - HLS");
 
-	hls_rgb.convertTo(hls_rgb, CV_8UC3, 255.0);
 	cv::imwrite("hls.tif", hls_rgb);
 
 #if 01
-    cv::Mat diff = cv::abs(cv_rgb - hls_rgb)*8;
+    cv::Mat diff = cv::abs(cv_rgb - hls_rgb)*255;
     
     cv::imshow("Difference", diff);
     cv::waitKey();
