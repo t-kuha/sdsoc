@@ -593,6 +593,42 @@ namespace hls
 			}
 		}
 	}
+    
+    
+    template<int ROWS, int COLS, int TYPE, typename PARAM_TYPE>
+    void remap(
+        hls::Mat<ROWS, COLS, TYPE>& src,
+        hls::Mat<ROWS, COLS, TYPE>& dst,
+        PARAM_TYPE ref, PARAM_TYPE fact, PARAM_TYPE sigma2)
+    {
+        int rows = dst.rows;
+        int cols = dst.cols;
+        
+        assert(rows <= ROWS);
+        assert(cols <= COLS);
+        
+        hls::Scalar<HLS_MAT_CN(TYPE), HLS_TNAME(TYPE)> px_in;
+        hls::Scalar<HLS_MAT_CN(TYPE), HLS_TNAME(TYPE)> px_out;
+        
+        for (int r = 0; r < rows; r++) {
+            for (int c = 0; c < cols; c++) {
+#pragma HLS PIPELINE
+                src >> px_in;
+                
+                // Remap
+                float I = px_in.val[0] / ((float)_MAT_RANGE_); // [0, 1]
+                I = I - ref;
+#ifdef _WIN32
+                float tmp = fact*I*std::exp(-I*I / sigma2);
+#else
+                float tmp = fact*I*hls::exp(-I*I / sigma2);
+#endif
+                px_out.val[0] = (data_in_t)(tmp* ((float)_MAT_RANGE_));
+                
+                dst << px_out;
+            }
+        }
+    }
 }
 
 

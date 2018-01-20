@@ -112,6 +112,11 @@ void hls_local_laplacian_wrap(cv::Mat& src, cv::Mat& dst, float sigma, float fac
 	for (int n = 0; n < _NUM_STEP_; n++) {
 		float ref = ((float)n) / ((float)(_NUM_STEP_ - 1));
 
+#if 1
+        hls_laplacian_pyramid_remap(buf_src,
+            temp_laplace_pyr[0], temp_laplace_pyr[1], temp_laplace_pyr[2], temp_laplace_pyr[3],
+            pyr_rows, pyr_cols, ref, fact, 2*sigma*sigma);
+#else
 		// Remap original image
 		// O.K.
 		remap(buf_src, I_remap, ref, fact, 2*sigma*sigma, pyr_rows[0], pyr_cols[0]);
@@ -121,6 +126,7 @@ void hls_local_laplacian_wrap(cv::Mat& src, cv::Mat& dst, float sigma, float fac
 		hls_laplacian_pyramid(I_remap,
 			temp_laplace_pyr[0], temp_laplace_pyr[1], temp_laplace_pyr[2], temp_laplace_pyr[3],
 			pyr_rows, pyr_cols);
+#endif
 		
 		hls_local_laplacian(
 			input_gaussian_pyr[0], input_gaussian_pyr[1], input_gaussian_pyr[2], 
@@ -343,8 +349,58 @@ void hls_laplacian_pyramid(
 }
 
 
+void hls_laplacian_pyramid_remap(
+                           data_in_t* src,
+                           data_pyr_t* dst0, data_pyr_t* dst1, data_pyr_t* dst2, data_pyr_t* dst3,
+                           pyr_sz_t pyr_rows_[_MAX_LEVELS_], pyr_sz_t pyr_cols_[_MAX_LEVELS_],
+                                 float ref, float fact, float sigma2)
+{
+    pyr_sz_t pyr_rows[_MAX_LEVELS_];
+    pyr_sz_t pyr_cols[_MAX_LEVELS_];
+#pragma HLS ARRAY_PARTITION variable=pyr_rows complete
+#pragma HLS ARRAY_PARTITION variable=pyr_cols complete
+    for (int l = 0; l < _MAX_LEVELS_; l++) {
+#pragma HLS PIPELINE
+        pyr_rows[l] = pyr_rows_[l];
+        pyr_cols[l] = pyr_cols_[l];
+    }
+    
+    // Input
+    hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE2_> in(pyr_rows[0], pyr_cols[0]);
+    
+    // Remapped image
+    hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE2_> tmp(pyr_rows[0], pyr_cols[0]);
+    
+    // Output laplacian
+    hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE2_> lap0(pyr_rows[0], pyr_cols[0]);
+    hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE2_> lap1(pyr_rows[1], pyr_cols[1]);
+    hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE2_> lap2(pyr_rows[2], pyr_cols[2]);
+    
+    // Down-sampled image
+    hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE2_> down0(pyr_rows[1], pyr_cols[1]);
+    hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE2_> down1(pyr_rows[2], pyr_cols[2]);
+    hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE2_> down2(pyr_rows[3], pyr_cols[3]);
+    
+#pragma HLS DATAFLOW
+    
+    load(src, in);
+    
+    hls::remap(in, tmp, ref, fact, sigma2);
+    
+    lap_kernel(tmp, down0, lap0);
+    lap_kernel(down0, down1, lap1);
+    lap_kernel(down1, down2, lap2);
+    
+    // Transfer data
+    save(lap0, dst0);
+    save(lap1, dst1);
+    save(lap2, dst2);
+    save(down2, dst3);
+}
+
+
 void hls_reconstruct(
-	data_pyr_t* src0, data_pyr_t* src1, data_pyr_t* src2, data_pyr_t* src3, 
+                     data_pyr_t* src0, data_pyr_t* src1, data_pyr_t* src2, data_pyr_t* src3, 
 	data_out_t* dst,
 	pyr_sz_t pyr_rows_[_MAX_LEVELS_], pyr_sz_t pyr_cols_[_MAX_LEVELS_])
 {

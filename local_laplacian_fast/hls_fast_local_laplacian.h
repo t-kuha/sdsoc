@@ -100,6 +100,13 @@ void hls_laplacian_pyramid(
 	data_pyr_t* dst0, data_pyr_t* dst1, data_pyr_t* dst2, data_pyr_t* dst3,
 	pyr_sz_t pyr_rows_[_MAX_LEVELS_], pyr_sz_t pyr_cols_[_MAX_LEVELS_]);
 
+
+void hls_laplacian_pyramid_remap(
+    data_in_t* src,
+    data_pyr_t* dst0, data_pyr_t* dst1, data_pyr_t* dst2, data_pyr_t* dst3,
+    pyr_sz_t pyr_rows_[_MAX_LEVELS_], pyr_sz_t pyr_cols_[_MAX_LEVELS_],
+    float ref, float fact, float sigma2);
+
 #pragma SDS data access_pattern(src0:SEQUENTIAL)
 #pragma SDS data access_pattern(src1:SEQUENTIAL)
 #pragma SDS data access_pattern(src2:SEQUENTIAL)
