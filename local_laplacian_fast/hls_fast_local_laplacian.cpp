@@ -82,6 +82,13 @@ void hls_local_laplacian_wrap(cv::Mat& src, cv::Mat& dst, float sigma, float fac
 	// Copy input image data
 	memcpy(buf_src, _src.data, _src.rows*_src.cols*sizeof(data_in_t));
 
+#if 1
+    hls_construct_pyramid(
+        buf_src,
+        input_gaussian_pyr[0], input_gaussian_pyr[1], input_gaussian_pyr[2], input_gaussian_pyr[3],
+        output_laplace_pyr[0], output_laplace_pyr[1], output_laplace_pyr[2], output_laplace_pyr[3],
+        pyr_rows, pyr_cols);
+#else
 	// Construct Laplacian pyramid
 #pragma SDS resource(1)
 	hls_laplacian_pyramid(buf_src,
@@ -92,10 +99,11 @@ void hls_local_laplacian_wrap(cv::Mat& src, cv::Mat& dst, float sigma, float fac
 	// Copy finest level
 	memcpy(input_gaussian_pyr[0], buf_src, _src.rows*_src.cols * sizeof(data_pyr_t));
 
-	// O.K.
 	hls_gaussian_pyramid(buf_src,
 			input_gaussian_pyr[1], input_gaussian_pyr[2], input_gaussian_pyr[3],
 			pyr_rows, pyr_cols);
+#endif
+    
 
 #if 0
 	{
@@ -118,7 +126,6 @@ void hls_local_laplacian_wrap(cv::Mat& src, cv::Mat& dst, float sigma, float fac
             pyr_rows, pyr_cols, ref, fact, 2*sigma*sigma);
 #else
 		// Remap original image
-		// O.K.
 		remap(buf_src, I_remap, ref, fact, 2*sigma*sigma, pyr_rows[0], pyr_cols[0]);
 
 		// Create laplacian pyramid from remapped image
@@ -462,6 +469,64 @@ void hls_reconstruct(
 			dst[r*pyr_cols[0] + c] = (px1.val[0] + px2.val[0]);
 		}
 	}
+}
+
+
+void hls_construct_pyramid(
+                           data_pyr_t* src,
+                           data_pyr_t* gau0, data_pyr_t* gau1, data_pyr_t* gau2, data_pyr_t* gau3,
+                           data_pyr_t* lap0, data_pyr_t* lap1, data_pyr_t* lap2, data_pyr_t* lap3,
+                           pyr_sz_t pyr_rows_[_MAX_LEVELS_], pyr_sz_t pyr_cols_[_MAX_LEVELS_])
+{
+    // Input stream
+    hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE2_> src_(pyr_rows_[0], pyr_cols_[0]);
+    
+    // Output
+    hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE2_> gau0_(pyr_rows_[0], pyr_cols_[0]);
+    hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE2_> gau1_(pyr_rows_[1], pyr_cols_[1]);
+    hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE2_> gau2_(pyr_rows_[2], pyr_cols_[2]);
+    hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE2_> gau3_(pyr_rows_[3], pyr_cols_[3]);
+    
+    hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE2_> lap0_(pyr_rows_[0], pyr_cols_[0]);
+    hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE2_> lap1_(pyr_rows_[1], pyr_cols_[1]);
+    hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE2_> lap2_(pyr_rows_[2], pyr_cols_[2]);
+    hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE2_> lap3_(pyr_rows_[3], pyr_cols_[3]);
+    
+    // Input to lap_kernel()
+    hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE2_> tmp0(pyr_rows_[0], pyr_cols_[0]);
+    hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE2_> tmp1(pyr_rows_[1], pyr_cols_[1]);
+    hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE2_> tmp2(pyr_rows_[2], pyr_cols_[2]);
+    
+    // Output from my_split()
+    hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE2_> tmp_gau1(pyr_rows_[1], pyr_cols_[1]);
+    hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE2_> tmp_gau2(pyr_rows_[2], pyr_cols_[2]);
+    hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE2_> tmp_gau3(pyr_rows_[3], pyr_cols_[3]);
+    hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE2_> out_dn4(pyr_rows_[3], pyr_cols_[3]);
+
+    // Load image data
+    load(src, src_);
+    
+    my_split(src_, gau0_, tmp0);  // G0
+    
+    lap_kernel(tmp0, tmp_gau1, lap0_);   // G1 & L0
+    my_split(tmp_gau1, gau1_, tmp1);
+    
+    lap_kernel(tmp1, tmp_gau2, lap1_);   // G2 & L1
+    my_split(tmp_gau2, gau2_, tmp2);
+    
+    lap_kernel(tmp2, tmp_gau3, lap2_);   // G3 & L2
+    my_split(tmp_gau3, gau3_, lap3_);   // L3 (= G3)
+    
+    // Transfer data
+    save(gau0_, gau0);
+    save(gau1_, gau1);
+    save(gau2_, gau2);
+    save(gau3_, gau3);
+
+    save(lap0_, lap0);
+    save(lap1_, lap1);
+    save(lap2_, lap2);
+    save(lap3_, lap3);
 }
 
 

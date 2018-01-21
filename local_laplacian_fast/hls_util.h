@@ -94,39 +94,67 @@ namespace hls
 			}
 		}
 	}
+    
 
-
-	// Elementwise addition
-	template<int ROWS, int COLS, int TYPE>
-	void add(
-		hls::Mat<ROWS, COLS, TYPE>& src1,
-		hls::Mat<ROWS, COLS, TYPE>& src2,
-		hls::Mat<ROWS, COLS, TYPE>& dst)
-	{
-		int rows = src1.rows;
-		int cols = src1.cols;
-
-		assert(rows <= ROWS);
-		assert(cols <= COLS);
-
-		hls::Scalar<HLS_MAT_CN(TYPE), HLS_TNAME(TYPE)> px1;
-		hls::Scalar<HLS_MAT_CN(TYPE), HLS_TNAME(TYPE)> px2;
-
-		for (int r = 0; r < rows; r++) {
-//#pragma HLS LOOP_TRIPCOUNT max=1024
-			for (int c = 0; c < cols; c++) {
-//#pragma HLS LOOP_TRIPCOUNT max=1024
+    template<int ROWS, int COLS, int TYPE>
+    void add(
+             hls::Mat<ROWS, COLS, TYPE>& src1,
+             hls::Mat<ROWS, COLS, TYPE>& src2,
+             hls::Mat<ROWS, COLS, TYPE>& dst)
+    {
+        int rows = src1.rows;
+        int cols = src1.cols;
+        
+        assert(rows <= ROWS);
+        assert(cols <= COLS);
+        
+        hls::Scalar<HLS_MAT_CN(TYPE), HLS_TNAME(TYPE)> px1;
+        hls::Scalar<HLS_MAT_CN(TYPE), HLS_TNAME(TYPE)> px2;
+        
+        for (int r = 0; r < rows; r++) {
+            //#pragma HLS LOOP_TRIPCOUNT max=1024
+            for (int c = 0; c < cols; c++) {
+                //#pragma HLS LOOP_TRIPCOUNT max=1024
 #pragma HLS PIPELINE
-				src1 >> px1;
-				src2 >> px2;
-
-				dst << (px1 + px2);
-			}
-		}
-	}
-
-
-	template<int ROWS, int COLS, int TYPE, typename SRC_T>
+                src1 >> px1;
+                src2 >> px2;
+                
+                dst << (px1 + px2);
+            }
+        }
+    }
+    
+    
+    // Elementwise subtraction
+    // dst = src1 - src2
+    template<int ROWS, int COLS, int TYPE>
+    void sub(
+             hls::Mat<ROWS, COLS, TYPE>& src1,
+             hls::Mat<ROWS, COLS, TYPE>& src2,
+             hls::Mat<ROWS, COLS, TYPE>& dst)
+    {
+        int rows = src1.rows;
+        int cols = src1.cols;
+        
+        assert(rows <= ROWS);
+        assert(cols <= COLS);
+        
+        hls::Scalar<HLS_MAT_CN(TYPE), HLS_TNAME(TYPE)> px1;
+        hls::Scalar<HLS_MAT_CN(TYPE), HLS_TNAME(TYPE)> px2;
+        
+        for (int r = 0; r < rows; r++) {
+            for (int c = 0; c < cols; c++) {
+#pragma HLS PIPELINE
+                src1 >> px1;
+                src2 >> px2;
+                
+                dst << (px1 - px2);
+            }
+        }
+    }
+    
+    
+    template<int ROWS, int COLS, int TYPE, typename SRC_T>
 	void load(SRC_T* src, hls::Mat<ROWS, COLS, TYPE>& dst)
 	{
 		int rows = dst.rows;
@@ -145,6 +173,7 @@ namespace hls
 			}
 		}
 	}
+    
 
 	template<int ROWS, int COLS, int TYPE, typename DST_T>
 	void save(hls::Mat<ROWS, COLS, TYPE>& src, DST_T* dst)
