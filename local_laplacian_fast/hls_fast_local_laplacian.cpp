@@ -1,5 +1,8 @@
 #include "stdafx.h"
 
+#include <iostream>
+#include <iomanip>
+
 #include "hls_fast_local_laplacian.h"
 
 #include "opencv2/highgui/highgui.hpp"
