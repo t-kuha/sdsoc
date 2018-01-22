@@ -120,7 +120,20 @@ void hls_laplacian_pyramid_remap(
 void hls_reconstruct(data_pyr_t* src0, data_pyr_t* src1, data_pyr_t* src2, data_pyr_t* src3,
 	data_out_t* dst, pyr_sz_t pyr_rows_[_MAX_LEVELS_], pyr_sz_t pyr_cols_[_MAX_LEVELS_]);
 
-
+#pragma SDS data access_pattern(src:SEQUENTIAL)
+#pragma SDS data access_pattern(gau0:SEQUENTIAL, gau1:SEQUENTIAL)
+#pragma SDS data access_pattern(gau2:SEQUENTIAL, gau3:SEQUENTIAL)
+#pragma SDS data access_pattern(lap0:SEQUENTIAL, lap1:SEQUENTIAL)
+#pragma SDS data access_pattern(lap2:SEQUENTIAL, lap3:SEQUENTIAL)
+#pragma SDS data copy(src[0:"pyr_rows_[0]*pyr_cols_[0]"])
+#pragma SDS data copy(gau0[0:"pyr_rows_[0]*pyr_cols_[0]"])
+#pragma SDS data copy(gau1[0:"pyr_rows_[1]*pyr_cols_[1]"])
+#pragma SDS data copy(gau2[0:"pyr_rows_[2]*pyr_cols_[2]"])
+#pragma SDS data copy(gau3[0:"pyr_rows_[3]*pyr_cols_[3]"])
+#pragma SDS data copy(lap0[0:"pyr_rows_[0]*pyr_cols_[0]"])
+#pragma SDS data copy(lap1[0:"pyr_rows_[1]*pyr_cols_[1]"])
+#pragma SDS data copy(lap2[0:"pyr_rows_[2]*pyr_cols_[2]"])
+#pragma SDS data copy(lap3[0:"pyr_rows_[3]*pyr_cols_[3]"])
 void hls_construct_pyramid(
     data_pyr_t* src,
     data_pyr_t* gau0, data_pyr_t* gau1, data_pyr_t* gau2, data_pyr_t* gau3,
