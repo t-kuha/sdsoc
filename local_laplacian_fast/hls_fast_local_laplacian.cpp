@@ -481,6 +481,7 @@ void hls_construct_pyramid(
                            data_pyr_t* lap0, data_pyr_t* lap1, data_pyr_t* lap2, data_pyr_t* lap3,
                            pyr_sz_t pyr_rows_[_MAX_LEVELS_], pyr_sz_t pyr_cols_[_MAX_LEVELS_])
 {
+#pragma HLS DATAFLOW
     // Input stream
     hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE2_> src_(pyr_rows_[0], pyr_cols_[0]);
     

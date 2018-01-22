@@ -77,6 +77,8 @@ namespace hls
 		hls::Mat<ROWS, COLS, TYPE>& dst1,
 		hls::Mat<ROWS, COLS, TYPE>& dst2)
 	{
+#pragma HLS INLINE
+
 		int rows = src.rows;
 		int cols = src.cols;
 
@@ -157,6 +159,9 @@ namespace hls
     template<int ROWS, int COLS, int TYPE, typename SRC_T>
 	void load(SRC_T* src, hls::Mat<ROWS, COLS, TYPE>& dst)
 	{
+#pragma HLS DATAFLOW
+#pragma HLS INLINE
+
 		int rows = dst.rows;
 		int cols = dst.cols;
 
@@ -178,6 +183,9 @@ namespace hls
 	template<int ROWS, int COLS, int TYPE, typename DST_T>
 	void save(hls::Mat<ROWS, COLS, TYPE>& src, DST_T* dst)
 	{
+#pragma HLS DATAFLOW
+#pragma HLS INLINE
+
 		int rows = src.rows;
 		int cols = src.cols;
 
@@ -200,6 +208,8 @@ namespace hls
 		hls::Mat<ROWS, COLS, TYPE>& src,
 		hls::Mat<ROWS, COLS, TYPE>& dst)
 	{
+#pragma HLS DATAFLOW
+
 		// Separable convolution
 		// This weights sum to 1
 		static const float x[5] = { .05, .25, .4, .25, .05 };
@@ -433,6 +443,8 @@ namespace hls
 		hls::Mat<ROWS, COLS, TYPE>& src,
 		hls::Mat<ROWS, COLS, TYPE>& dst)
 	{
+#pragma HLS DATAFLOW
+
 		// Size of up-sampled image
 		int rows = dst.rows;
 		int cols = dst.cols;
@@ -588,6 +600,7 @@ namespace hls
 		hls::Mat<ROWS, COLS, TYPE>& lap)
 	{
 #pragma HLS DATAFLOW
+#pragma HLS INLINE
 
 		// Source is split into: 1. for down-sampling, and 2. Difference
 		hls::Mat<ROWS, COLS, TYPE> src_down(src.rows, src.cols);
@@ -630,6 +643,8 @@ namespace hls
         hls::Mat<ROWS, COLS, TYPE>& dst,
         PARAM_TYPE ref, PARAM_TYPE fact, PARAM_TYPE sigma2)
     {
+#pragma HLS DATAFLOW
+
         int rows = dst.rows;
         int cols = dst.cols;
         
