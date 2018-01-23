@@ -85,7 +85,7 @@ void local_laplacian(cv::Mat& src, cv::Mat& dst, float sigma, float fact, int N)
 cv::Mat downsample(cv::Mat& src)
 {
 	// Convolution Kernel
-	const float x[5] = { .05, .25, .4, .25, .05 };
+	const float x[5] = { .05f, .25f, .4f, .25f, .05f };
 	cv::Mat kernel = cv::Mat(5, 5, CV_32FC1);
 	for (int r = 0; r < kernel.rows; r++) {
 		for (int c = 0; c < kernel.rows; c++) {
@@ -99,8 +99,8 @@ cv::Mat downsample(cv::Mat& src)
     
 	// Decimate
 	cv::Size sz;
-	sz.height = std::ceil(dst.rows / 2.0);
-	sz.width = std::ceil(dst.cols / 2.0);
+	sz.height = static_cast<int> (std::ceil(dst.rows / 2.0));
+	sz.width = static_cast<int> (std::ceil(dst.cols / 2.0));
     
 #if 0
     cv::resize(dst, dst, sz, 0.0, 0.0, cv::INTER_NEAREST);
@@ -126,7 +126,7 @@ cv::Mat downsample(cv::Mat& src)
 // rows, cols: size after upsampling
 cv::Mat upsample(cv::Mat& src, int rows, int cols)
 {
-	const float x[5] = { .05, .25, .4, .25, .05 };
+	const float x[5] = { .05f, .25f, .4f, .25f, .05f };
 	cv::Mat kernel = cv::Mat(5, 5, CV_32FC1);
 	for (int r = 0; r < kernel.rows; r++) {
 		for (int c = 0; c < kernel.rows; c++) {
