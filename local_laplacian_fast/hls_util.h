@@ -344,8 +344,8 @@ namespace hls
 			}
 		}
 	}
-#if 0
 
+#if 0
 	template<int ROWS, int COLS, int TYPE>
 	void downsample(
 		hls::Mat<ROWS, COLS, TYPE>& src,
@@ -459,6 +459,7 @@ namespace hls
 
 		for (int r = 0; r < rows + 2; r++) {
 			for (int c = 0; c < cols2; c++) {
+#pragma HLS PIPELINE
 				if (r < rows) {
 					if (r % 2 == 0) {
 						// Load pixel
@@ -520,6 +521,7 @@ namespace hls
 
 		for (int r = 0; r < rows; r++) {
 			for (int c = 0; c < cols + 2; c++) {
+#pragma HLS PIPELINE
 				if (c < cols) {
 					if (c % 2 == 0) {
 						// Load pixel from source
