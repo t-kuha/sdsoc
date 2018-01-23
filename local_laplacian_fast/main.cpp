@@ -62,10 +62,12 @@ int main(int argc, char* argv[])
 
 	cv_rgb.convertTo(cv_rgb, CV_8UC3, 255.0);
 
+#ifndef __SDSCC__
 	// Show output image
 	cv::imshow("Output - OpenCV", cv_rgb);
 	cv::waitKey();
 	cv::destroyWindow("Output - OpenCV");
+#endif
 
 	// Save output image
 	cv::imwrite("cv.tif", cv_rgb);
@@ -81,18 +83,22 @@ int main(int argc, char* argv[])
 
 	hls_rgb.convertTo(hls_rgb, CV_8UC3, 255.0);
 
+#ifndef __SDSCC__
 	cv::imshow("Output - HLS", hls_rgb);
 	cv::waitKey();
 	cv::destroyWindow("Output - HLS");
+#endif
 
 	cv::imwrite("hls.tif", hls_rgb);
 
 #if 01
     cv::Mat diff = cv::abs(cv_rgb - hls_rgb)*255;
     
+#ifndef __SDSCC__
     cv::imshow("Difference", diff);
     cv::waitKey();
     cv::destroyWindow("Difference");
+#endif
 #endif
 
 	std::cout << "----- Done -----" << std::endl;
