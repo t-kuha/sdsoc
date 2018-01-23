@@ -180,7 +180,7 @@ namespace hls
 	}
 
 	template<int ROWS, int COLS, int TYPE>
-	void downsample2(
+	void downsample(
 		hls::Mat<ROWS, COLS, TYPE>& src,
 		hls::Mat<ROWS, COLS, TYPE>& dst)
 	{
@@ -344,7 +344,7 @@ namespace hls
 			}
 		}
 	}
-
+#if 0
 
 	template<int ROWS, int COLS, int TYPE>
 	void downsample(
@@ -412,6 +412,7 @@ namespace hls
 		}
 #endif
 	}
+#endif
 
 
 	template<int ROWS, int COLS, int TYPE>
