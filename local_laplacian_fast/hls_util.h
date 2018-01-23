@@ -8,33 +8,9 @@
 #ifndef _HLS_UTIL_H_
 #define _HLS_UTIL_H_
 
-#ifdef _WIN32
-
-#include "ap_int.h"
-//#include "ap_fixed.h"
-
-#include "hls_stream.h"
-
-#include "hls/utils/x_hls_utils.h"
-#include "hls/utils/x_hls_traits.h"
-#include "hls/utils/x_hls_defines.h"
-
-#include "hls/hls_video_types.h"
-#include "hls/hls_video_mem.h"
-#include "hls/hls_video_core.h"
-#include "hls/hls_video_imgbase.h"
-#include "hls/hls_video_io.h"
-
-//#include "hls_math.h"
-
-#define ___HLS__VIDEO__
-#include "hls/hls_video_imgproc.h"
-
-#else
-
 #include "hls_video.h"
+#include "hls_math.h"
 
-#endif
 
 namespace hls
 {
@@ -662,10 +638,10 @@ namespace hls
                 // Remap
                 float I = px_in.val[0] / ((float)_MAT_RANGE_); // [0, 1]
                 I = I - ref;
-#ifdef _WIN32
-                float tmp = fact*I*std::exp(-I*I / sigma2);
-#else
+#ifdef __SDSVHLS__
                 float tmp = fact*I*hls::exp(-I*I / sigma2);
+#else
+                float tmp = fact*I*std::exp(-I*I / sigma2);
 #endif
                 px_out.val[0] = (data_in_t)(tmp* ((float)_MAT_RANGE_));
                 

@@ -4,33 +4,7 @@
 
 #include "opencv2/core/core.hpp"		// cv::Mat
 
-#ifdef _WIN32
-
-#include "ap_int.h"
-//#include "ap_fixed.h"
-
-#include "hls_stream.h"
-
-#include "hls/utils/x_hls_utils.h"
-#include "hls/utils/x_hls_traits.h"
-#include "hls/utils/x_hls_defines.h"
-
-#include "hls/hls_video_types.h"
-#include "hls/hls_video_mem.h"
-#include "hls/hls_video_core.h"
-#include "hls/hls_video_imgbase.h"
-#include "hls/hls_video_io.h"
-
-//#include "hls_math.h"
-
-#define ___HLS__VIDEO__
-#include "hls/hls_video_imgproc.h"
-
-#else
-
 #include "hls_video.h"
-
-#endif
 
 #include "hls_def.h"
 

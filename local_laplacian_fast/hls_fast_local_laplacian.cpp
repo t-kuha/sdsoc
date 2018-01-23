@@ -5,6 +5,8 @@
 
 #include "hls_fast_local_laplacian.h"
 
+#include "hls_math.h"
+
 #include "opencv2/highgui/highgui.hpp"
 
 #ifdef __SDSCC__
@@ -545,10 +547,10 @@ void remap(data_in_t* src, data_in_t* dst, float ref, float fact, float sigma2, 
 #pragma HLS PIPELINE
             float I = src[r*cols + c] / ((float)_MAT_RANGE_); // [0, 1]
 			I = I - ref;
-#ifdef _WIN32
-            tmp = fact*I*std::exp(-I*I / sigma2);
+#ifdef __SDSVHLS__
+            tmp = fact*I*hls::exp(-I*I / sigma2);
 #else
-            tmp = fact*I*hls::expf(-I*I / sigma2);
+            tmp = fact*I*std::exp(-I*I / sigma2);
 #endif
             dst[r*cols + c] = (data_in_t)(tmp* ((float)_MAT_RANGE_));
         }
