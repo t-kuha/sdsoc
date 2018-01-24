@@ -88,6 +88,7 @@ namespace hls
         
         hls::Scalar<HLS_MAT_CN(TYPE), HLS_TNAME(TYPE)> px1;
         hls::Scalar<HLS_MAT_CN(TYPE), HLS_TNAME(TYPE)> px2;
+		hls::Scalar<HLS_MAT_CN(TYPE), HLS_TNAME(TYPE)> px3;
         
         for (int r = 0; r < rows; r++) {
             //#pragma HLS LOOP_TRIPCOUNT max=1024
@@ -97,7 +98,9 @@ namespace hls
                 src1 >> px1;
                 src2 >> px2;
                 
-                dst << (px1 + px2);
+				px3.val[0] = hls::sr_cast<HLS_TNAME(TYPE)>(px1.val[0] + px2.val[0]);
+				dst << px3;
+                //dst << (px1 + px2);
             }
         }
     }
@@ -119,14 +122,17 @@ namespace hls
         
         hls::Scalar<HLS_MAT_CN(TYPE), HLS_TNAME(TYPE)> px1;
         hls::Scalar<HLS_MAT_CN(TYPE), HLS_TNAME(TYPE)> px2;
-        
+		hls::Scalar<HLS_MAT_CN(TYPE), HLS_TNAME(TYPE)> px3;
+
         for (int r = 0; r < rows; r++) {
             for (int c = 0; c < cols; c++) {
 #pragma HLS PIPELINE
                 src1 >> px1;
                 src2 >> px2;
                 
-                dst << (px1 - px2);
+				px3.val[0] = hls::sr_cast<HLS_TNAME(TYPE)>(px1.val[0] - px2.val[0]);
+				dst << px3;
+                //dst << (px1 - px2);
             }
         }
     }
