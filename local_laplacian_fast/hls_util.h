@@ -658,6 +658,25 @@ namespace hls
             }
         }
     }
+
+
+	template<int ROWS, int COLS, int TYPE>
+	void consume(hls::Mat<ROWS, COLS, TYPE>& src)
+	{
+		int rows = src.rows;
+		int cols = src.cols;
+
+		assert(rows <= ROWS);
+		assert(cols <= COLS);
+
+		hls::Scalar<HLS_MAT_CN(TYPE), HLS_TNAME(TYPE)> px_in;
+
+		for (int r = 0; r < rows; r++) {
+			for (int c = 0; c < cols; c++) {
+				src >> px_in;
+			}
+		}
+	}
 }
 
 
