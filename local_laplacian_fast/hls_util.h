@@ -626,9 +626,11 @@ namespace hls
     void remap(
         hls::Mat<ROWS, COLS, TYPE>& src,
         hls::Mat<ROWS, COLS, TYPE>& dst,
-        PARAM_TYPE ref, PARAM_TYPE fact, PARAM_TYPE sigma2)
+        /*PARAM_TYPE ref*/int step, PARAM_TYPE fact, PARAM_TYPE sigma2)
     {
 #pragma HLS DATAFLOW
+
+		PARAM_TYPE ref = (float)step / (_NUM_STEP_ - 1);
 
         int rows = dst.rows;
         int cols = dst.cols;
