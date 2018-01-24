@@ -215,15 +215,6 @@ namespace hls
 		hls::Window<1, 5 - 1, HLS_TNAME(TYPE)>	buf_h;	// Line buffer (for horizoltal convolution)
 		hls::Window<1, 5, HLS_TNAME(TYPE)>		cal_h;	// Calculation
 
-#if 1
-		for (int j = 0; j < 4; j++) {
-			buf_h.val[0][j] = 0;
-		}
-		for (int j = 0; j < 5; j++) {
-			cal_h.val[0][j] = 0;
-		}
-#endif
-
 		for (int r = 0; r < rows; r++) {
 			for (int c = 0; c < cols + 2; c++) {
 //#pragma HLS PIPELINE
@@ -283,17 +274,6 @@ namespace hls
 		// Vertical
 		hls::LineBuffer<5 - 1, COLS / 2, HLS_TNAME(TYPE)>	buf_v;	// Line buffer
 		hls::Window<5, 1, HLS_TNAME(TYPE)>				cal_v;	// Calculation
-
-#if 01
-		for (int j = 0; j < 4; j++) {
-			for (int i = 0; i < cols2; i++) {
-				buf_v.val[j][i] = 0;
-			}
-		}
-		for (int j = 0; j < 5; j++) {
-			cal_v.val[j][0] = 0;
-		}
-#endif
 
 		for (int r = 0; r < rows + 2; r++) {
 			for (int c = 0; c < cols2; c++) {
@@ -452,17 +432,6 @@ namespace hls
 		hls::Window<5, 1, HLS_TNAME(TYPE)>				cal_v;	// Calculation
 		hls::LineBuffer<5 - 1, COLS / 2, HLS_TNAME(TYPE)>	buf_v;	// Line buffer
 
-#if 0
-		for (int j = 0; j < 4; j++) {
-			for (int i = 0; i < cols2; i++) {
-				buf_v.val[j][i] = -8;
-			}
-		}
-		for (int j = 0; j < 5; j++) {
-			cal_v.val[j][0] = -8;
-		}
-#endif
-
 		for (int r = 0; r < rows + 2; r++) {
 			for (int c = 0; c < cols2; c++) {
 #pragma HLS PIPELINE
@@ -515,15 +484,6 @@ namespace hls
 		// Horizontal
 		hls::Window<1, 5 - 1, HLS_TNAME(TYPE)>	buf_h;	// Line buffer (for horizoltal convolution)
 		hls::Window<1, 5, HLS_TNAME(TYPE)>		cal_h;	// Calculation
-
-#if 0
-		for (int j = 0; j < 4; j++) {
-				buf_h.val[0][j] = -7;
-		}
-		for (int j = 0; j < 5; j++) {
-			cal_h.val[0][j] = -7;
-		}
-#endif
 
 		for (int r = 0; r < rows; r++) {
 			for (int c = 0; c < cols + 2; c++) {
