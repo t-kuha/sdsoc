@@ -194,7 +194,9 @@ namespace hls
 
 		// Separable convolution
 		// This weights sum to 1
-		static const float x[5] = { .05f, .25f, .4f, .25f, .05f };
+		//static const float x[5] = { .05f, .25f, .4f, .25f, .05f };
+		static const int x[5] = { 1, 5, 8, 5, 1 };
+		const int x_sum = 20;
 		
 		int rows = src.rows;
 		int cols = src.cols;
@@ -258,7 +260,7 @@ namespace hls
 								x[1] * cal_h.val[0][1] +
 								x[2] * cal_h.val[0][2] +
 								x[3] * cal_h.val[0][3] +
-								x[4] * cal_h.val[0][4]/*px_in.val[0]*//*buf1.val[0][4]*/);
+								x[4] * cal_h.val[0][4]) / x_sum;
 						tmp << px_out;
 					}
 				}
@@ -318,7 +320,7 @@ namespace hls
 								x[1] * cal_v.val[1][0] +
 								x[2] * cal_v.val[2][0] +
 								x[3] * cal_v.val[3][0] +
-								x[4] * cal_v.val[4][0]);
+								x[4] * cal_v.val[4][0]) / x_sum;
 						dst << px_out;
 					}
 				}
@@ -416,7 +418,9 @@ namespace hls
 		assert(cols <= COLS);
 
 		// Convolution Kernel - This sums to unity
-		static const float x[5] = { .05f, .25f, .4f, .25f, .05f };
+		//static const float x[5] = { .05f, .25f, .4f, .25f, .05f };
+		static const int x[5] = { 1, 5, 8, 5, 1 };
+		const int x_sum = 20;
 
 		// Width of input image
 		int cols2 = src.cols;
@@ -469,7 +473,7 @@ namespace hls
 							x[1] * cal_v.val[1][0] +
 							x[2] * cal_v.val[2][0] +
 							x[3] * cal_v.val[3][0] +
-							x[4] * cal_v.val[4][0]);
+							x[4] * cal_v.val[4][0]) / x_sum;
 
 					tmp << px_out;
 				}
@@ -523,7 +527,7 @@ namespace hls
 							x[1] * cal_h.val[0][1] +
 							x[2] * cal_h.val[0][2] +
 							x[3] * cal_h.val[0][3] +
-							x[4] * cal_h.val[0][4]) * 4;
+							x[4] * cal_h.val[0][4]) * 4 / x_sum;
 					dst << px_out;
 				}
 
@@ -616,7 +620,7 @@ namespace hls
 #endif
                 px_out.val[0] = (data_in_t)(tmp* ((float)_MAT_RANGE_));
                 
-                dst << px_out;
+				dst << px_out;
             }
         }
     }
