@@ -127,8 +127,8 @@ void hls_local_laplacian_wrap(cv::Mat& src, cv::Mat& dst, float sigma, float fac
 
 #if 1
         hls_laplacian_pyramid_remap(buf_src,
-            temp_laplace_pyr[0], temp_laplace_pyr[1], temp_laplace_pyr[2], temp_laplace_pyr[3],
-            pyr_rows, pyr_cols, ref, fact, 2*sigma*sigma);
+            temp_laplace_pyr[0], temp_laplace_pyr[1], temp_laplace_pyr[2], //temp_laplace_pyr[3],
+            pyr_rows, pyr_cols, n/*ref*/, fact, 2*sigma*sigma);
 #else
 		// Remap original image
 		remap(buf_src, I_remap, ref, fact, 2*sigma*sigma, pyr_rows[0], pyr_cols[0]);
