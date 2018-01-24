@@ -25,7 +25,7 @@ void hls_local_laplacian(
 		data_pyr_t* lap0, data_pyr_t* lap1, data_pyr_t* lap2,
 		data_pyr_t* dst0, data_pyr_t* dst1, data_pyr_t* dst2,
 		pyr_sz_t pyr_rows_[_MAX_LEVELS_], pyr_sz_t pyr_cols_[_MAX_LEVELS_],
-		float ref);
+		/*float ref*/int step);
 
 void hls_gaussian_pyramid(
 	data_in_t* src,
@@ -49,9 +49,9 @@ void hls_laplacian_pyramid(
 #pragma SDS data copy(dst3[0:"pyr_rows_[3]*pyr_cols_[3]"])
 void hls_laplacian_pyramid_remap(
     data_in_t* src,
-    data_pyr_t* dst0, data_pyr_t* dst1, data_pyr_t* dst2, data_pyr_t* dst3,
+    data_pyr_t* dst0, data_pyr_t* dst1, data_pyr_t* dst2,// data_pyr_t* dst3,
     pyr_sz_t pyr_rows_[_MAX_LEVELS_], pyr_sz_t pyr_cols_[_MAX_LEVELS_],
-    float ref, float fact, float sigma2);
+	/*float ref*/ int step, float fact, float sigma2);
 
 #pragma SDS data access_pattern(src0:SEQUENTIAL)
 #pragma SDS data access_pattern(src1:SEQUENTIAL)
