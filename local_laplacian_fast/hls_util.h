@@ -194,7 +194,7 @@ namespace hls
 
 		// Separable convolution
 		// This weights sum to 1
-		static const float x[5] = { .05, .25, .4, .25, .05 };
+		static const float x[5] = { .05f, .25f, .4f, .25f, .05f };
 		
 		int rows = src.rows;
 		int cols = src.cols;
@@ -436,7 +436,7 @@ namespace hls
 		assert(cols <= COLS);
 
 		// Convolution Kernel - This sums to unity
-		static const float x[5] = { .05, .25, .4, .25, .05 };
+		static const float x[5] = { .05f, .25f, .4f, .25f, .05f };
 
 		// Width of input image
 		int cols2 = src.cols;
