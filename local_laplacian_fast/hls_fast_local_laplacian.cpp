@@ -90,7 +90,7 @@ void hls_local_laplacian_wrap(cv::Mat& src, cv::Mat& dst, float sigma, float fac
 #if 1
     hls_construct_pyramid(
         buf_src,
-        input_gaussian_pyr[0], input_gaussian_pyr[1], input_gaussian_pyr[2], //input_gaussian_pyr[3],
+        input_gaussian_pyr[0], input_gaussian_pyr[1], input_gaussian_pyr[2],
         output_laplace_pyr[0], output_laplace_pyr[1], output_laplace_pyr[2], output_laplace_pyr[3],
         pyr_rows, pyr_cols);
 #else
@@ -125,7 +125,6 @@ void hls_local_laplacian_wrap(cv::Mat& src, cv::Mat& dst, float sigma, float fac
 #endif
 	
 	for (int n = 0; n < _NUM_STEP_; n++) {
-		//float ref = ((float)n) / ((float)(_NUM_STEP_ - 1));
 
 #if 1
         hls_laplacian_pyramid_remap(buf_src,
@@ -202,38 +201,6 @@ void hls_local_laplacian_wrap(cv::Mat& src, cv::Mat& dst, float sigma, float fac
 #endif
 }
 
-#if 0
-// Kernel for hls_local_laplacian()
-void kernel(data_pyr_t* gau, data_pyr_t* temp_laplace_pyr, data_pyr_t* dst, int rows, int cols, int step /*float ref, float discretisation_step*/)
-{
-#pragma HLS INLINE
-	//const float discretisation_step = 1.0f / (_NUM_STEP_ - 1);
-
-	float x_;
-
-	int offset = 0;
-	for (int r = 0; r < rows; r++) {
-		for (int c = 0; c < cols; c++) {
-#pragma HLS PIPELINE
-			float g = gau[offset] / ((float) _MAT_RANGE_);	// [0, 1]
-			g = (_NUM_STEP_ - 1)*g - /*ref*//*(float) */step;
-			if (g < 0) {
-				g = -g;
-			}
-
-			if (/*g < discretisation_step*/g/**(_NUM_STEP_ - 1)*/ < 1) {
-				x_ = /*(_NUM_STEP_ - 1) */ (1 - g) /* (discretisation_step ) */;
-				x_ = x_ * temp_laplace_pyr[offset];
-			}
-			else {
-				x_ = 0;
-			}
-			dst[offset] = x_ + dst[offset];
-			offset++;
-		}
-	}
-}
-#endif
 
 // Accelerated function
 // I:    Original image
@@ -244,10 +211,8 @@ void hls_local_laplacian(
 	data_pyr_t* lap0, data_pyr_t* lap1, data_pyr_t* lap2,
 	data_pyr_t* dst0, data_pyr_t* dst1, data_pyr_t* dst2,
 	pyr_sz_t pyr_rows_[_MAX_LEVELS_], pyr_sz_t pyr_cols_[_MAX_LEVELS_],
-	/*float ref*/int step)
+	int step)
 {
-	//float discretisation_step = 1.0f / (_NUM_STEP_ - 1);
-
 	pyr_sz_t pyr_rows[_MAX_LEVELS_];
 	pyr_sz_t pyr_cols[_MAX_LEVELS_];
 //#pragma HLS ARRAY_PARTITION variable=pyr_rows complete
@@ -312,8 +277,6 @@ void hls_gaussian_pyramid(
 	hls::Mat<_MAX_ROWS_, _MAX_ROWS_, _MAT_TYPE2_> out3(pyr_rows[3], pyr_cols[3]);
 
 #pragma HLS DATAFLOW
-	//	assert(pyr_rows[0] <= _MAX_ROWS_);
-	//	assert(pyr_cols[0] <= _MAX_COLS_);
 
 	load(src, in);
 
@@ -376,9 +339,9 @@ void hls_laplacian_pyramid(
 
 void hls_laplacian_pyramid_remap(
 	data_in_t* src,
-	data_pyr_t* dst0, data_pyr_t* dst1, data_pyr_t* dst2, //data_pyr_t* dst3,
+	data_pyr_t* dst0, data_pyr_t* dst1, data_pyr_t* dst2,
 	pyr_sz_t pyr_rows_[_MAX_LEVELS_], pyr_sz_t pyr_cols_[_MAX_LEVELS_],
-	/*float ref*/ int step, float fact, float sigma2)
+	int step, float fact, float sigma2)
 {
     pyr_sz_t pyr_rows[_MAX_LEVELS_];
     pyr_sz_t pyr_cols[_MAX_LEVELS_];
@@ -538,13 +501,11 @@ void hls_construct_pyramid(
     my_split(tmp_gau2, gau2_, tmp2);
     
     lap_kernel(tmp2, lap3_/*tmp_gau3*/, lap2_);   // G3 (= L3) & L2
-//    my_split(tmp_gau3, gau3_, lap3_);   // L3 (= G3)
     
     // Transfer data
     save(gau0_, gau0);
     save(gau1_, gau1);
     save(gau2_, gau2);
-//    save(gau3_, gau3);
 
     save(lap0_, lap0);
     save(lap1_, lap1);
@@ -552,29 +513,6 @@ void hls_construct_pyramid(
     save(lap3_, lap3);
 }
 
-
-#if 0
-// src: [0, 1]
-// ref: [0, 1]
-void remap(data_in_t* src, data_in_t* dst, float ref, float fact, float sigma2, int rows, int cols)
-{
-#pragma HLS INLINE
-    float tmp;
-    for (int r = 0; r < rows; r++) {
-        for (int c = 0; c < cols; c++) {
-#pragma HLS PIPELINE
-            float I = src[r*cols + c] / ((float)_MAT_RANGE_); // [0, 1]
-			I = I - ref;
-#ifdef __SDSVHLS__
-            tmp = fact*I*hls::exp(-I*I / sigma2);
-#else
-            tmp = fact*I*std::exp(-I*I / sigma2);
-#endif
-            dst[r*cols + c] = (data_in_t)(tmp* ((float)_MAT_RANGE_));
-        }
-    }
-}
-#endif
 
 
 bool hls_save_img(std::string name, data_pyr_t* img, int rows, int cols)

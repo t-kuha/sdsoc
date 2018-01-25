@@ -13,7 +13,6 @@ void hls_local_laplacian_wrap(cv::Mat& src, cv::Mat& dst, float sigma, float fac
 
 #pragma SDS data access_pattern(gau0:SEQUENTIAL, gau1:SEQUENTIAL, gau2:SEQUENTIAL)
 #pragma SDS data access_pattern(lap0:SEQUENTIAL, lap1:SEQUENTIAL, lap2:SEQUENTIAL)
-//#pragma SDS data access_pattern(dst0:SEQUENTIAL, dst1:SEQUENTIAL, dst2:SEQUENTIAL)
 #pragma SDS data copy(gau0[0:"pyr_rows_[0]*pyr_cols_[0]"], gau1[0:"pyr_rows_[1]*pyr_cols_[1]"])
 #pragma SDS data copy(gau2[0:"pyr_rows_[2]*pyr_cols_[2]"])
 #pragma SDS data copy(lap0[0:"pyr_rows_[0]*pyr_cols_[0]"], lap1[0:"pyr_rows_[1]*pyr_cols_[1]"])
@@ -25,7 +24,7 @@ void hls_local_laplacian(
 		data_pyr_t* lap0, data_pyr_t* lap1, data_pyr_t* lap2,
 		data_pyr_t* dst0, data_pyr_t* dst1, data_pyr_t* dst2,
 		pyr_sz_t pyr_rows_[_MAX_LEVELS_], pyr_sz_t pyr_cols_[_MAX_LEVELS_],
-		/*float ref*/int step);
+		int step);
 
 void hls_gaussian_pyramid(
 	data_in_t* src,
@@ -49,9 +48,9 @@ void hls_laplacian_pyramid(
 #pragma SDS data copy(dst3[0:"pyr_rows_[3]*pyr_cols_[3]"])
 void hls_laplacian_pyramid_remap(
     data_in_t* src,
-    data_pyr_t* dst0, data_pyr_t* dst1, data_pyr_t* dst2,// data_pyr_t* dst3,
+    data_pyr_t* dst0, data_pyr_t* dst1, data_pyr_t* dst2,
     pyr_sz_t pyr_rows_[_MAX_LEVELS_], pyr_sz_t pyr_cols_[_MAX_LEVELS_],
-	/*float ref*/ int step, float fact, float sigma2);
+	int step, float fact, float sigma2);
 
 #pragma SDS data access_pattern(src0:SEQUENTIAL)
 #pragma SDS data access_pattern(src1:SEQUENTIAL)
@@ -80,11 +79,10 @@ void hls_reconstruct(data_pyr_t* src0, data_pyr_t* src1, data_pyr_t* src2, data_
 #pragma SDS data mem_attribute(lap2:PHYSICAL_CONTIGUOUS, lap3:PHYSICAL_CONTIGUOUS)
 void hls_construct_pyramid(
 	data_in_t* src,
-    data_pyr_t* gau0, data_pyr_t* gau1, data_pyr_t* gau2, //data_pyr_t* gau3,
+    data_pyr_t* gau0, data_pyr_t* gau1, data_pyr_t* gau2,
     data_pyr_t* lap0, data_pyr_t* lap1, data_pyr_t* lap2, data_pyr_t* lap3,
     pyr_sz_t pyr_rows_[_MAX_LEVELS_], pyr_sz_t pyr_cols_[_MAX_LEVELS_]);
 
-//void remap(data_in_t* src, data_in_t* dst, float ref, float fact, float sigma, int rows, int cols);
 
 // For debugging
 bool hls_save_img(std::string name, data_pyr_t* img, int rows, int cols);

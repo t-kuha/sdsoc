@@ -100,7 +100,6 @@ namespace hls
                 
 				px3.val[0] = hls::sr_cast<HLS_TNAME(TYPE)>(px1.val[0] + px2.val[0]);
 				dst << px3;
-                //dst << (px1 + px2);
             }
         }
     }
@@ -132,7 +131,6 @@ namespace hls
                 
 				px3.val[0] = hls::sr_cast<HLS_TNAME(TYPE)>(px1.val[0] - px2.val[0]);
 				dst << px3;
-                //dst << (px1 - px2);
             }
         }
     }
@@ -193,10 +191,8 @@ namespace hls
 #pragma HLS DATAFLOW
 
 		// Separable convolution
-		// This weights sum to 1
-		//static const float x[5] = { .05f, .25f, .4f, .25f, .05f };
 		static const int x[5] = { 1, 5, 8, 5, 1 };
-		const int x_sum = 20;
+		const int x_sum = 20;	// The weights sum to 20
 		
 		int rows = src.rows;
 		int cols = src.cols;
@@ -333,75 +329,6 @@ namespace hls
 		}
 	}
 
-#if 0
-	template<int ROWS, int COLS, int TYPE>
-	void downsample(
-		hls::Mat<ROWS, COLS, TYPE>& src,
-		hls::Mat<ROWS, COLS, TYPE>& dst)
-	{
-		int rows = src.rows;
-		int cols = src.cols;
-
-		assert(rows <= ROWS);
-		assert(cols <= COLS);
-
-		//#pragma HLS INLINE
-#pragma HLS DATAFLOW
-		// Convolution Kernel - This sums to unity
-		static const float x[25] = {
-			0.0025f, 0.0125f, 0.0200f, 0.0125f, 0.0025f,
-			0.0125f, 0.0625f, 0.1000f, 0.0625f, 0.0125f,
-			0.0200f, 0.1000f, 0.1600f, 0.1000f, 0.0200f,
-			0.0125f, 0.0625f, 0.1000f, 0.0625f, 0.0125f,
-			0.0025f, 0.0125f, 0.0200f, 0.0125f, 0.0025f };
-		hls::Window<5, 5, float> kernel;
-		for (int r = 0; r < 5; r++) {
-			for (int c = 0; c < 5; c++) {
-#pragma HLS PIPELINE
-				kernel.val[r][c] = x[r * 5 + c];
-			}
-		}
-
-		// Convolve
-		hls::Point p(-1, -1);
-		hls::Mat<ROWS, COLS, TYPE> tmp(rows, cols);
-		hls::Filter2D<hls::BORDER_REFLECT>(src, tmp, kernel, p);
-
-		// Decimate
-		hls::Scalar<HLS_MAT_CN(TYPE), HLS_TNAME(TYPE)> px;
-
-#if 1
-		for (int r = 0; r < rows; r++) {
-//#pragma HLS LOOP_TRIPCOUNT max=1024
-			for (int c = 0; c < cols; c++) {
-#pragma HLS PIPELINE
-//#pragma HLS LOOP_TRIPCOUNT max=1024
-				tmp >> px;
-				if ((r % 2 == 0) && (c % 2 == 0)) {
-					dst << px;
-				}
-			}
-		}
-#else
-		for (int r = 0; r < rows2; r++) {
-			for (int c = 0; c < cols2; c++) {
-				// No if() statements
-#pragma HLS PIPELINE
-				tmp >> px;
-				dst << px;
-
-				// Consume
-				tmp >> px;
-			}
-			for (int c = 0; c < cols2; c++) {
-#pragma HLS PIPELINE
-				tmp >> px;
-			}
-		}
-#endif
-	}
-#endif
-
 
 	template<int ROWS, int COLS, int TYPE>
 	void upsample(
@@ -417,8 +344,7 @@ namespace hls
 		assert(rows <= ROWS);
 		assert(cols <= COLS);
 
-		// Convolution Kernel - This sums to unity
-		//static const float x[5] = { .05f, .25f, .4f, .25f, .05f };
+		// Convolution Kernel
 		static const int x[5] = { 1, 5, 8, 5, 1 };
 		const int x_sum = 20;
 
@@ -591,7 +517,7 @@ namespace hls
     void remap(
         hls::Mat<ROWS, COLS, HLS_32FC1>& src,
         hls::Mat<ROWS, COLS, HLS_32FC1>& dst,
-        /*PARAM_TYPE ref*/int step, PARAM_TYPE fact, PARAM_TYPE sigma2)
+        int step, PARAM_TYPE fact, PARAM_TYPE sigma2)
     {
 #pragma HLS DATAFLOW
 
@@ -632,7 +558,7 @@ namespace hls
 	void remap(
 		hls::Mat<ROWS, COLS, HLS_MAKETYPE(BASE_TYPE, 1) >& src,
 		hls::Mat<ROWS, COLS, HLS_MAKETYPE(BASE_TYPE, 1) >& dst,
-		/*PARAM_TYPE ref*/int step, PARAM_TYPE fact, PARAM_TYPE sigma2)
+		int step, PARAM_TYPE fact, PARAM_TYPE sigma2)
 	{
 #pragma HLS DATAFLOW
 
@@ -656,11 +582,8 @@ namespace hls
 				ap_fixed<32, 16> I = px_in.val[0];
 				ap_ufixed<16, 4> s = step;
 
-				//std::cout << I << " | " << s << std::endl;
-
 				I = I / ap_uint<16>(_MAT_RANGE_);
 				s = s / (_NUM_STEP_ - 1);	// [-1, 1]
-				//std::cout << I << " | " << s << std::endl;
 				I = I - s;
 				ap_fixed<32, 16> I2 = I*I;
 
@@ -673,8 +596,7 @@ namespace hls
 				ap_fixed<32, 24> tmp = tmp2*_MAT_RANGE_;
 				tmp *= /*(float)*/I;
 #endif
-				//std::cout << tmp<< std::endl;
-				px_out.val[0] = /*hls::sr_cast<HLS_TNAME(BASE_TYPE)>*/(tmp);
+				px_out.val[0] = hls::sr_cast<HLS_TNAME(BASE_TYPE)>(tmp);
 
 #else
 
