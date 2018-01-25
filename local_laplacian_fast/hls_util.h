@@ -658,7 +658,7 @@ namespace hls
 
 				//std::cout << I << " | " << s << std::endl;
 
-				I = I / _MAT_RANGE_;
+				I = I / ap_uint<4>(_MAT_RANGE_);
 				s = s / (_NUM_STEP_ - 1);	// [-1, 1]
 				//std::cout << I << " | " << s << std::endl;
 				I = I - s;
