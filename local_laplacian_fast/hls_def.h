@@ -19,7 +19,7 @@
 // Num. of descretization step
 #define		_NUM_STEP_		10
 
-#define		_DATA_IS_FLOAT_
+//#define		_DATA_IS_FLOAT_
 
 #ifdef _DATA_IS_FLOAT_
 // Floating point implementation
@@ -38,6 +38,9 @@ typedef		float			data_pyr_t;		// Data type for intermediate pyramid
 #else
 // Fixed point implementation
 #include "ap_int.h"
+
+#include "hls/utils/x_hls_utils.h"		// hls::__isnan()
+#include "hls/utils/x_hls_defines.h"
 #include "hls/hls_video_types.h"	// HLS_TBITDEPTH()
 
 // hls::Mat type

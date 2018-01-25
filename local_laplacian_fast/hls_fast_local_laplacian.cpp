@@ -5,7 +5,7 @@
 
 #include "hls_fast_local_laplacian.h"
 
-//#include "hls_math.h"
+#include "hls_math.h"
 
 #include "opencv2/highgui/highgui.hpp"
 
