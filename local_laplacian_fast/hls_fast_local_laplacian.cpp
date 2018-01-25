@@ -259,13 +259,23 @@ void hls_local_laplacian(
 	}
 
 	// Parallel execution
+#ifdef _DATA_IS_FLOAT_
 	// Layer 0
-	kernel(gau0, lap0, dst0, pyr_rows[0], pyr_cols[0], step /*ref, discretisation_step*/);
+	hls::kernel(gau0, lap0, dst0, pyr_rows[0], pyr_cols[0], step /*ref, discretisation_step*/);
 	// Layer 1
-	kernel(gau1, lap1, dst1, pyr_rows[1], pyr_cols[1], step /*ref, discretisation_step*/);
+	hls::kernel(gau1, lap1, dst1, pyr_rows[1], pyr_cols[1], step /*ref, discretisation_step*/);
 	// Layer 2
-	kernel(gau2, lap2, dst2, pyr_rows[2], pyr_cols[2], step /*ref, discretisation_step*/);
+	hls::kernel(gau2, lap2, dst2, pyr_rows[2], pyr_cols[2], step /*ref, discretisation_step*/);
 	// Not necessary for Layer 3
+#else
+	// Layer 0
+	hls::kernel<HLS_TBITDEPTH(_MAT_TYPE2_)>(gau0, lap0, dst0, pyr_rows[0], pyr_cols[0], step /*ref, discretisation_step*/);
+	// Layer 1
+	hls::kernel<HLS_TBITDEPTH(_MAT_TYPE2_)>(gau1, lap1, dst1, pyr_rows[1], pyr_cols[1], step /*ref, discretisation_step*/);
+	// Layer 2
+	hls::kernel<HLS_TBITDEPTH(_MAT_TYPE2_)>(gau2, lap2, dst2, pyr_rows[2], pyr_cols[2], step /*ref, discretisation_step*/);
+	// Not necessary for Layer 3
+#endif
 }
 
 
@@ -399,8 +409,12 @@ void hls_laplacian_pyramid_remap(
     
     load(src, in);
     
+#ifdef _DATA_IS_FLOAT_
     hls::remap(in, tmp, step/*ref*/, fact, sigma2);
-    
+#else
+	hls::remap<_MAX_ROWS_, _MAX_ROWS_, HLS_MAT_DEPTH(_MAT_TYPE2_)>(in, tmp, step, fact, sigma2);
+#endif
+
     lap_kernel(tmp, down0, lap0);
     lap_kernel(down0, down1, lap1);
     lap_kernel(down1, down2, lap2);

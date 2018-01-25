@@ -586,10 +586,11 @@ namespace hls
 	}
     
     
-    template<int ROWS, int COLS, int TYPE, typename PARAM_TYPE>
+    // Floating point data
+    template<int ROWS, int COLS, typename PARAM_TYPE>
     void remap(
-        hls::Mat<ROWS, COLS, TYPE>& src,
-        hls::Mat<ROWS, COLS, TYPE>& dst,
+        hls::Mat<ROWS, COLS, HLS_32FC1>& src,
+        hls::Mat<ROWS, COLS, HLS_32FC1>& dst,
         /*PARAM_TYPE ref*/int step, PARAM_TYPE fact, PARAM_TYPE sigma2)
     {
 #pragma HLS DATAFLOW
@@ -602,8 +603,8 @@ namespace hls
         assert(rows <= ROWS);
         assert(cols <= COLS);
         
-        hls::Scalar<HLS_MAT_CN(TYPE), HLS_TNAME(TYPE)> px_in;
-        hls::Scalar<HLS_MAT_CN(TYPE), HLS_TNAME(TYPE)> px_out;
+        hls::Scalar<HLS_MAT_CN(HLS_32FC1), HLS_TNAME(HLS_32FC1)> px_in;
+        hls::Scalar<HLS_MAT_CN(HLS_32FC1), HLS_TNAME(HLS_32FC1)> px_out;
         
         for (int r = 0; r < rows; r++) {
             for (int c = 0; c < cols; c++) {
@@ -611,19 +612,87 @@ namespace hls
                 src >> px_in;
                 
                 // Remap
-                float I = px_in.val[0] / ((float)_MAT_RANGE_); // [0, 1]
+                float I = px_in.val[0]; // [0, 1]
                 I = I - ref;
 #ifdef __SDSVHLS__
                 float tmp = fact*I*hls::exp(-I*I / sigma2);
 #else
                 float tmp = fact*I*std::exp(-I*I / sigma2);
 #endif
-                px_out.val[0] = (data_in_t)(tmp* ((float)_MAT_RANGE_));
+                px_out.val[0] = tmp;
                 
 				dst << px_out;
             }
         }
     }
+
+	// FIxed point (intger) data
+	// BASE_TYPE: HLS_16S etc.
+	template<int ROWS, int COLS, int BASE_TYPE, typename PARAM_TYPE>
+	void remap(
+		hls::Mat<ROWS, COLS, HLS_MAKETYPE(BASE_TYPE, 1) >& src,
+		hls::Mat<ROWS, COLS, HLS_MAKETYPE(BASE_TYPE, 1) >& dst,
+		/*PARAM_TYPE ref*/int step, PARAM_TYPE fact, PARAM_TYPE sigma2)
+	{
+#pragma HLS DATAFLOW
+
+		int rows = dst.rows;
+		int cols = dst.cols;
+
+		assert(rows <= ROWS);
+		assert(cols <= COLS);
+
+		hls::Scalar<1, HLS_TNAME(BASE_TYPE)> px_in;
+		hls::Scalar<1, HLS_TNAME(BASE_TYPE)> px_out;
+
+		for (int r = 0; r < rows; r++) {
+			for (int c = 0; c < cols; c++) {
+#pragma HLS PIPELINE
+				src >> px_in;
+
+#if 01
+				// Remap
+				//HLS_TNAME(BASE_TYPE) p = px_in.val[0]; // [-_MAT_RANGE_, _MAT_RANGE_]
+				ap_fixed<32, 16> I = px_in.val[0];
+				ap_ufixed<16, 4> s = step;
+
+				//std::cout << I << " | " << s << std::endl;
+
+				I = I / _MAT_RANGE_;
+				s = s / (_NUM_STEP_ - 1);	// [-1, 1]
+				//std::cout << I << " | " << s << std::endl;
+				I = I - s;
+				ap_fixed<32, 16> I2 = I*I;
+
+				float e_ = -I2;
+				e_ = e_/ sigma2;
+#ifdef __SDSVHLS__
+				float tmp = fact*I*hls::exp(e_);
+#else
+				float tmp2 = fact*std::exp(e_);
+				ap_fixed<32, 24> tmp = tmp2*_MAT_RANGE_;
+				tmp *= /*(float)*/I;
+#endif
+				//std::cout << tmp<< std::endl;
+				px_out.val[0] = /*hls::sr_cast<HLS_TNAME(BASE_TYPE)>*/(tmp);
+
+#else
+
+				float I = px_in.val[0];
+				I = I / _MAT_RANGE_; // [0, 1]
+				I = I - (float)(step)/ (_NUM_STEP_ - 1);
+#ifdef __SDSVHLS__
+				float tmp = fact*I*hls::exp(-I*I / sigma2);
+#else
+				float tmp = fact*I*std::exp(-I*I / sigma2);
+#endif
+				px_out.val[0] = tmp*_MAT_RANGE_;
+				std::cout << px_out.val[0] << std::endl;
+#endif
+				dst << px_out;
+			}
+		}
+	}
 
 
 	template<int ROWS, int COLS, int TYPE>
@@ -640,6 +709,65 @@ namespace hls
 		for (int r = 0; r < rows; r++) {
 			for (int c = 0; c < cols; c++) {
 				src >> px_in;
+			}
+		}
+	}
+
+
+	void kernel(float* gau, float* temp_laplace_pyr, float* dst, int rows, int cols, int step)
+	{
+#pragma HLS INLINE
+
+		float x_;
+
+		int offset = 0;
+		for (int r = 0; r < rows; r++) {
+			for (int c = 0; c < cols; c++) {
+#pragma HLS PIPELINE
+				float g = gau[offset] / ((float) _MAT_RANGE_);	// [0, 1]
+				g = (_NUM_STEP_ - 1)*g - step;
+				if (g < 0) {
+					g = -g;
+				}
+
+				if (g < 1) {
+					x_ = 1 - g;
+					x_ = x_ * temp_laplace_pyr[offset];
+				}
+				else {
+					x_ = 0;
+				}
+				dst[offset] = (x_ + dst[offset]);
+				offset++;
+			}
+		}
+	}
+
+	template<int N>
+	void kernel(ap_int<N>* gau, ap_int<N>* temp_laplace_pyr, ap_int<N>* dst, int rows, int cols, int step)
+	{
+#pragma HLS INLINE
+
+		ap_int<N + 4> x_;
+
+		int offset = 0;
+		for (int r = 0; r < rows; r++) {
+			for (int c = 0; c < cols; c++) {
+#pragma HLS PIPELINE
+				ap_int<N + 4> g = (_NUM_STEP_ - 1)*gau[offset] - step*_MAT_RANGE_;
+				if (g < 0) {
+					g = -g;
+				}
+
+				if (g < _MAT_RANGE_) {
+					x_ = _MAT_RANGE_ - g;
+					x_ = x_ * temp_laplace_pyr[offset] / _MAT_RANGE_;
+				}
+				else {
+					x_ = 0;
+				}
+				dst[offset] = hls::sr_cast< ap_int<N> >(x_ + dst[offset]);
+				offset++;
 			}
 		}
 	}
