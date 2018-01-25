@@ -37,6 +37,8 @@ typedef		float			data_pyr_t;		// Data type for intermediate pyramid
 
 #else
 // Fixed point implementation
+#include "ap_int.h"
+#include "hls/hls_video_types.h"	// HLS_TBITDEPTH()
 
 // hls::Mat type
 #define		_MAT_TYPE2_		HLS_16SC1
@@ -47,7 +49,7 @@ typedef		float			data_pyr_t;		// Data type for intermediate pyramid
 // Data types
 typedef		signed short	data_in_t;		// Input data type
 typedef		signed short	data_out_t;		// output data type
-typedef		signed short	data_pyr_t;		// Data type for intermediate pyramid
+typedef		ap_int<HLS_TBITDEPTH(_MAT_TYPE2_)>	data_pyr_t;		// Data type for intermediate pyramid
 
 #endif
 
