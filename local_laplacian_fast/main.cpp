@@ -137,7 +137,7 @@ void gray2rgb(cv::Mat& gray, std::vector<cv::Mat>& color, cv::Mat& rgb)
 	// Original MATLAB implementation
 	std::vector<cv::Mat> color2;
 
-	for (int c = 0; c < color.size(); c++) {
+	for (unsigned int c = 0; c < color.size(); c++) {
 		cv::Mat tmp;
 		cv::multiply(color.at(c), gray, tmp);
 		color2.push_back(tmp);
