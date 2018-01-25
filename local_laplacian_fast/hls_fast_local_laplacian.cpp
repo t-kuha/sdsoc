@@ -202,7 +202,7 @@ void hls_local_laplacian_wrap(cv::Mat& src, cv::Mat& dst, float sigma, float fac
 #endif
 }
 
-
+#if 0
 // Kernel for hls_local_laplacian()
 void kernel(data_pyr_t* gau, data_pyr_t* temp_laplace_pyr, data_pyr_t* dst, int rows, int cols, int step /*float ref, float discretisation_step*/)
 {
@@ -233,6 +233,7 @@ void kernel(data_pyr_t* gau, data_pyr_t* temp_laplace_pyr, data_pyr_t* dst, int 
 		}
 	}
 }
+#endif
 
 // Accelerated function
 // I:    Original image
