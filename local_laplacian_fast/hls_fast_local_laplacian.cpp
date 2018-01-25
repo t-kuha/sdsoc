@@ -5,7 +5,7 @@
 
 #include "hls_fast_local_laplacian.h"
 
-#include "hls_math.h"
+//#include "hls_math.h"
 
 #include "opencv2/highgui/highgui.hpp"
 
@@ -114,9 +114,11 @@ void hls_local_laplacian_wrap(cv::Mat& src, cv::Mat& dst, float sigma, float fac
 	{
 		// Show pyramid image
 		for (int l = 0; l < _MAX_LEVELS_; l++) {
+			hls_show_img(input_gaussian_pyr[l], pyr_rows[l], pyr_cols[l], 500, "hls_gauss_" + std::to_string(l));
 			hls_save_img("hls_gauss_" + std::to_string(l), input_gaussian_pyr[l], pyr_rows[l], pyr_cols[l]);
 		}
 		for (int l = 0; l < _MAX_LEVELS_; l++) {
+			hls_show_img(output_laplace_pyr[l], pyr_rows[l], pyr_cols[l], 500, "hls_laplacian_" + std::to_string(l));
 			hls_save_img("hls_laplacian_" + std::to_string(l), output_laplace_pyr[l], pyr_rows[l], pyr_cols[l]);
 		}
 	}
@@ -537,6 +539,7 @@ void hls_construct_pyramid(
 }
 
 
+#if 0
 // src: [0, 1]
 // ref: [0, 1]
 void remap(data_in_t* src, data_in_t* dst, float ref, float fact, float sigma2, int rows, int cols)
@@ -557,6 +560,7 @@ void remap(data_in_t* src, data_in_t* dst, float ref, float fact, float sigma2, 
         }
     }
 }
+#endif
 
 
 bool hls_save_img(std::string name, data_pyr_t* img, int rows, int cols)
