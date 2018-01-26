@@ -19,6 +19,17 @@
   
 
 ***
+#### local\_laplacian\_fast
+  - FPGA implementation of fast local laplacian pyramid
+  - Original code: 
+
+
+***
+#### local\_memory
+  - Accessing PL's local memory from PS
+  
+
+***
 #### pynq\_bnn
   - SDSoC implementation of BNN-PYNQ
   - Project in progress
