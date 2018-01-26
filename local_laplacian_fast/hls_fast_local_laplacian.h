@@ -52,11 +52,11 @@ void hls_laplacian_pyramid_remap(
     pyr_sz_t pyr_rows_[_MAX_LEVELS_], pyr_sz_t pyr_cols_[_MAX_LEVELS_],
 	int step, float fact, float sigma2);
 
-#pragma SDS data access_pattern(src0:SEQUENTIAL)
-#pragma SDS data access_pattern(src1:SEQUENTIAL)
-#pragma SDS data access_pattern(src2:SEQUENTIAL)
-#pragma SDS data access_pattern(src3:SEQUENTIAL)
+#pragma SDS data access_pattern(src0:SEQUENTIAL, src1:SEQUENTIAL)
+#pragma SDS data access_pattern(src2:SEQUENTIAL, src3:SEQUENTIAL)
 #pragma SDS data access_pattern(dst:SEQUENTIAL)
+#pragma SDS data mem_attribute(src0:PHYSICAL_CONTIGUOUS, src1:PHYSICAL_CONTIGUOUS)
+#pragma SDS data mem_attribute(src2:PHYSICAL_CONTIGUOUS, src3:PHYSICAL_CONTIGUOUS)
 #pragma SDS data copy(src0[0:"pyr_rows_[3]*pyr_cols_[3]"], src1[0:"pyr_rows_[2]*pyr_cols_[2]"])
 #pragma SDS data copy(src2[0:"pyr_rows_[1]*pyr_cols_[1]"], src3[0:"pyr_rows_[0]*pyr_cols_[0]"])
 #pragma SDS data copy(dst[0:"pyr_rows_[0]*pyr_cols_[0]"])
