@@ -571,7 +571,11 @@ namespace hls
 		hls::Scalar<1, HLS_TNAME(BASE_TYPE)> px_in;
 		hls::Scalar<1, HLS_TNAME(BASE_TYPE)> px_out;
 
+		ap_fixed<32, 8> fact_ = fact;
+		ap_fixed<32, 4> sigma2_ = sigma2;
+
 		for (int r = 0; r < rows; r++) {
+			std::cout << r << std::endl;
 			for (int c = 0; c < cols; c++) {
 #pragma HLS PIPELINE
 				src >> px_in;
@@ -585,17 +589,17 @@ namespace hls
 				I = I / ap_uint<16>(_MAT_RANGE_);
 				s = s / (_NUM_STEP_ - 1);	// [-1, 1]
 				I = I - s;
-				ap_fixed<32, 16> I2 = I*I;
+				ap_fixed<32, 8> I2 = I*I;
 
-				float e_ = -I2;
-				e_ = e_/ sigma2;
-#ifdef __SDSVHLS__
-				float tmp = fact*I*hls::exp(e_);
-#else
-				float tmp2 = fact*std::exp(e_);
+				ap_fixed<32, 8> e_ = -I2;
+				e_ = e_/ sigma2_;
+//#ifdef __SDSVHLS__
+				ap_fixed<32, 8> tmp2 = fact_*I*hls::exp(e_);
+//#else
+//				float tmp2 = fact*std::exp(e_);
 				ap_fixed<32, 24> tmp = tmp2*_MAT_RANGE_;
 				tmp *= /*(float)*/I;
-#endif
+//#endif
 				px_out.val[0] = hls::sr_cast<HLS_TNAME(BASE_TYPE)>(tmp);
 
 #else
