@@ -91,9 +91,7 @@ namespace hls
 		hls::Scalar<HLS_MAT_CN(TYPE), HLS_TNAME(TYPE)> px3;
         
         for (int r = 0; r < rows; r++) {
-            //#pragma HLS LOOP_TRIPCOUNT max=1024
             for (int c = 0; c < cols; c++) {
-                //#pragma HLS LOOP_TRIPCOUNT max=1024
 #pragma HLS PIPELINE
                 src1 >> px1;
                 src2 >> px2;
@@ -152,6 +150,7 @@ namespace hls
 
 		for (int r = 0; r < rows; r++) {
 			for (int c = 0; c < cols; c++) {
+#pragma HLS LOOP_MERGE
 #pragma HLS PIPELINE
 				px.val[0] = src[r*cols + c];
 				dst << px;
@@ -215,7 +214,7 @@ namespace hls
 
 		for (int r = 0; r < rows; r++) {
 			for (int c = 0; c < cols + 2; c++) {
-//#pragma HLS PIPELINE
+#pragma HLS PIPELINE
 				if (c < cols) {
 					// Load pixel from source
 					src >> px_in;
