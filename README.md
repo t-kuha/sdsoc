@@ -1,5 +1,10 @@
 ## SDSoC Projects
 
+
+#### algorithm_sort
+  - Odd-Even sort
+  
+***
 #### binarynet
   - Binary CNN
     - __optimized__: Optimized code (Fits in Zybo (Zynq-7010))
