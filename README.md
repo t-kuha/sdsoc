@@ -38,6 +38,15 @@
   - __WARNING:__ this code does not work with SDSoC 2017.4 (2017.2 is OK)
 
 
+  - Performance (CPU clock cycle @ 142.86 [MHz]):
+
+  | Image Size [px] | SW              | HW        | Speed-up |
+  |:---------------:|----------------:|----------:|---------:|
+  | 1920 x 1080     | 169,424,338,952 | 9,812,102 | 17,266   |
+  | 256 x 256       |   3,593,393,664 |   289,420 | 12,415   |
+
+
+
 ***
 ### Project in progress
 
