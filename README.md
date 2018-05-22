@@ -35,7 +35,7 @@
 ***
 #### vhls_video_lib
   - Using Vivado HLS video library ( hls::***() ) in SDSoC
-  - __WARNING:__ this code does not work with SDSoC 2017.4  
+  - __WARNING:__ this code does not work with SDSoC 2017.4 (2017.2 is OK)
 
 
 ***
@@ -55,4 +55,3 @@
 ***
 #### pynq\_bnn
   - SDSoC implementation of BNN-PYNQ
-  - Project in progress
