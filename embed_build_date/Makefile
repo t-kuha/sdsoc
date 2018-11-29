@@ -15,7 +15,7 @@ DM_CLOCK_ID	:= 2
 
 # SDSoC-related
 PLATFORM    := zc702
-SDSFLAGS	= -sds-sys-config Linux -sds-pf ${PLATFORM} -dmclkid ${DM_CLOCK_ID}
+SDSFLAGS	= -sds-sys-config linux -sds-pf ${PLATFORM} -dmclkid ${DM_CLOCK_ID}
 CC			:= sds++ ${SDSFLAGS}
 
 # General option
