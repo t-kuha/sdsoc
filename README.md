@@ -22,7 +22,7 @@
 
 ***
 #### local\_memory
-  - Accessing PL's local memory from PS
+  - Writing to & reading from PL's local memory from PS
 
 
 ***
