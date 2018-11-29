@@ -1,14 +1,9 @@
 /*
  * main.cpp
  *
- *  Created on: Aug 28, 2017
- *      Author: kuriharat
  */
 
-
 #include <stdio.h>
-
-//#include "sds_utils.h"
 
 void get_build_date(char str[21]){
 #pragma HLS ARRAY_PARTITION variable=str complete
@@ -40,7 +35,7 @@ int main(int argc, char* argv[])
 {
 
 	char str[21] = "";
-	/*sds_utils::*/get_build_date(str);
+	get_build_date(str);
 
 	printf("HW Build date: %s\n", str);
 
