@@ -4,7 +4,7 @@
 
 ***
 
-## Prereqisite
+## Prerequisite
 
 ```shell-session
 # Prepare SDx command
