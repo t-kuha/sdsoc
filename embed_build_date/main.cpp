@@ -1,9 +1,8 @@
-/*
- * main.cpp
- *
- */
+// 
+// Embed build data in HW
+// 
 
-#include <stdio.h>
+#include <iostream>
 
 void get_build_date(char str[21]){
 #pragma HLS ARRAY_PARTITION variable=str complete
@@ -33,11 +32,10 @@ void get_build_date(char str[21]){
 
 int main(int argc, char* argv[])
 {
-
 	char str[21] = "";
 	get_build_date(str);
 
-	printf("HW Build date: %s\n", str);
+	std::cout << "HW Build date: " << str << std::endl;
 
 	return 0;
 }
