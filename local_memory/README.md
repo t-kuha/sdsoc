@@ -1,4 +1,14 @@
-### Execution Result
+# Using PL as memory
+
+## How to build
+
+```shell-session
+$ make PLATFORM=<platform name or path platform folder>
+```
+
+***
+
+## Execution Result
 
 - First time: local memory is initialized with 0.
 

@@ -1,3 +1,6 @@
+// 
+// Using PL as memory
+// 
 
 #include <iostream>
 
