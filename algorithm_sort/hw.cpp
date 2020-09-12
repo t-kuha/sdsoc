@@ -3,10 +3,10 @@
 // I. Skliarova, V. Sklyarov, A. Sudnitson, M. Kruus,
 // "Integration of High-Level Synthesis to the Courses on Reconfigurable Digital Systems",
 // Proceedings of the 38th International Conference on Information and Communication Technology, Electronics and Microelectronics
-// - MIPROÅf15, Opatija, Croatia, May, 2015, pp. 172-177.
+// - MIPRO, Opatija, Croatia, May, 2015, pp. 172-177.
 //
 
-#include "ex_sort.h"
+#include "hw.h"
 
 void ex_sort(int in[N], int out[N])
 {
