@@ -1,0 +1,15 @@
+*~
+*.pyc
+*.npz
+*.zip
+*.o
+*.a
+*.exe
+
+.Xil
+_sds
+sd_card
+*.prj
+vivado_hls.log
+
+zlib-*
